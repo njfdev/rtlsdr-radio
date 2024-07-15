@@ -106,8 +106,13 @@ pub mod nrsc5 {
         let message  = line.split(" ").skip(1).collect::<Vec<&str>>().join(" ");
 
         // continuously send synchronized message to keep frontend updated (a timestamp always means synced)
-        window.emit("nrsc5_status", Some("synchronized"))
-          .expect("failed to emit event");
+        if (!message.starts_with("Lost synchronization")) {
+          window.emit("nrsc5_status", Some("synchronized"))
+            .expect("failed to emit event");
+        } else {
+          window.emit("nrsc5_status", Some("synchronization_lost"))
+            .expect("failed to emit event");
+        }
 
         if message.starts_with("Title: ") {
           window.emit("nrsc5_title", message.strip_prefix("Title: "))
@@ -126,6 +131,9 @@ pub mod nrsc5 {
             .expect("failed to emit event");
         } else if message.starts_with("Message: ") {
           window.emit("nrsc5_message", message.strip_prefix("Message: "))
+            .expect("failed to emit event");
+        } else if message.starts_with("BER: ") {
+          window.emit("nrsc5_ber", message.strip_prefix("BER: ").unwrap().split(",").nth(0).unwrap())
             .expect("failed to emit event");
         }
       }

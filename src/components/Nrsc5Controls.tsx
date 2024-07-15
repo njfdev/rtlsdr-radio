@@ -10,6 +10,7 @@ enum Nrsc5Status {
   Starting = "starting",
   SdrFound = "sdr-found",
   Synced = "synchronized",
+  SyncLost = "synchronization_lost",
 }
 
 export default function Nrsc5Controls() {
@@ -23,6 +24,7 @@ export default function Nrsc5Controls() {
   const [stationName, setStationName] = useState("");
   const [slogan, setSlogan] = useState("");
   const [message, setMessage] = useState("");
+  const [bitErrorRate, setBitErrorRate] = useState(0.0);
 
   const start_nrsc5 = () => {
     setNrsc5Status(Nrsc5Status.Starting);
@@ -64,17 +66,31 @@ export default function Nrsc5Controls() {
   appWindow.listen("nrsc5_message", (event: { payload: string }) => {
     setMessage(event.payload);
   });
+  appWindow.listen("nrsc5_ber", (event: { payload: string }) => {
+    setBitErrorRate(parseFloat(event.payload));
+  });
 
   return (
     <div className="flex gap-4">
-      <div>
-        <h1>Title: {songTitle}</h1>
-        <h2>Artist: {songArtist}</h2>
-        <h3>Bit Rate: {audioBitRate}</h3>
-        <hr />
-        <h1>Station: {stationName}</h1>
-        <h2>Slogan: {slogan}</h2>
-        <h2>Message: {message}</h2>
+      <div className="flex items-center justify-center align-middle min-w-[16rem]">
+        {nrsc5Status == Nrsc5Status.Synced && (
+          <div className="w-full">
+            <h1>Title: {songTitle}</h1>
+            <h2>Artist: {songArtist}</h2>
+            <h3>Bit Rate: {audioBitRate}</h3>
+            <h3>Bit Error Rate: {Math.floor(bitErrorRate * 100_00) / 100}%</h3>
+            <hr />
+            <h1>Station: {stationName}</h1>
+            <h2>Slogan: {slogan}</h2>
+            <h2>Message: {message}</h2>
+          </div>
+        )}
+        {nrsc5Status == Nrsc5Status.SyncLost && (
+          <>
+            <span className="text-red-500">Synchronization Lost</span>
+          </>
+        )}
+        {nrsc5Status == Nrsc5Status.Stopped && <span>SDR Not Running</span>}
       </div>
       <div>
         <Input
