@@ -1,0 +1,12 @@
+mkdir build
+cd build
+git clone https://github.com/theori-io/nrsc5.git
+cd nrsc5
+git reset --hard a57dd5b5f93e08d9ccdeb5f6b670a16d7566f8f1
+mkdir build
+cd build
+cmake ../
+make
+cd ../../
+mkdir bin
+mv ./nrsc5/build/src/nrsc5 ./bin/nrsc5-$(rustc -vV | sed -n 's|host: ||p')
