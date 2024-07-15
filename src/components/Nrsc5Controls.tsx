@@ -91,6 +91,7 @@ export default function Nrsc5Controls() {
           </>
         )}
         {nrsc5Status == Nrsc5Status.Stopped && <span>SDR Not Running</span>}
+        {nrsc5Status == Nrsc5Status.SdrFound && <span>Loading...</span>}
       </div>
       <div>
         <Input
@@ -113,18 +114,13 @@ export default function Nrsc5Controls() {
               stop_nrsc5();
             }
           }}
-          isLoading={
-            nrsc5Status == Nrsc5Status.SdrFound ||
-            nrsc5Status == Nrsc5Status.Starting
-          }
+          isLoading={nrsc5Status == Nrsc5Status.Starting}
         >
           {nrsc5Status == Nrsc5Status.Stopped
             ? "Start nrsc5"
-            : nrsc5Status == Nrsc5Status.Synced
-            ? "Stop nrsc5"
             : nrsc5Status == Nrsc5Status.Starting
             ? "Starting..."
-            : "Loading..."}
+            : "Stop nrsc5"}
         </Button>
       </div>
     </div>
