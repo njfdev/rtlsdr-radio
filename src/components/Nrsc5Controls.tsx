@@ -20,6 +20,9 @@ export default function Nrsc5Controls() {
   const [songTitle, setSongTitle] = useState("");
   const [songArtist, setSongArtist] = useState("");
   const [audioBitRate, setAudioBitRate] = useState("");
+  const [stationName, setStationName] = useState("");
+  const [slogan, setSlogan] = useState("");
+  const [message, setMessage] = useState("");
 
   const start_nrsc5 = () => {
     setNrsc5Status(Nrsc5Status.Starting);
@@ -52,6 +55,15 @@ export default function Nrsc5Controls() {
   appWindow.listen("nrsc5_br", (event: { payload: string }) => {
     setAudioBitRate(event.payload);
   });
+  appWindow.listen("nrsc5_station", (event: { payload: string }) => {
+    setStationName(event.payload);
+  });
+  appWindow.listen("nrsc5_slogan", (event: { payload: string }) => {
+    setSlogan(event.payload);
+  });
+  appWindow.listen("nrsc5_message", (event: { payload: string }) => {
+    setMessage(event.payload);
+  });
 
   return (
     <div className="flex gap-4">
@@ -59,6 +71,10 @@ export default function Nrsc5Controls() {
         <h1>Title: {songTitle}</h1>
         <h2>Artist: {songArtist}</h2>
         <h3>Bit Rate: {audioBitRate}</h3>
+        <hr />
+        <h1>Station: {stationName}</h1>
+        <h2>Slogan: {slogan}</h2>
+        <h2>Message: {message}</h2>
       </div>
       <div>
         <Input

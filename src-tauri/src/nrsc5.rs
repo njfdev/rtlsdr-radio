@@ -118,6 +118,15 @@ pub mod nrsc5 {
         } else if message.starts_with("Audio bit rate: ") {
           window.emit("nrsc5_br", message.strip_prefix("Audio bit rate: "))
             .expect("failed to emit event");
+        } else if message.starts_with("Station name: ") {
+          window.emit("nrsc5_station", message.strip_prefix("Station name: "))
+            .expect("failed to emit event");
+        } else if message.starts_with("Slogan: ") {
+          window.emit("nrsc5_slogan", message.strip_prefix("Slogan: "))
+            .expect("failed to emit event");
+        } else if message.starts_with("Message: ") {
+          window.emit("nrsc5_message", message.strip_prefix("Message: "))
+            .expect("failed to emit event");
         }
       }
     }
