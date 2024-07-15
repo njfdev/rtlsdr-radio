@@ -3,25 +3,39 @@
 import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api";
 import { appWindow } from "@tauri-apps/api/window";
+import { Input, Button } from "@nextui-org/react";
 
 export default function Nrsc5Controls() {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [freq, setFreq] = useState<string | undefined>();
+  const [channel, setChannel] = useState<string | undefined>();
   const [messages, setMessages] = useState("");
 
-  useEffect(() => {
-    invoke<string>("start_nrsc5", { name: "Next.js" })
-      .then((_result) => setIsPlaying(true))
+  const start_nrsc5 = () => {
+    invoke<string>("start_nrsc5", { fmFreq: freq, channel: channel })
+      .then((_result) => console.log("Started Playing"))
       .catch(console.error);
-  }, []);
+  };
 
   appWindow.listen("message", (event) => {
+    console.log(event.payload);
     setMessages(messages + "\n" + event.payload);
   });
 
   return (
     <div>
-      <h1>Is nrsc5 Playing? {isPlaying}</h1>
-      <div>{messages}</div>
+      <Input
+        type="number"
+        label="FM Frequency"
+        value={freq}
+        onChange={(e) => setFreq(e.target.value)}
+      />
+      <Input
+        type="number"
+        label="Channel"
+        value={channel}
+        onChange={(e) => setChannel(e.target.value)}
+      />
+      <Button onClick={() => start_nrsc5()}>Start nrsc5</Button>
     </div>
   );
 }

@@ -12,11 +12,11 @@ fn main() {
 }
 
 #[tauri::command]
-fn start_nrsc5(window: Window) {
+fn start_nrsc5(window: Window, fm_freq: String, channel: String) {
   thread::spawn(|| {
     let (mut rx, mut child) = Command::new_sidecar("nrsc5")
       .expect("failed to create `nrsc5` binary command")
-      .args(["101.5", "0"])
+      .args([fm_freq, channel])
       .spawn()
       .expect("Failed to spawn sidecar");
 
