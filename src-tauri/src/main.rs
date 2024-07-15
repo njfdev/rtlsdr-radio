@@ -10,7 +10,7 @@ use tauri::{api::process::{Command, CommandEvent}, Manager, State, Window};
 fn main() {
   tauri::Builder::default()
     .manage(Nrsc5State::new())
-    .invoke_handler(tauri::generate_handler![start_nrsc5])
+    .invoke_handler(tauri::generate_handler![start_nrsc5, stop_nrsc5])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
@@ -18,4 +18,9 @@ fn main() {
 #[tauri::command]
 fn start_nrsc5(window: Window, state: State<Nrsc5State>, fm_freq: String, channel: String) {
   state.startThread(window, fm_freq, channel);
+}
+
+#[tauri::command]
+fn stop_nrsc5(state: State<Nrsc5State>) {
+  state.stopThread();
 }

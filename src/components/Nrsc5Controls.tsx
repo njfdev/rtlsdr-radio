@@ -15,6 +15,11 @@ export default function Nrsc5Controls() {
       .then((_result) => console.log("Started Playing"))
       .catch(console.error);
   };
+  const stop_nrsc5 = () => {
+    invoke<string>("stop_nrsc5", {})
+      .then((_result) => console.log("Stopped Playing"))
+      .catch(console.error);
+  };
 
   appWindow.listen("message", (event) => {
     console.log(event.payload);
@@ -36,6 +41,7 @@ export default function Nrsc5Controls() {
         onChange={(e) => setChannel(e.target.value)}
       />
       <Button onClick={() => start_nrsc5()}>Start nrsc5</Button>
+      <Button onClick={() => stop_nrsc5()}>Stop nrsc5</Button>
     </div>
   );
 }
