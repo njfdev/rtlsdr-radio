@@ -17,10 +17,10 @@ fn main() {
 
 #[tauri::command]
 fn start_nrsc5(window: Window, state: State<Nrsc5State>, fm_freq: String, channel: String) {
-  state.startThread(window, fm_freq, channel);
+  state.start_thread(window, fm_freq, channel);
 }
 
 #[tauri::command]
-fn stop_nrsc5(state: State<Nrsc5State>) {
-  state.stopThread();
+fn stop_nrsc5(window: Window, state: State<Nrsc5State>) {
+  state.stop_thread(window);
 }

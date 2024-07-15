@@ -15,7 +15,7 @@ pub mod nrsc5 {
       Nrsc5State(Arc::new(Mutex::new(Nrsc5 { nrsc5_thread: None, shutdown_flag: Arc::new(AtomicBool::new(false)) })))
     }
 
-    pub fn startThread(&self, window: Window, fm_freq: String, channel: String) {
+    pub fn start_thread(&self, window: Window, fm_freq: String, channel: String) {
       // we can make a clone because a clone of Arc is just making another reference to the original
       let nrsc5_state = self.0.clone();
       let nrsc5_state_clone = nrsc5_state.clone();
@@ -34,9 +34,19 @@ pub mod nrsc5 {
         tauri::async_runtime::spawn(async move {
           // read events
           while let Some(event) = rx.recv().await {
-            if let CommandEvent::Stdout(line) = event {
-              window.emit("message", Some(format!("'{}'", line)))
-                .expect("failed to emit event");
+            match event {
+              CommandEvent::Stdout(line) => {
+                print!("{}", line);
+              }
+              // for some reason all nrsc5 output is found under Stderr
+              CommandEvent::Stderr(line) => {
+                print!("{}", line);
+                Nrsc5State::handle_nrsc5_output(&window, line);
+              }
+              CommandEvent::Error(line) => {
+                eprint!("Sidecar Error: {}", line);
+              }
+              _ => {}
             }
           }
 
@@ -49,14 +59,14 @@ pub mod nrsc5 {
           thread::sleep(time::Duration::from_millis(100));
         }
 
-        child.kill();
+        let _ = child.kill();
       });
 
       let mut nrsc5 = block_on(nrsc5_state.lock());
       nrsc5.nrsc5_thread = Some(nrsc5_thread);
     }
 
-    pub fn stopThread(&self) {
+    pub fn stop_thread(&self, window: Window) {
       if let Ok(mut nrsc5) = self.0.try_lock() {
 
         nrsc5.shutdown_flag.store(true, Ordering::SeqCst);
@@ -66,8 +76,39 @@ pub mod nrsc5 {
         }
 
         nrsc5.shutdown_flag.store(false, Ordering::SeqCst);
+
+        window.emit("nrsc5_status", Some("stopped"))
+          .expect("failed to emit event");
       } else {
         println!("Could not acquire lock immediately");
+      }
+    }
+
+    fn is_timestamp(string: String) -> bool {
+      let parts: Vec<&str> = string.split(":").collect();
+
+      if parts.len() != 3 {
+        return false;
+      }
+
+      if parts[0].parse::<usize>().is_err() || parts[1].parse::<usize>().is_err() || parts[2].parse::<usize>().is_err() {
+        return false;
+      }
+
+      return true;
+    }
+
+    fn handle_nrsc5_output(window: &Window, line: String) {
+      if line.starts_with("Found") {
+        window.emit("nrsc5_status", Some("sdr-found"))
+          .expect("failed to emit event");
+      } else if Nrsc5State::is_timestamp(line.split(" ").nth(0).expect("Unexpected output from nrsc5").to_owned()) {
+        let message  = line.split(" ").skip(1).collect::<Vec<&str>>().join(" ");
+
+        if message.starts_with("Synchronized") {
+          window.emit("nrsc5_status", Some("synchronized"))
+            .expect("failed to emit event");
+        }
       }
     }
   }
