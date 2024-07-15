@@ -7,6 +7,7 @@ import { Input, Button } from "@nextui-org/react";
 
 enum Nrsc5Status {
   Stopped = "stopped",
+  Starting = "starting",
   SdrFound = "sdr-found",
   Synced = "synchronized",
 }
@@ -18,6 +19,7 @@ export default function Nrsc5Controls() {
   const [nrsc5Status, setNrsc5Status] = useState(Nrsc5Status.Stopped);
 
   const start_nrsc5 = () => {
+    setNrsc5Status(Nrsc5Status.Starting);
     invoke<string>("start_nrsc5", { fmFreq: freq, channel: channel })
       .then((_result) => console.log("Started Playing"))
       .catch(console.error);
@@ -52,15 +54,27 @@ export default function Nrsc5Controls() {
         value={channel}
         onChange={(e) => setChannel(e.target.value)}
       />
-      <Button onClick={() => start_nrsc5()}>Start nrsc5</Button>
-      <Button onClick={() => stop_nrsc5()}>Stop nrsc5</Button>
-      <span>
-        {nrsc5Status == Nrsc5Status.SdrFound
-          ? "Connected to RTL-SDR"
+      <Button
+        onClick={() => {
+          if (nrsc5Status == Nrsc5Status.Stopped) {
+            start_nrsc5();
+          } else if (nrsc5Status == Nrsc5Status.Synced) {
+            stop_nrsc5();
+          }
+        }}
+        isLoading={
+          nrsc5Status == Nrsc5Status.SdrFound ||
+          nrsc5Status == Nrsc5Status.Starting
+        }
+      >
+        {nrsc5Status == Nrsc5Status.Stopped
+          ? "Start nrsc5"
           : nrsc5Status == Nrsc5Status.Synced
-          ? "Playing"
-          : ""}
-      </span>
+          ? "Stop nrsc5"
+          : nrsc5Status == Nrsc5Status.Starting
+          ? "Starting..."
+          : "Loading..."}
+      </Button>
     </div>
   );
 }

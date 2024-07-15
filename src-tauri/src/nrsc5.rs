@@ -105,10 +105,9 @@ pub mod nrsc5 {
       } else if Nrsc5State::is_timestamp(line.split(" ").nth(0).expect("Unexpected output from nrsc5").to_owned()) {
         let message  = line.split(" ").skip(1).collect::<Vec<&str>>().join(" ");
 
-        if message.starts_with("Synchronized") {
-          window.emit("nrsc5_status", Some("synchronized"))
-            .expect("failed to emit event");
-        }
+        // continuously send synchronized message to keep frontend updated (a timestamp always means synced)
+        window.emit("nrsc5_status", Some("synchronized"))
+          .expect("failed to emit event");
       }
     }
   }
