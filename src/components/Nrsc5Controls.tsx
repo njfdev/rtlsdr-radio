@@ -17,6 +17,9 @@ export default function Nrsc5Controls() {
   const [channel, setChannel] = useState<string | undefined>();
 
   const [nrsc5Status, setNrsc5Status] = useState(Nrsc5Status.Stopped);
+  const [songTitle, setSongTitle] = useState("");
+  const [songArtist, setSongArtist] = useState("");
+  const [audioBitRate, setAudioBitRate] = useState("");
 
   const start_nrsc5 = () => {
     setNrsc5Status(Nrsc5Status.Starting);
@@ -40,41 +43,58 @@ export default function Nrsc5Controls() {
     );
   });
 
+  appWindow.listen("nrsc5_title", (event: { payload: string }) => {
+    setSongTitle(event.payload);
+  });
+  appWindow.listen("nrsc5_artist", (event: { payload: string }) => {
+    setSongArtist(event.payload);
+  });
+  appWindow.listen("nrsc5_br", (event: { payload: string }) => {
+    setAudioBitRate(event.payload);
+  });
+
   return (
-    <div>
-      <Input
-        type="number"
-        label="FM Frequency"
-        value={freq}
-        onChange={(e) => setFreq(e.target.value)}
-      />
-      <Input
-        type="number"
-        label="Channel"
-        value={channel}
-        onChange={(e) => setChannel(e.target.value)}
-      />
-      <Button
-        onClick={() => {
-          if (nrsc5Status == Nrsc5Status.Stopped) {
-            start_nrsc5();
-          } else if (nrsc5Status == Nrsc5Status.Synced) {
-            stop_nrsc5();
+    <div className="flex gap-4">
+      <div>
+        <h1>Title: {songTitle}</h1>
+        <h2>Artist: {songArtist}</h2>
+        <h3>Bit Rate: {audioBitRate}</h3>
+      </div>
+      <div>
+        <Input
+          type="number"
+          label="FM Frequency"
+          value={freq}
+          onChange={(e) => setFreq(e.target.value)}
+        />
+        <Input
+          type="number"
+          label="Channel"
+          value={channel}
+          onChange={(e) => setChannel(e.target.value)}
+        />
+        <Button
+          onClick={() => {
+            if (nrsc5Status == Nrsc5Status.Stopped) {
+              start_nrsc5();
+            } else if (nrsc5Status == Nrsc5Status.Synced) {
+              stop_nrsc5();
+            }
+          }}
+          isLoading={
+            nrsc5Status == Nrsc5Status.SdrFound ||
+            nrsc5Status == Nrsc5Status.Starting
           }
-        }}
-        isLoading={
-          nrsc5Status == Nrsc5Status.SdrFound ||
-          nrsc5Status == Nrsc5Status.Starting
-        }
-      >
-        {nrsc5Status == Nrsc5Status.Stopped
-          ? "Start nrsc5"
-          : nrsc5Status == Nrsc5Status.Synced
-          ? "Stop nrsc5"
-          : nrsc5Status == Nrsc5Status.Starting
-          ? "Starting..."
-          : "Loading..."}
-      </Button>
+        >
+          {nrsc5Status == Nrsc5Status.Stopped
+            ? "Start nrsc5"
+            : nrsc5Status == Nrsc5Status.Synced
+            ? "Stop nrsc5"
+            : nrsc5Status == Nrsc5Status.Starting
+            ? "Starting..."
+            : "Loading..."}
+        </Button>
+      </div>
     </div>
   );
 }

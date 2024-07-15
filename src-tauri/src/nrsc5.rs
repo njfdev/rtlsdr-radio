@@ -108,6 +108,17 @@ pub mod nrsc5 {
         // continuously send synchronized message to keep frontend updated (a timestamp always means synced)
         window.emit("nrsc5_status", Some("synchronized"))
           .expect("failed to emit event");
+
+        if message.starts_with("Title: ") {
+          window.emit("nrsc5_title", message.strip_prefix("Title: "))
+            .expect("failed to emit event");
+        } else if message.starts_with("Artist: ") {
+          window.emit("nrsc5_artist", message.strip_prefix("Artist: "))
+            .expect("failed to emit event");
+        } else if message.starts_with("Audio bit rate: ") {
+          window.emit("nrsc5_br", message.strip_prefix("Audio bit rate: "))
+            .expect("failed to emit event");
+        }
       }
     }
   }
