@@ -10,14 +10,14 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^1.6.0",
-    "next": "14.2.5",
-    "react": "^18",
-    "react-dom": "^18"
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "next": "^15.0.0-canary.67",
+    "react": "^19.0.0-rc-df5f2736-20240712",
+    "react-dom": "^19.0.0-rc-df5f2736-20240712"
   },
   "devDependencies": {
     "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
     "postcss": "^8",
