@@ -47,7 +47,7 @@ jobs:
           sudo apt-get install -y git build-essential cmake autoconf libtool libao-dev libfftw3-dev librtlsdr-dev
 
       - name: Install Dependencies (MacOS Only)
-        if: matrix.platform == 'macos-latest'
+        if: matrix.platform == 'macos-latest' || matrix.platform == 'macos-13'
         run: |
           brew install cmake autoconf automake libtool git librtlsdr libao fftw
 
