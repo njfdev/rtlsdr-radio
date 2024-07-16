@@ -1,3 +1,5 @@
+# Note: FAAD2 is turned off because it causes issues in GitHub Actions and is not needed
+
 mkdir build
 cd build
 git clone https://github.com/theori-io/nrsc5.git
@@ -7,13 +9,13 @@ mkdir build
 cd build
 if [ "$TAURI_PLATFORM" = "macos" ]; then
   if [ "$TAURI_ARCH" = "aarch64" ]; then
-    cmake -DCMAKE_OSX_ARCHITECTURES=arm64 ../
+    cmake -DCMAKE_OSX_ARCHITECTURES=arm64 -DUSE_FAAD2=OFF ../
   else
-    cmake -DCMAKE_OSX_ARCHITECTURES=$TAURI_ARCH ../
+    cmake -DCMAKE_OSX_ARCHITECTURES=$TAURI_ARCH -DUSE_FAAD2=OFF ../
   fi
     BINARY_BUILD_TARGET_NAME="$TAURI_ARCH-apple-darwin"
 else
-  cmake ../
+  cmake -DUSE_FAAD2=OFF ../
   BINARY_BUILD_TARGET_NAME=$(rustc -vV | sed -n 's|host: ||p')
 fi
 make
