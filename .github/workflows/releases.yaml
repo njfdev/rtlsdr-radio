@@ -1,0 +1,60 @@
+name: Create GitHub Release
+
+# release a new version by pushing to the release branch
+on:
+  push:
+    branches:
+      - release
+
+jobs:
+  publish-tauri:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "macos-latest" # for Arm based Macs
+            args: "--target aarch64-apple-darwin"
+          - platform: "macos-latest" # for Intel based Macs
+            args: "--target x86_64-apple-darwin"
+          - platform: "ubuntu-20.04"
+            args: ""
+          - platform: "windows-latest"
+            args: ""
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-verison: lts/*
+
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # If on Mac, we need to include both architectures
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Install Dependencies (Ubuntu Only)
+        if: matrix.platform == 'ubuntu-20.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-devlibappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y git build-essential cmake autoconf libtool libao-dev libfftw3-dev librtlsdr-dev
+
+      - name: install frontend dependencies
+        run: yarn install
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
+          releaseName: "RTL-SDR Radio v__VERSION__"
+          releaseBody: "See the assets to download this version and install."
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
