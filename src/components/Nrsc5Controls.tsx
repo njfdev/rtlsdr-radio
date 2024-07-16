@@ -89,7 +89,7 @@ export default function Nrsc5Controls() {
   return (
     <div className="flex w-[48rem] gap-4">
       <div className="flex items-center grow basis-0 justify-center align-middle min-w-[16rem] w-full">
-        <Tabs defaultValue="radioInfo">
+        <Tabs defaultValue="radioInfo" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="radioInfo">Radio Info</TabsTrigger>
             <TabsTrigger value="stationInfo">Station Info</TabsTrigger>
@@ -135,7 +135,8 @@ export default function Nrsc5Controls() {
                 <CardDescription>{slogan}</CardDescription>
               </CardHeader>
               <CardContent>
-                <span>{message}</span>
+                <h2 className="text-lg font-bold">Station Message</h2>
+                <span className="text-sm">{message}</span>
               </CardContent>
             </Card>
           </TabsContent>
