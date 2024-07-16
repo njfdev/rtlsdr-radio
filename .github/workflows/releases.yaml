@@ -52,7 +52,7 @@ jobs:
         if: matrix.platform == 'windows-latest'
         shell: msys2 {0}
         run: |
-          pacman -S autoconf automake git gzip make mingw-w64-i686-gcc mingw-w64-i686-cmake mingw-w64-i686-libtool patch tar xz
+          pacman -S --noconfirm autoconf automake git gzip make mingw-w64-i686-gcc mingw-w64-i686-cmake mingw-w64-i686-libtool patch tar xz
 
           cd ~
           curl -L http://www.fftw.org/fftw-3.3.7.tar.gz | tar xvz
