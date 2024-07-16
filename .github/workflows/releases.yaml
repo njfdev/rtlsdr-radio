@@ -15,9 +15,9 @@ jobs:
       matrix:
         include:
           - platform: "macos-latest" # for Arm based Macs
-            args: "--target aarch64-apple-darwin"
-          - platform: "macos-latest" # for Intel based Macs
-            args: "--target x86_64-apple-darwin"
+            args: ""
+          - platform: "macos-13" # for Intel based Macs (last version that GitHub runs on Intel)
+            args: ""
           - platform: "ubuntu-20.04"
             args: ""
           # NOTE: Temporarily Removing Windows until Build Scripts are Modified to work on Windows
