@@ -110,7 +110,7 @@ export default function Nrsc5Controls() {
           onClick={() => {
             if (nrsc5Status == Nrsc5Status.Stopped) {
               start_nrsc5();
-            } else if (nrsc5Status == Nrsc5Status.Synced) {
+            } else if (nrsc5Status != Nrsc5Status.Starting) {
               stop_nrsc5();
             }
           }}
