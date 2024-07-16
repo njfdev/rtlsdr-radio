@@ -52,8 +52,8 @@ jobs:
         if: matrix.platform == 'windows-latest'
         shell: msys2 {0}
         run: |
-          pacman -Syu
-          pacman -Su
+          pacman -Syu --noconfirm
+          pacman -Su --noconfirm
           pacman -S --noconfirm autoconf automake git gzip make mingw-w64-i686-gcc mingw-w64-i686-cmake mingw-w64-i686-libtool patch tar xz
 
           cd ~
