@@ -3,7 +3,10 @@
 import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api";
 import { appWindow } from "@tauri-apps/api/window";
-import { Input, Button } from "@nextui-org/react";
+import { Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 
 enum Nrsc5Status {
   Stopped = "stopped",
@@ -14,8 +17,8 @@ enum Nrsc5Status {
 }
 
 export default function Nrsc5Controls() {
-  const [freq, setFreq] = useState<string | undefined>();
-  const [channel, setChannel] = useState<string | undefined>();
+  const [freq, setFreq] = useState<number>(101.5);
+  const [channel, setChannel] = useState<number>(1);
 
   const [nrsc5Status, setNrsc5Status] = useState(Nrsc5Status.Stopped);
   const [songTitle, setSongTitle] = useState("");
@@ -28,7 +31,10 @@ export default function Nrsc5Controls() {
 
   const start_nrsc5 = () => {
     setNrsc5Status(Nrsc5Status.Starting);
-    invoke<string>("start_nrsc5", { fmFreq: freq, channel: channel })
+    invoke<string>("start_nrsc5", {
+      fmFreq: freq.toString(),
+      channel: (channel - 1).toString(),
+    })
       .then((_result) => console.log("Started Playing"))
       .catch(console.error);
   };
@@ -71,8 +77,8 @@ export default function Nrsc5Controls() {
   });
 
   return (
-    <div className="flex gap-4">
-      <div className="flex items-center justify-center align-middle min-w-[16rem]">
+    <div className="flex w-[48rem] gap-4">
+      <div className="flex items-center grow basis-0 justify-center align-middle min-w-[16rem]">
         {nrsc5Status == Nrsc5Status.Synced && (
           <div className="w-full">
             <h1>Title: {songTitle}</h1>
@@ -93,19 +99,35 @@ export default function Nrsc5Controls() {
         {nrsc5Status == Nrsc5Status.Stopped && <span>SDR Not Running</span>}
         {nrsc5Status == Nrsc5Status.SdrFound && <span>Loading...</span>}
       </div>
-      <div>
-        <Input
-          type="number"
-          label="FM Frequency"
-          value={freq}
-          onChange={(e) => setFreq(e.target.value)}
-        />
-        <Input
-          type="number"
-          label="Channel"
-          value={channel}
-          onChange={(e) => setChannel(e.target.value)}
-        />
+      <div className="grid gap-2 grow basis-0 w-full">
+        <div className="grid w-full gap-1.5">
+          <Label htmlFor="fm_freq_slider" className="flex">
+            FM Station
+          </Label>
+          <Input
+            id="fm_freq_slider"
+            type="number"
+            step={0.2}
+            min={88.1}
+            max={107.9}
+            value={freq}
+            onChange={(e) => setFreq(parseFloat(e.target.value))}
+          />
+        </div>
+        <div className="grid w-full gap-1.5">
+          <div>
+            <Label htmlFor="fm_freq_slider">Station Channel</Label>
+          </div>
+          <Input
+            type="number"
+            step={1}
+            min={1}
+            max={4}
+            placeholder="#"
+            value={channel}
+            onChange={(e) => setChannel(parseInt(e.target.value))}
+          />
+        </div>
         <Button
           onClick={() => {
             if (nrsc5Status == Nrsc5Status.Stopped) {
@@ -114,8 +136,11 @@ export default function Nrsc5Controls() {
               stop_nrsc5();
             }
           }}
-          isLoading={nrsc5Status == Nrsc5Status.Starting}
+          disabled={nrsc5Status == Nrsc5Status.Starting}
         >
+          {nrsc5Status == Nrsc5Status.Starting && (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          )}
           {nrsc5Status == Nrsc5Status.Stopped
             ? "Start nrsc5"
             : nrsc5Status == Nrsc5Status.Starting
