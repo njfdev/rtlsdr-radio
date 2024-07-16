@@ -20,9 +20,8 @@ jobs:
             args: ""
           - platform: "ubuntu-20.04"
             args: ""
-          # NOTE: Temporarily Removing Windows until Build Scripts are Modified to work on Windows
-          #- platform: "windows-latest"
-          #  args: ""
+          - platform: "windows-latest"
+            args: ""
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -38,6 +37,12 @@ jobs:
         with:
           # If on Mac, we need to include both architectures
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+        # required to run build scripts
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
       - name: Install Dependencies (Ubuntu Only)
         if: matrix.platform == 'ubuntu-20.04'

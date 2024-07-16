@@ -12,3 +12,4 @@ make
 cd ../../
 mkdir bin
 mv ./nrsc5/build/src/nrsc5 ./bin/nrsc5-$(rustc -vV | sed -n 's|host: ||p')
+cd ../
