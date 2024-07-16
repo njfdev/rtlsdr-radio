@@ -48,13 +48,11 @@ export default function Nrsc5Controls() {
     invoke<string>("start_nrsc5", {
       fmFreq: freq.toString(),
       channel: (channel - 1).toString(),
-    })
-      .then((_result) => console.log("Started Playing"))
-      .catch(console.error);
+    }).catch(console.error);
   };
   const stop_nrsc5 = () => {
     invoke<string>("stop_nrsc5", {})
-      .then((_result) => console.log("Stopped Playing"))
+      .then((_result) => setStreamDetails({}))
       .catch(console.error);
   };
 
