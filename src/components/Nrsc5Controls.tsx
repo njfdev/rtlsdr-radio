@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 enum Nrsc5Status {
   Stopped = "stopped",
@@ -48,7 +49,15 @@ export default function Nrsc5Controls() {
     invoke<string>("start_nrsc5", {
       fmFreq: freq.toString(),
       channel: (channel - 1).toString(),
-    }).catch(console.error);
+    })
+      .then((_result) =>
+        setStreamDetails((old) => ({
+          ...old,
+          audioBitRate: 0,
+          bitErrorRate: 0,
+        }))
+      )
+      .catch(console.error);
   };
   const stop_nrsc5 = () => {
     invoke<string>("stop_nrsc5", {})
@@ -119,8 +128,7 @@ export default function Nrsc5Controls() {
                 Station Info
               </TabsTrigger>
             </TabsList>
-            {nrsc5Status == Nrsc5Status.Synced ||
-            nrsc5Status == Nrsc5Status.SyncLost ? (
+            {nrsc5Status != Nrsc5Status.Stopped ? (
               <>
                 <TabsContent value="radioInfo">
                   <Card
@@ -130,9 +138,21 @@ export default function Nrsc5Controls() {
                   } *:transition-all`}
                   >
                     <CardHeader>
-                      <CardTitle>{streamDetails.songTitle}</CardTitle>
-                      <CardDescription>
-                        {streamDetails.songArtist}
+                      <CardTitle>
+                        {streamDetails.songTitle &&
+                        streamDetails.songTitle.trim().length > 0 ? (
+                          <>{streamDetails.songTitle}</>
+                        ) : (
+                          <Skeleton className="h-6 max-w-52" />
+                        )}
+                      </CardTitle>
+                      <CardDescription className="grid grid-cols-2">
+                        {streamDetails.songArtist &&
+                        streamDetails.songArtist.trim().length > 0 ? (
+                          <>{streamDetails.songArtist}</>
+                        ) : (
+                          <Skeleton className="h-4 max-w-36" />
+                        )}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -172,8 +192,22 @@ export default function Nrsc5Controls() {
                 <TabsContent value="stationInfo">
                   <Card>
                     <CardHeader>
-                      <CardTitle>{streamDetails.stationName}</CardTitle>
-                      <CardDescription>{streamDetails.slogan}</CardDescription>
+                      <CardTitle>
+                        {streamDetails.stationName &&
+                        streamDetails.stationName.trim().length > 0 ? (
+                          <>{streamDetails.stationName}</>
+                        ) : (
+                          <Skeleton className="h-6 max-w-52" />
+                        )}
+                      </CardTitle>
+                      <CardDescription>
+                        {streamDetails.slogan &&
+                        streamDetails.slogan.trim().length > 0 ? (
+                          <>{streamDetails.slogan}</>
+                        ) : (
+                          <Skeleton className="h-4 max-w-36" />
+                        )}
+                      </CardDescription>
                     </CardHeader>
                     {streamDetails.message &&
                       streamDetails.message.trim().length > 0 && (
@@ -191,12 +225,7 @@ export default function Nrsc5Controls() {
               <Card>
                 <CardHeader />
                 <CardContent>
-                  {nrsc5Status == Nrsc5Status.Stopped && (
-                    <span className="w-full text-center">SDR Not Running</span>
-                  )}
-                  {nrsc5Status == Nrsc5Status.SdrFound && (
-                    <span className="w-full text-center">Loading...</span>
-                  )}
+                  <span className="w-full text-center">SDR Not Running</span>
                 </CardContent>
                 <CardFooter />
               </Card>
