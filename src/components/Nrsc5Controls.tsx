@@ -7,6 +7,16 @@ import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 enum Nrsc5Status {
   Stopped = "stopped",
@@ -23,11 +33,11 @@ export default function Nrsc5Controls() {
   const [nrsc5Status, setNrsc5Status] = useState(Nrsc5Status.Stopped);
   const [songTitle, setSongTitle] = useState("");
   const [songArtist, setSongArtist] = useState("");
-  const [audioBitRate, setAudioBitRate] = useState("");
+  const [audioBitRate, setAudioBitRate] = useState<number>(0);
   const [stationName, setStationName] = useState("");
   const [slogan, setSlogan] = useState("");
   const [message, setMessage] = useState("");
-  const [bitErrorRate, setBitErrorRate] = useState(0.0);
+  const [bitErrorRate, setBitErrorRate] = useState<number>(0.0);
 
   const start_nrsc5 = () => {
     setNrsc5Status(Nrsc5Status.Starting);
@@ -61,7 +71,7 @@ export default function Nrsc5Controls() {
     setSongArtist(event.payload);
   });
   appWindow.listen("nrsc5_br", (event: { payload: string }) => {
-    setAudioBitRate(event.payload);
+    setAudioBitRate(parseFloat(event.payload));
   });
   appWindow.listen("nrsc5_station", (event: { payload: string }) => {
     setStationName(event.payload);
@@ -78,19 +88,59 @@ export default function Nrsc5Controls() {
 
   return (
     <div className="flex w-[48rem] gap-4">
-      <div className="flex items-center grow basis-0 justify-center align-middle min-w-[16rem]">
-        {nrsc5Status == Nrsc5Status.Synced && (
-          <div className="w-full">
-            <h1>Title: {songTitle}</h1>
-            <h2>Artist: {songArtist}</h2>
-            <h3>Bit Rate: {audioBitRate}</h3>
-            <h3>Bit Error Rate: {Math.floor(bitErrorRate * 100_00) / 100}%</h3>
-            <hr />
-            <h1>Station: {stationName}</h1>
-            <h2>Slogan: {slogan}</h2>
-            <h2>Message: {message}</h2>
-          </div>
-        )}
+      <div className="flex items-center grow basis-0 justify-center align-middle min-w-[16rem] w-full">
+        <Tabs defaultValue="radioInfo">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="radioInfo">Radio Info</TabsTrigger>
+            <TabsTrigger value="stationInfo">Station Info</TabsTrigger>
+          </TabsList>
+          <TabsContent value="radioInfo">
+            <Card>
+              <CardHeader>
+                <CardTitle>{songTitle}</CardTitle>
+                <CardDescription>{songArtist}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Badge
+                  variant="outline"
+                  className={`before:content-[''] before:inline-block before:w-2 before:h-2 before:${
+                    audioBitRate > 64
+                      ? "bg-green-500"
+                      : audioBitRate > 32
+                      ? "bg-orange-500"
+                      : "bg-red-500"
+                  } before:rounded-full before:mr-2`}
+                >
+                  {audioBitRate}kbps
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className={`before:content-[''] before:inline-block before:w-2 before:h-2 before:${
+                    bitErrorRate < 0.0075
+                      ? "bg-green-500"
+                      : bitErrorRate < 0.05
+                      ? "bg-orange-500"
+                      : "bg-red-500"
+                  } before:rounded-full before:mr-2`}
+                >
+                  {Math.floor(bitErrorRate * 100_00) / 100}% BER
+                </Badge>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="stationInfo">
+            <Card>
+              <CardHeader>
+                <CardTitle>{stationName}</CardTitle>
+                <CardDescription>{slogan}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <span>{message}</span>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+        {nrsc5Status == Nrsc5Status.Synced && <></>}
         {nrsc5Status == Nrsc5Status.SyncLost && (
           <>
             <span className="text-red-500">Synchronization Lost</span>
