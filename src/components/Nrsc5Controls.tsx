@@ -169,10 +169,13 @@ export default function Nrsc5Controls() {
                   <CardTitle>{streamDetails.stationName}</CardTitle>
                   <CardDescription>{streamDetails.slogan}</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <h2 className="text-lg font-bold">Station Message</h2>
-                  <span className="text-sm">{streamDetails.message}</span>
-                </CardContent>
+                {streamDetails.message &&
+                  streamDetails.message.trim().length > 0 && (
+                    <CardContent>
+                      <h2 className="text-lg font-bold">Station Message</h2>
+                      <span className="text-sm">{streamDetails.message}</span>
+                    </CardContent>
+                  )}
               </Card>
             </TabsContent>
           </Tabs>
