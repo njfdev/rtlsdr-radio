@@ -131,7 +131,7 @@ export default function Nrsc5Controls() {
                   <CardDescription>{streamDetails.songArtist}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {streamDetails.audioBitRate && (
+                  {streamDetails.audioBitRate != undefined && (
                     <Badge
                       variant="outline"
                       className={`before:content-[''] before:inline-block before:w-2 before:h-2 before:${
@@ -145,7 +145,7 @@ export default function Nrsc5Controls() {
                       {streamDetails.audioBitRate}kbps
                     </Badge>
                   )}
-                  {streamDetails.bitErrorRate && (
+                  {streamDetails.bitErrorRate != undefined && (
                     <Badge
                       variant="outline"
                       className={`before:content-[''] before:inline-block before:w-2 before:h-2 before:${
