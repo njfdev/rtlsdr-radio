@@ -26,18 +26,22 @@ enum Nrsc5Status {
   SyncLost = "synchronization_lost",
 }
 
+interface StreamDetails {
+  songTitle?: string;
+  songArtist?: string;
+  stationName?: string;
+  slogan?: string;
+  message?: string;
+  audioBitRate?: number;
+  bitErrorRate?: number;
+}
+
 export default function Nrsc5Controls() {
   const [freq, setFreq] = useState<number>(101.5);
   const [channel, setChannel] = useState<number>(1);
 
   const [nrsc5Status, setNrsc5Status] = useState(Nrsc5Status.Stopped);
-  const [songTitle, setSongTitle] = useState("");
-  const [songArtist, setSongArtist] = useState("");
-  const [audioBitRate, setAudioBitRate] = useState<number>(0);
-  const [stationName, setStationName] = useState("");
-  const [slogan, setSlogan] = useState("");
-  const [message, setMessage] = useState("");
-  const [bitErrorRate, setBitErrorRate] = useState<number>(0.0);
+  const [streamDetails, setStreamDetails] = useState<StreamDetails>({});
 
   const start_nrsc5 = () => {
     setNrsc5Status(Nrsc5Status.Starting);
@@ -65,25 +69,31 @@ export default function Nrsc5Controls() {
   });
 
   appWindow.listen("nrsc5_title", (event: { payload: string }) => {
-    setSongTitle(event.payload);
+    setStreamDetails((old) => ({ ...old, songTitle: event.payload }));
   });
   appWindow.listen("nrsc5_artist", (event: { payload: string }) => {
-    setSongArtist(event.payload);
+    setStreamDetails((old) => ({ ...old, songArtist: event.payload }));
   });
   appWindow.listen("nrsc5_br", (event: { payload: string }) => {
-    setAudioBitRate(parseFloat(event.payload));
+    setStreamDetails((old) => ({
+      ...old,
+      audioBitRate: parseFloat(event.payload),
+    }));
   });
   appWindow.listen("nrsc5_station", (event: { payload: string }) => {
-    setStationName(event.payload);
+    setStreamDetails((old) => ({ ...old, stationName: event.payload }));
   });
   appWindow.listen("nrsc5_slogan", (event: { payload: string }) => {
-    setSlogan(event.payload);
+    setStreamDetails((old) => ({ ...old, slogan: event.payload }));
   });
   appWindow.listen("nrsc5_message", (event: { payload: string }) => {
-    setMessage(event.payload);
+    setStreamDetails((old) => ({ ...old, message: event.payload }));
   });
   appWindow.listen("nrsc5_ber", (event: { payload: string }) => {
-    setBitErrorRate(parseFloat(event.payload));
+    setStreamDetails((old) => ({
+      ...old,
+      bitErrorRate: parseFloat(event.payload),
+    }));
   });
 
   return (
@@ -97,46 +107,50 @@ export default function Nrsc5Controls() {
           <TabsContent value="radioInfo">
             <Card>
               <CardHeader>
-                <CardTitle>{songTitle}</CardTitle>
-                <CardDescription>{songArtist}</CardDescription>
+                <CardTitle>{streamDetails.songTitle}</CardTitle>
+                <CardDescription>{streamDetails.songArtist}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Badge
-                  variant="outline"
-                  className={`before:content-[''] before:inline-block before:w-2 before:h-2 before:${
-                    audioBitRate > 64
-                      ? "bg-green-500"
-                      : audioBitRate > 32
-                      ? "bg-orange-500"
-                      : "bg-red-500"
-                  } before:rounded-full before:mr-2`}
-                >
-                  {audioBitRate}kbps
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className={`before:content-[''] before:inline-block before:w-2 before:h-2 before:${
-                    bitErrorRate < 0.0075
-                      ? "bg-green-500"
-                      : bitErrorRate < 0.05
-                      ? "bg-orange-500"
-                      : "bg-red-500"
-                  } before:rounded-full before:mr-2`}
-                >
-                  {Math.floor(bitErrorRate * 100_00) / 100}% BER
-                </Badge>
+                {streamDetails.audioBitRate && (
+                  <Badge
+                    variant="outline"
+                    className={`before:content-[''] before:inline-block before:w-2 before:h-2 before:${
+                      streamDetails.audioBitRate > 64
+                        ? "bg-green-500"
+                        : streamDetails.audioBitRate > 32
+                        ? "bg-orange-500"
+                        : "bg-red-500"
+                    } before:rounded-full before:mr-2`}
+                  >
+                    {streamDetails.audioBitRate}kbps
+                  </Badge>
+                )}
+                {streamDetails.bitErrorRate && (
+                  <Badge
+                    variant="outline"
+                    className={`before:content-[''] before:inline-block before:w-2 before:h-2 before:${
+                      streamDetails.bitErrorRate < 0.0075
+                        ? "bg-green-500"
+                        : streamDetails.bitErrorRate < 0.05
+                        ? "bg-orange-500"
+                        : "bg-red-500"
+                    } before:rounded-full before:mr-2`}
+                  >
+                    {Math.floor(streamDetails.bitErrorRate * 100_00) / 100}% BER
+                  </Badge>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
           <TabsContent value="stationInfo">
             <Card>
               <CardHeader>
-                <CardTitle>{stationName}</CardTitle>
-                <CardDescription>{slogan}</CardDescription>
+                <CardTitle>{streamDetails.stationName}</CardTitle>
+                <CardDescription>{streamDetails.slogan}</CardDescription>
               </CardHeader>
               <CardContent>
                 <h2 className="text-lg font-bold">Station Message</h2>
-                <span className="text-sm">{message}</span>
+                <span className="text-sm">{streamDetails.message}</span>
               </CardContent>
             </Card>
           </TabsContent>
