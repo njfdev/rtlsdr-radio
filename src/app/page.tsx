@@ -1,5 +1,4 @@
 import Nrsc5Controls from "@/components/Nrsc5Controls";
-import Image from "next/image";
 
 export default function Home() {
   return (
