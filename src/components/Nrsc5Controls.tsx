@@ -119,65 +119,88 @@ export default function Nrsc5Controls() {
                 Station Info
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="radioInfo">
-              <Card
-                className={`
+            {nrsc5Status == Nrsc5Status.Synced ||
+            nrsc5Status == Nrsc5Status.SyncLost ? (
+              <>
+                <TabsContent value="radioInfo">
+                  <Card
+                    className={`
                   ${
                     nrsc5Status == Nrsc5Status.SyncLost ? "*:blur-sm" : ""
                   } *:transition-all`}
-              >
-                <CardHeader>
-                  <CardTitle>{streamDetails.songTitle}</CardTitle>
-                  <CardDescription>{streamDetails.songArtist}</CardDescription>
-                </CardHeader>
+                  >
+                    <CardHeader>
+                      <CardTitle>{streamDetails.songTitle}</CardTitle>
+                      <CardDescription>
+                        {streamDetails.songArtist}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {streamDetails.audioBitRate != undefined && (
+                        <Badge
+                          variant="outline"
+                          className={`before:content-[''] before:inline-block before:w-2 before:h-2 before:${
+                            streamDetails.audioBitRate > 64
+                              ? "bg-green-500"
+                              : streamDetails.audioBitRate > 32
+                              ? "bg-orange-500"
+                              : "bg-red-500"
+                          } before:rounded-full before:mr-2`}
+                        >
+                          {streamDetails.audioBitRate}kbps
+                        </Badge>
+                      )}
+                      {streamDetails.bitErrorRate != undefined && (
+                        <Badge
+                          variant="outline"
+                          className={`before:content-[''] before:inline-block before:w-2 before:h-2 before:${
+                            streamDetails.bitErrorRate < 0.0075
+                              ? "bg-green-500"
+                              : streamDetails.bitErrorRate < 0.05
+                              ? "bg-orange-500"
+                              : "bg-red-500"
+                          } before:rounded-full before:mr-2`}
+                        >
+                          {Math.floor(streamDetails.bitErrorRate * 100_00) /
+                            100}
+                          % BER
+                        </Badge>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                <TabsContent value="stationInfo">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{streamDetails.stationName}</CardTitle>
+                      <CardDescription>{streamDetails.slogan}</CardDescription>
+                    </CardHeader>
+                    {streamDetails.message &&
+                      streamDetails.message.trim().length > 0 && (
+                        <CardContent>
+                          <h2 className="text-lg font-bold">Station Message</h2>
+                          <span className="text-sm">
+                            {streamDetails.message}
+                          </span>
+                        </CardContent>
+                      )}
+                  </Card>
+                </TabsContent>
+              </>
+            ) : (
+              <Card>
+                <CardHeader />
                 <CardContent>
-                  {streamDetails.audioBitRate != undefined && (
-                    <Badge
-                      variant="outline"
-                      className={`before:content-[''] before:inline-block before:w-2 before:h-2 before:${
-                        streamDetails.audioBitRate > 64
-                          ? "bg-green-500"
-                          : streamDetails.audioBitRate > 32
-                          ? "bg-orange-500"
-                          : "bg-red-500"
-                      } before:rounded-full before:mr-2`}
-                    >
-                      {streamDetails.audioBitRate}kbps
-                    </Badge>
+                  {nrsc5Status == Nrsc5Status.Stopped && (
+                    <span className="w-full text-center">SDR Not Running</span>
                   )}
-                  {streamDetails.bitErrorRate != undefined && (
-                    <Badge
-                      variant="outline"
-                      className={`before:content-[''] before:inline-block before:w-2 before:h-2 before:${
-                        streamDetails.bitErrorRate < 0.0075
-                          ? "bg-green-500"
-                          : streamDetails.bitErrorRate < 0.05
-                          ? "bg-orange-500"
-                          : "bg-red-500"
-                      } before:rounded-full before:mr-2`}
-                    >
-                      {Math.floor(streamDetails.bitErrorRate * 100_00) / 100}%
-                      BER
-                    </Badge>
+                  {nrsc5Status == Nrsc5Status.SdrFound && (
+                    <span className="w-full text-center">Loading...</span>
                   )}
                 </CardContent>
+                <CardFooter />
               </Card>
-            </TabsContent>
-            <TabsContent value="stationInfo">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{streamDetails.stationName}</CardTitle>
-                  <CardDescription>{streamDetails.slogan}</CardDescription>
-                </CardHeader>
-                {streamDetails.message &&
-                  streamDetails.message.trim().length > 0 && (
-                    <CardContent>
-                      <h2 className="text-lg font-bold">Station Message</h2>
-                      <span className="text-sm">{streamDetails.message}</span>
-                    </CardContent>
-                  )}
-              </Card>
-            </TabsContent>
+            )}
           </Tabs>
           {nrsc5Status == Nrsc5Status.SyncLost && (
             <div
@@ -190,8 +213,6 @@ export default function Nrsc5Controls() {
             </div>
           )}
         </div>
-        {nrsc5Status == Nrsc5Status.Stopped && <span>SDR Not Running</span>}
-        {nrsc5Status == Nrsc5Status.SdrFound && <span>Loading...</span>}
       </div>
       <div className="grid gap-2 grow basis-0 w-full">
         <div className="grid w-full gap-1.5">
