@@ -50,22 +50,16 @@ jobs:
         with:
           update: true
 
-      - name: Update Pacman (Windows Only)
-        if: matrix.platform == 'windows-latest'
-        shell: msys2 {0}
-        run: |
-          pacman -Syu --noconfirm || exit 0
-          MSYS2_RESTART=1 pacman -Su --noconfirm
-
       - name: Install Dependencies (Windows Only)
         if: matrix.platform == 'windows-latest'
         shell: msys2 {0}
         run: |
+          pacman -Su --noconfirm
           pacman -S --noconfirm autoconf automake git gzip make mingw-w64-i686-gcc mingw-w64-i686-cmake mingw-w64-i686-libtool patch tar xz
 
           cd ~
-          curl -L http://www.fftw.org/fftw-3.3.7.tar.gz | tar xvz
-          cd fftw-3.3.7
+          curl -L http://www.fftw.org/fftw-3.3.10.tar.gz | tar xvz
+          cd fftw-3.3.10
           autoupdate
           autoreconf -i
           ./configure --enable-float --enable-sse2 --with-our-malloc && make && make install
