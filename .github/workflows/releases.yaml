@@ -88,6 +88,9 @@ jobs:
         run: |
           brew install cmake autoconf automake libtool git librtlsdr libao fftw
 
+      - name: Check libtool Version
+        run: libtool --version
+
       - name: install frontend dependencies
         run: yarn install
 
