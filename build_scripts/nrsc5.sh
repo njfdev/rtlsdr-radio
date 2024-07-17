@@ -1,8 +1,8 @@
 # Note: FAAD2 is turned off because it causes issues in GitHub Actions and is not needed
 
-# if pacman exists, install the dependencies
-if [ -x "$(command -v pacman)" ]; then
-pacman -S --noconfirm autoconf automake git gzip make mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-libtool patch tar xz libtool cmake gcc
+# if apt exists, install the dependencies
+if [ -x "$(command -v apt-get)" ]; then
+sudo apt-get install autoconf automake git gzip make patch tar xz libtool cmake gcc
 fi
 
 mkdir build
