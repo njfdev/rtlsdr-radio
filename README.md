@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# RTL-SDR Radio
 
-## Getting Started
+> As of writing this (July 16th, 2024), this is just a simple GUI wrapper for the `nrsc5` CLI. However, I envision this project to evolve and bundle all the tools into a nice user interface to make the most out of your RTL-SDR.
 
-First, run the development server:
+RTL-SDR Radio is your one-stop shop for listening to the radio frequencies in the air. Using this app, you can listen to any [HD Radio Station](https://hdradio.com/stations/) in your area using the `nrsc5` tool!
+
+## Installation
+
+> ⚠️ WARNING! I have been having issues with building through GitHub Actions, so the GitHub Releases might not run. Or, they might run, but not have any sound when playing a radio station. I recommend compiling from source in the next section.
+
+Installation should be as simple as going to the [GitHub Releases](https://github.com/njfdev/rtlsdr-radio/releases) and downloading the most recent application from the "Assets" dropdown for your specific OS (Windows support is expected soon).
+
+## Compiling from Source
+
+Compiling from source is very easy!
+
+First, install Rust if it is not already installed:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then, make sure to install the prerequisites:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# MacOS with brew
+brew install cmake autoconf automake libtool git librtlsdr libao fftw
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+# Debian/Ubuntu Based Linux OSes
+sudo apt-get update
+sudo apt-get install -y libwebkit2gtk-4.0-dev librsvg2-dev patchelf git build-essential cmake autoconf automake libtool libao-dev libfftw3-dev librtlsdr-dev
+```
 
-## Learn More
+Then, clone the git repository and build with `tauri`:
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+```bash
+git clone https://github.com/njfdev/rtlsdr-radio.git
+cargo tauri build
+```

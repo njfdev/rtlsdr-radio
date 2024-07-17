@@ -163,7 +163,7 @@ export default function Nrsc5Controls() {
                             streamDetails.audioBitRate > 64
                               ? "bg-green-500"
                               : streamDetails.audioBitRate > 32
-                              ? "bg-orange-500"
+                              ? "bg-yellow-500"
                               : "bg-red-500"
                           } before:rounded-full before:mr-2`}
                         >
@@ -177,7 +177,7 @@ export default function Nrsc5Controls() {
                             streamDetails.bitErrorRate < 0.0075
                               ? "bg-green-500"
                               : streamDetails.bitErrorRate < 0.05
-                              ? "bg-orange-500"
+                              ? "bg-yellow-500"
                               : "bg-red-500"
                           } before:rounded-full before:mr-2`}
                         >

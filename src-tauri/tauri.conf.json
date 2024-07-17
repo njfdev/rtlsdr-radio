@@ -1,7 +1,7 @@
 {
   "build": {
-    "beforeBuildCommand": "./build_scripts/nrsc5.sh && yarn build",
-    "beforeDevCommand": "./build_scripts/nrsc5.sh && yarn dev",
+    "beforeBuildCommand": "python3 build_scripts/run_all.py && yarn build",
+    "beforeDevCommand": "python3 build_scripts/run_all.py && yarn dev",
     "devPath": "http://localhost:3000",
     "distDir": "../out"
   },
