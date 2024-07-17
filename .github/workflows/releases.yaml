@@ -47,17 +47,20 @@ jobs:
       - name: Install MSYS2 (Windows Only)
         if: matrix.platform == 'windows-latest'
         uses: msys2/setup-msys2@v2
+        with:
+          update: true
 
       - name: Update Pacman (Windows Only)
         if: matrix.platform == 'windows-latest'
         shell: msys2 {0}
-        run: pacman -Syu --noconfirm
+        run: |
+          pacman -Syu --noconfirm || exit 0
+          MSYS2_RESTART=1 pacman -Su --noconfirm
 
       - name: Install Dependencies (Windows Only)
         if: matrix.platform == 'windows-latest'
         shell: msys2 {0}
         run: |
-          pacman -Su --noconfirm
           pacman -S --noconfirm autoconf automake git gzip make mingw-w64-i686-gcc mingw-w64-i686-cmake mingw-w64-i686-libtool patch tar xz
 
           cd ~
