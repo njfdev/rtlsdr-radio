@@ -20,8 +20,9 @@ jobs:
             args: ""
           - platform: "ubuntu-20.04"
             args: ""
-          - platform: "windows-latest"
-            args: ""
+          # NOTE: Building on Windows is disabled for now. There are to many workarounds and I never got it working.
+          #- platform: "windows-latest"
+          #  args: ""
 
     runs-on: ${{ matrix.platform }}
     steps:

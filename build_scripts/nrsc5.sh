@@ -2,7 +2,7 @@
 
 # if pacman exists, install the dependencies
 if [ -x "$(command -v pacman)" ]; then
-pacman -S --noconfirm autoconf automake git gzip make mingw-w64-i686-gcc mingw-w64-i686-cmake mingw-w64-i686-libtool patch tar xz
+pacman -S --noconfirm autoconf automake git gzip make mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-libtool patch tar xz libtool cmake gcc
 fi
 
 mkdir build
