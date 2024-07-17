@@ -35,5 +35,7 @@ Then, clone the git repository and build with `tauri`:
 
 ```bash
 git clone https://github.com/njfdev/rtlsdr-radio.git
+cd rtlsdr-radio
+cargo install tauri-cli
 cargo tauri build
 ```
