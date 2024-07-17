@@ -7,9 +7,9 @@ fi
 
 mkdir build
 cd build
-# Using my (njfdev) fork that fixes a build error in GitHub Actions
-git clone https://github.com/njfdev/nrsc5.git
+git clone https://github.com/theori-io/nrsc5.git
 cd nrsc5
+git reset --hard a57dd5b5f93e08d9ccdeb5f6b670a16d7566f8f1
 mkdir build
 cd build
 cmake ../
