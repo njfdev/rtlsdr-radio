@@ -81,15 +81,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.0-dev librsvg2-dev patchelf
-          sudo apt-get install -y git build-essential cmake autoconf libtool libao-dev libfftw3-dev librtlsdr-dev
+          sudo apt-get install -y git build-essential cmake autoconf automake libtool libao-dev libfftw3-dev librtlsdr-dev
 
       - name: Install Dependencies (MacOS Only)
         if: matrix.platform == 'macos-latest' || matrix.platform == 'macos-13'
         run: |
           brew install cmake autoconf automake libtool git librtlsdr libao fftw
-
-      - name: Check libtool Version
-        run: libtool --version
 
       - name: install frontend dependencies
         run: yarn install
