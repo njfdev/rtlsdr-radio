@@ -60,7 +60,6 @@ jobs:
           cd ~
           curl -L http://www.fftw.org/fftw-3.3.10.tar.gz | tar xvz
           cd fftw-3.3.10
-          autoupdate
           autoreconf -i
           ./configure --enable-float --enable-sse2 --with-our-malloc && make && make install
 
