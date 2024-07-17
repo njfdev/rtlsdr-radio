@@ -12,7 +12,7 @@ cd nrsc5
 git reset --hard a57dd5b5f93e08d9ccdeb5f6b670a16d7566f8f1
 mkdir build
 cd build
-cmake ../
+cmake -DUSE_FAAD2=OFF ../
 make
 cd ../../
 mkdir bin
