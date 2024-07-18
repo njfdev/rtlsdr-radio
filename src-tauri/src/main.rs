@@ -10,6 +10,7 @@ use rtlsdr::rtlsdr::RtlSdrState;
 use soapysdr::Device;
 use tauri::{api::process::{Command, CommandEvent}, App, Manager, State, Window};
 
+
 struct AppState {
   nrsc5State: Nrsc5State,
   rtlSdrState: RtlSdrState
