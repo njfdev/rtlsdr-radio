@@ -96,7 +96,7 @@ pub mod rtlsdr {
 
         // process the samples and stream to the audio output
         while !(shutdown_flag.load(Ordering::SeqCst)) {
-          match rx_stream.read(&mut [&mut buffer], Duration::from_secs(1).as_micros() as i64) {
+          match rx_stream.read(&mut [&mut buffer], Duration::from_secs(1).as_nanos() as i64) {
             Ok(samples_read) => {
               let mut demodulated = Vec::with_capacity(samples_read);
               for &sample in &buffer[..samples_read] {

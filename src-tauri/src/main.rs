@@ -42,5 +42,5 @@ fn start_fm_stream(window: Window, state: State<AppState>) {
 #[tauri::command]
 fn stop_fm_stream(window: Window, state: State<AppState>) {
   state.rtlSdrState.stop_stream(window);
-  state.rtlSdrState.disconnect_sdr();
+  //state.rtlSdrState.disconnect_sdr();
 }
