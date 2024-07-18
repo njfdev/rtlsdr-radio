@@ -24,11 +24,13 @@ Then, make sure to install the prerequisites:
 
 ```bash
 # MacOS with brew
-brew install cmake autoconf automake libtool git librtlsdr libao fftw
+brew tap pothosware/homebrew-pothos
+brew update
+brew install cmake autoconf automake libtool git librtlsdr libao fftw soapyrtlsdr
 
 # Debian/Ubuntu Based Linux OSes
 sudo apt-get update
-sudo apt-get install -y libwebkit2gtk-4.0-dev librsvg2-dev patchelf git build-essential cmake autoconf automake libtool libao-dev libfftw3-dev librtlsdr-dev nodejs npm
+sudo apt-get install -y libwebkit2gtk-4.0-dev librsvg2-dev patchelf git build-essential cmake autoconf automake libtool libao-dev libfftw3-dev librtlsdr-dev nodejs npm libsoapysdr-dev soapysdr-module-rtlsdr
 ```
 
 Then, clone the git repository and build with `tauri`:
