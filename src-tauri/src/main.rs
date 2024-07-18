@@ -19,7 +19,7 @@ struct AppState {
 fn main() {
   tauri::Builder::default()
     .manage(AppState { nrsc5State: Nrsc5State::new(), rtlSdrState: RtlSdrState::new() })
-    .invoke_handler(tauri::generate_handler![start_nrsc5, stop_nrsc5, start_fm_stream])
+    .invoke_handler(tauri::generate_handler![start_nrsc5, stop_nrsc5, start_fm_stream, stop_fm_stream])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
@@ -37,4 +37,10 @@ fn stop_nrsc5(window: Window, state: State<AppState>) {
 #[tauri::command]
 fn start_fm_stream(window: Window, state: State<AppState>) {
   state.rtlSdrState.start_stream(window, "101.5".to_owned());
+}
+
+#[tauri::command]
+fn stop_fm_stream(window: Window, state: State<AppState>) {
+  state.rtlSdrState.stop_stream(window);
+  state.rtlSdrState.disconnect_sdr();
 }
