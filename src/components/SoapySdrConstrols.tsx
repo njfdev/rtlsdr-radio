@@ -12,7 +12,7 @@ export default function SoapySdrControls() {
 
   return (
     <div>
-      <Button onClick={() => start_stream}>Start FM Stream</Button>
+      <Button onClick={() => start_stream()}>Start FM Stream</Button>
     </div>
   );
 }
