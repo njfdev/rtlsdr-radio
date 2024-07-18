@@ -25,10 +25,13 @@ pub mod rtlsdr {
       self.0.clone().lock().unwrap().rtlsdr_device = Some(device);
     }
 
-    pub fn disconnect_sdr(&self) {
+    pub fn disconnect_sdr(&self, window: Window) {
       let rtlsdr_state = self.0.clone();
       let device = rtlsdr_state.lock().unwrap().rtlsdr_device.take();
       drop(device);
+      // notify frontend that sdr is stopped
+      window.emit("rtlsdr_status", "stopped")
+        .expect("failed to emit event");
     }
 
     pub fn start_stream(&self, window: Window, fm_freq: String) {
@@ -99,6 +102,10 @@ pub mod rtlsdr {
         // create FmDemod object
         let mut fm_demoder = demod_fm::FmDemod::new(75_000, sample_rate as u32);
 
+        // notify frontend that audio is playing
+        window.emit("rtlsdr_status", "running")
+          .expect("failed to emit event");
+
         // process the samples and stream to the audio output
         while !(shutdown_flag.load(Ordering::SeqCst)) {
           match rx_stream.read(&mut [&mut buffer], Duration::from_secs(10).as_nanos() as i64) {
@@ -143,18 +150,12 @@ pub mod rtlsdr {
 
         rtlSdrData.shutdown_flag.store(false, Ordering::SeqCst);
 
-        window.emit("rtlsdr_status", Some("stopped"))
+        window.emit("rtlsdr_status", Some("idle"))
           .expect("failed to emit event");
       } else {
         println!("Could not acquire lock immediately");
         return;
       }
-    }
-  }
-
-  impl Drop for RtlSdrState {
-    fn drop(&mut self) {
-      self.disconnect_sdr();
     }
   }
 }
