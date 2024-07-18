@@ -5,9 +5,13 @@ mod nrsc5;
 
 use std::thread;
 use nrsc5::nrsc5::Nrsc5State;
+use soapysdr::Device;
 use tauri::{api::process::{Command, CommandEvent}, Manager, State, Window};
 
 fn main() {
+  let args = "driver=rtlsdr";
+  let device = Device::new(args).expect("Failed to create a SoapySDR device");
+
   tauri::Builder::default()
     .manage(Nrsc5State::new())
     .invoke_handler(tauri::generate_handler![start_nrsc5, stop_nrsc5])
