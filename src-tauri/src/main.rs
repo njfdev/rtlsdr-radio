@@ -42,6 +42,4 @@ fn start_fm_stream(window: Window, state: State<AppState>) {
 #[tauri::command]
 fn stop_fm_stream(window: Window, state: State<AppState>) {
   state.rtlSdrState.stop_stream(window);
-  // TODO: Fix crashing on disconnect
-  //state.rtlSdrState.disconnect_sdr();
 }

@@ -27,7 +27,8 @@ pub mod rtlsdr {
 
     pub fn disconnect_sdr(&self) {
       let rtlsdr_state = self.0.clone();
-      rtlsdr_state.lock().unwrap().rtlsdr_device.take();
+      let device = rtlsdr_state.lock().unwrap().rtlsdr_device.take();
+      drop(device);
     }
 
     pub fn start_stream(&self, window: Window, fm_freq: String) {
@@ -70,6 +71,9 @@ pub mod rtlsdr {
         let audio_buffer = Arc::new(Mutex::new(Vec::new()));
         let audio_buffer_clone = audio_buffer.clone();
 
+        let can_close = Arc::new(AtomicBool::new(true));
+        let can_close_clone = can_close.clone();
+
         let audio_stream = device.build_output_stream(&config.into(), move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
           let mut buffer = audio_buffer_clone.lock().unwrap();
           for frame in data.chunks_mut(channels) {
@@ -83,6 +87,7 @@ pub mod rtlsdr {
               }
             }
           }
+          can_close_clone.store(true, Ordering::SeqCst);
         }, err_fn, None).expect("Failed to build output stream");
 
         audio_stream.play().expect("Failed to play audio stream");
@@ -96,7 +101,7 @@ pub mod rtlsdr {
 
         // process the samples and stream to the audio output
         while !(shutdown_flag.load(Ordering::SeqCst)) {
-          match rx_stream.read(&mut [&mut buffer], Duration::from_secs(1).as_nanos() as i64) {
+          match rx_stream.read(&mut [&mut buffer], Duration::from_secs(10).as_nanos() as i64) {
             Ok(samples_read) => {
               let mut demodulated = Vec::with_capacity(samples_read);
               for &sample in &buffer[..samples_read] {
@@ -109,11 +114,17 @@ pub mod rtlsdr {
                 .map(|&x| x)
                 .collect();
 
+              can_close.store(false, Ordering::SeqCst);
+
               let mut buffer = audio_buffer.lock().unwrap();
               buffer.extend(audio_samples);
             },
             Err(err) => eprintln!("Error reading samples: {:?}", err)
           }
+        }
+
+        while !can_close.load(Ordering::SeqCst) {
+          thread::sleep(Duration::from_millis(100));
         }
 
         // deactivate the stream after ending output
@@ -138,6 +149,12 @@ pub mod rtlsdr {
         println!("Could not acquire lock immediately");
         return;
       }
+    }
+  }
+
+  impl Drop for RtlSdrState {
+    fn drop(&mut self) {
+      self.disconnect_sdr();
     }
   }
 }
