@@ -83,7 +83,7 @@ pub mod rtlsdr {
       let ratio = (sample_rate / (audio_sample_rate as f64)) as usize;
 
       // create FmDemod object
-      let fm_demoder = demod_fm::FmDemod::new(75_000, sample_rate as u32);
+      let mut fm_demoder = demod_fm::FmDemod::new(75_000, sample_rate as u32);
 
       // process the samples and stream to the audio output
       loop {
