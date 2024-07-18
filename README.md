@@ -28,7 +28,7 @@ brew install cmake autoconf automake libtool git librtlsdr libao fftw
 
 # Debian/Ubuntu Based Linux OSes
 sudo apt-get update
-sudo apt-get install -y libwebkit2gtk-4.0-dev librsvg2-dev patchelf git build-essential cmake autoconf automake libtool libao-dev libfftw3-dev librtlsdr-dev
+sudo apt-get install -y libwebkit2gtk-4.0-dev librsvg2-dev patchelf git build-essential cmake autoconf automake libtool libao-dev libfftw3-dev librtlsdr-dev nodejs npm
 ```
 
 Then, clone the git repository and build with `tauri`:
@@ -36,6 +36,8 @@ Then, clone the git repository and build with `tauri`:
 ```bash
 git clone https://github.com/njfdev/rtlsdr-radio.git
 cd rtlsdr-radio
+sudo npm install --global yarn
+yarn install
 cargo install tauri-cli
 cargo tauri build
 ```
