@@ -118,7 +118,6 @@ pub mod rtlsdr {
 
         // deactivate the stream after ending output
         rx_stream.deactivate(None).expect("Failed to deactivate RX stream");
-        audio_stream.pause();
       }));
     }
 
