@@ -125,7 +125,7 @@ pub mod rtlsdr {
 
                             // output the stream
                             let playback =
-                                AudioPlayer::new(stream_settings.sample_rate, Some(256)).unwrap();
+                                AudioPlayer::new(stream_settings.sample_rate, Some(2048)).unwrap();
                             playback.feed_from(&buffer);
 
                             // notify frontend that audio is playing
