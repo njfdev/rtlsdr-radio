@@ -7,7 +7,7 @@ mod rtlsdr;
 use std::{os::macos::raw::stat, thread};
 use nrsc5::nrsc5::Nrsc5State;
 use rtlsdr::rtlsdr::RtlSdrState;
-use tauri::{api::process::{Command, CommandEvent}, App, Manager, State, Window};
+use tauri::{api::process::{Command, CommandEvent}, App, Manager, State, Window, async_runtime::block_on};
 
 
 struct AppState {
@@ -15,7 +15,8 @@ struct AppState {
   rtlSdrState: RtlSdrState
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
   tauri::Builder::default()
     .manage(AppState { nrsc5State: Nrsc5State::new(), rtlSdrState: RtlSdrState::new() })
     .invoke_handler(tauri::generate_handler![start_nrsc5, stop_nrsc5, start_fm_stream, stop_fm_stream])
@@ -34,11 +35,12 @@ fn stop_nrsc5(window: Window, state: State<AppState>) {
 }
 
 #[tauri::command]
-fn start_fm_stream(window: Window, state: State<AppState>) {
-  state.rtlSdrState.start_stream(window, "101.5".to_owned());
+async fn start_fm_stream(window: Window, state: State<'_, AppState>) -> Result<(),()> {
+  state.rtlSdrState.start_stream(window, "101.5".to_owned()).await;
+  Ok(())
 }
 
 #[tauri::command]
 fn stop_fm_stream(window: Window, state: State<AppState>) {
-  state.rtlSdrState.stop_stream(window);
+  block_on(state.rtlSdrState.stop_stream(window));
 }
