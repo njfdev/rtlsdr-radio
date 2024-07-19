@@ -86,7 +86,7 @@ pub mod rtlsdr {
               volume.feed_from(&downsample2);
       
               // add a buffer
-              let buffer = blocks::Buffer::new(0.0, 0.0, 0.0, 0.01);
+              let buffer = blocks::Buffer::new(0.0, 0.0, 0.0, 0.1);
               buffer.feed_from(&volume);
       
               // output the stream
