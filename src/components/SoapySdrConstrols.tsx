@@ -13,7 +13,6 @@ enum RtlSdrStatus {
   Stopped = "stopped",
   Starting = "starting",
   Pausing = "pausing",
-  Idle = "idle",
   Running = "running",
 }
 
@@ -109,20 +108,25 @@ export default function SoapySdrControls() {
       </div>
       <Button
         onClick={() => {
-          if (status == RtlSdrStatus.Stopped || status == RtlSdrStatus.Idle) {
+          if (status == RtlSdrStatus.Stopped) {
             start_stream();
           } else if (status == RtlSdrStatus.Running) {
             stop_stream();
           }
         }}
-        disabled={status == RtlSdrStatus.Starting}
+        disabled={
+          status == RtlSdrStatus.Starting || status == RtlSdrStatus.Pausing
+        }
       >
         {status == RtlSdrStatus.Running ? (
           "Stop FM Stream"
         ) : status == RtlSdrStatus.Starting ? (
           <>
-            {" "}
-            <Loader2 className="animate-spin" /> Starting...
+            <Loader2 className="animate-spin mr-2" /> Starting...
+          </>
+        ) : status == RtlSdrStatus.Pausing ? (
+          <>
+            <Loader2 className="animate-spin mr-2" /> Stopping...
           </>
         ) : (
           "Start FM Stream"

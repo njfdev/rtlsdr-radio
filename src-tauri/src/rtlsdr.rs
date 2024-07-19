@@ -151,7 +151,7 @@ pub mod rtlsdr {
                 rtlSdrData.shutdown_flag.store(false, Ordering::SeqCst);
 
                 window
-                    .emit("rtlsdr_status", Some("idle"))
+                    .emit("rtlsdr_status", Some("stopped"))
                     .expect("failed to emit event");
             } else {
                 println!("Could not acquire lock immediately");
