@@ -7,7 +7,6 @@ mod rtlsdr;
 use std::{os::macos::raw::stat, thread};
 use nrsc5::nrsc5::Nrsc5State;
 use rtlsdr::rtlsdr::RtlSdrState;
-use soapysdr::Device;
 use tauri::{api::process::{Command, CommandEvent}, App, Manager, State, Window};
 
 

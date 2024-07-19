@@ -2,36 +2,21 @@ pub mod rtlsdr {
     use std::{sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex}, thread, time::Duration};
 
     use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-    use soapysdr::{Device, Direction::Rx};
+    //use soapysdr::{Device, Direction::Rx};
+    use rtlsdr::RTLSDRDevice;
     use tauri::Window;
     use cpal;
-    use num::complex::Complex32;
+    use num::{complex::Complex32, Complex};
 
   pub struct RtlSdrState(Arc<Mutex<RtlSdrData>>);
   pub struct RtlSdrData {
-    pub rtlsdr_device: Option<Device>,
     pub radio_stream_thread: Option<thread::JoinHandle<()>>,
     pub shutdown_flag: Arc<AtomicBool>
   }
 
   impl RtlSdrState {
     pub fn new() -> Self {
-      RtlSdrState(Arc::new(Mutex::new(RtlSdrData { rtlsdr_device: None, radio_stream_thread: None, shutdown_flag: Arc::new(AtomicBool::new(false)) })))
-    }
-
-    pub fn connect_to_sdr(&self) {
-      let args = "driver=rtlsdr";
-      let device = Device::new(args).expect("Failed to create a SoapySDR device");
-      self.0.clone().lock().unwrap().rtlsdr_device = Some(device);
-    }
-
-    pub fn disconnect_sdr(&self, window: Window) {
-      let rtlsdr_state = self.0.clone();
-      let device = rtlsdr_state.lock().unwrap().rtlsdr_device.take();
-      drop(device);
-      // notify frontend that sdr is stopped
-      window.emit("rtlsdr_status", "stopped")
-        .expect("failed to emit event");
+      RtlSdrState(Arc::new(Mutex::new(RtlSdrData { radio_stream_thread: None, shutdown_flag: Arc::new(AtomicBool::new(false)) })))
     }
 
     pub fn start_stream(&self, window: Window, fm_freq: String) {
@@ -40,26 +25,17 @@ pub mod rtlsdr {
 
       let shutdown_flag = rtlsdr_state.lock().unwrap().shutdown_flag.clone();
 
-      if rtlsdr_state_clone.lock().unwrap().rtlsdr_device.is_none() {
-        self.connect_to_sdr();
-      }
-
-      let rtlsdr_dev = rtlsdr_state.lock().unwrap().rtlsdr_device.clone().unwrap();
-
       rtlsdr_state.lock().unwrap().radio_stream_thread = Some(thread::spawn(move || {
+        // connect to SDR
+        let mut rtlsdr_dev = rtlsdr::open(0).expect("Failed to connect to RTL-SDR");
+
         // set sample rate
-        let sample_rate = 2.048e6;
-        rtlsdr_dev.set_sample_rate(Rx, 0, sample_rate);
+        let sample_rate = 2.048e6 as u32;
+        rtlsdr_dev.set_sample_rate(sample_rate);
 
         // set center frequency
-        let sdr_freq = fm_freq.parse::<f64>().expect("FM Frequency could not be parsed as a float") * 1_000_000.0;
-        rtlsdr_dev.set_frequency(Rx, 0, sdr_freq, "").expect("Failed to set frequency");
-
-        // create an RX stream
-        let mut rx_stream = rtlsdr_dev.rx_stream::<Complex32>(&[0]).expect("Failed to create RX stream");
-
-        // activate the stream
-        rx_stream.activate(None).expect("Failed to activate RX stream");
+        let sdr_freq = (fm_freq.parse::<f32>().expect("FM Frequency could not be parsed as a float") * 1_000_000.0) as u32;
+        rtlsdr_dev.set_center_freq( sdr_freq).expect("Failed to set frequency");
 
         // setup audio output with cpal
         let host = cpal::default_host();
@@ -94,10 +70,10 @@ pub mod rtlsdr {
         }, err_fn, None).expect("Failed to build output stream");
 
         audio_stream.play().expect("Failed to play audio stream");
+        rtlsdr_dev.reset_buffer();
 
         // create buffer for the samples
-        let mut buffer = vec![Complex32::new(0.0, 0.0); 4096];
-        let ratio = (sample_rate / (audio_sample_rate as f64)) as usize;
+        let ratio = (sample_rate / audio_sample_rate as u32) as usize;
 
         // create FmDemod object
         let mut fm_demoder = demod_fm::FmDemod::new(75_000, sample_rate as u32);
@@ -108,11 +84,17 @@ pub mod rtlsdr {
 
         // process the samples and stream to the audio output
         while !(shutdown_flag.load(Ordering::SeqCst)) {
-          match rx_stream.read(&mut [&mut buffer], Duration::from_secs(10).as_nanos() as i64) {
+          match rtlsdr_dev.read_sync(4096) {
             Ok(samples_read) => {
-              let mut demodulated = Vec::with_capacity(samples_read);
-              for &sample in &buffer[..samples_read] {
-                demodulated.push(fm_demoder.feed(sample));
+              let mut demodulated = Vec::with_capacity(samples_read.len() / 2);
+
+              for chunk in samples_read.chunks(2) {
+                if chunk.len() == 2 {
+                  let i = (chunk[0] as i8) as f32 / 128.0;
+                  let q = (chunk[1] as i8) as f32 / 128.0;
+                  let complex_sample = Complex::new(i, q);
+                  demodulated.push(fm_demoder.feed(complex_sample));
+                }
               }
 
               let audio_samples: Vec<_> = demodulated
@@ -133,9 +115,6 @@ pub mod rtlsdr {
         while !can_close.load(Ordering::SeqCst) {
           thread::sleep(Duration::from_millis(100));
         }
-
-        // deactivate the stream after ending output
-        rx_stream.deactivate(None).expect("Failed to deactivate RX stream");
       }));
     }
 
