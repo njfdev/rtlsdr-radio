@@ -4,7 +4,7 @@
 mod nrsc5;
 mod rtlsdr;
 
-use std::{os::macos::raw::stat, thread};
+use std::{os::macos::raw::stat, sync::{Arc, Mutex}, thread};
 use nrsc5::nrsc5::Nrsc5State;
 use rtlsdr::rtlsdr::RtlSdrState;
 use tauri::{api::process::{Command, CommandEvent}, App, Manager, State, Window, async_runtime::block_on};
@@ -12,13 +12,13 @@ use tauri::{api::process::{Command, CommandEvent}, App, Manager, State, Window, 
 
 struct AppState {
   nrsc5State: Nrsc5State,
-  rtlSdrState: RtlSdrState
+  rtlSdrState: Arc<Mutex<RtlSdrState>>
 }
 
 #[tokio::main]
 async fn main() {
   tauri::Builder::default()
-    .manage(AppState { nrsc5State: Nrsc5State::new(), rtlSdrState: RtlSdrState::new() })
+    .manage(AppState { nrsc5State: Nrsc5State::new(), rtlSdrState: Arc::new(Mutex::new(RtlSdrState::new())) })
     .invoke_handler(tauri::generate_handler![start_nrsc5, stop_nrsc5, start_fm_stream, stop_fm_stream])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
@@ -36,10 +36,17 @@ fn stop_nrsc5(window: Window, state: State<AppState>) {
 
 #[tauri::command]
 fn start_fm_stream(window: Window, state: State<AppState>) {
-  state.rtlSdrState.start_stream(window, "101.5".to_owned());
+  state.rtlSdrState.lock().unwrap().start_stream(window, "101.5".to_owned());
 }
 
 #[tauri::command]
-fn stop_fm_stream(window: Window, state: State<AppState>) {
-  block_on(state.rtlSdrState.stop_stream(window));
+async fn stop_fm_stream(window: Window, state: State<'_, AppState>) -> Result<String, ()> {
+  let rtlsdr_state_clone = state.rtlSdrState.clone();
+
+  tokio::task::spawn_blocking(move || {
+    block_on(rtlsdr_state_clone.lock().unwrap().stop_stream(window));
+  })
+  .await
+  .unwrap();
+  Ok("".to_string())
 }

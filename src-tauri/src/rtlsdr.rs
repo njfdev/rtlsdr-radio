@@ -2,14 +2,14 @@ pub mod rtlsdr {
     use std::{sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex}, thread, time::Duration};
 
     use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-    use tauri::{Window};
+    use tauri::{async_runtime, Window};
     use tokio::{self, time};
     use radiorust::{blocks::{io::{rf, audio::cpal::AudioPlayer}, modulation::FmDemod, FreqShifter}, prelude::*};
     use soapysdr::Direction;
 
   pub struct RtlSdrState(Arc<Mutex<RtlSdrData>>);
   pub struct RtlSdrData {
-    pub radio_stream_thread: Option<tokio::task::JoinHandle<()>>,
+    pub radio_stream_thread: Option<async_runtime::JoinHandle<()>>,
     pub shutdown_flag: Arc<AtomicBool>
   }
 
@@ -24,7 +24,7 @@ pub mod rtlsdr {
 
       let shutdown_flag = rtlsdr_state.lock().unwrap().shutdown_flag.clone();
 
-      rtlsdr_state.lock().unwrap().radio_stream_thread = Some(tokio::task::spawn_blocking(move || {
+      rtlsdr_state.lock().unwrap().radio_stream_thread = Some(async_runtime::spawn_blocking(move || {
           tokio::runtime::Runtime::new().unwrap().block_on(async move {
               // connect to SDR
               let mut rtlsdr_dev = soapysdr::Device::new("driver=rtlsdr").unwrap();
