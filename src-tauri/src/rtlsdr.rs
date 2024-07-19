@@ -31,6 +31,8 @@ pub mod rtlsdr {
     #[derive(serde::Deserialize)]
     pub struct StreamSettings {
         fm_freq: f64,
+        volume: f64,
+        sample_rate: f64,
     }
 
     impl RtlSdrState {
@@ -106,20 +108,24 @@ pub mod rtlsdr {
                             filter2.feed_from(&demodulator);
 
                             // downsample so the output device can play the audio
-                            let downsample2 =
-                                blocks::Downsampler::<f32>::new(4096, 48000.0, 2.0 * 20000.0);
+                            let downsample2 = blocks::Downsampler::<f32>::new(
+                                4096,
+                                stream_settings.sample_rate,
+                                2.0 * 20000.0,
+                            );
                             downsample2.feed_from(&filter2);
 
                             // add a volume block
-                            let volume = blocks::GainControl::<f32>::new(1.0);
+                            let volume = blocks::GainControl::<f32>::new(stream_settings.volume);
                             volume.feed_from(&downsample2);
 
                             // add a buffer
-                            let buffer = blocks::Buffer::new(0.0, 0.0, 0.0, 0.5);
+                            let buffer = blocks::Buffer::new(0.0, 0.0, 0.0, 1.0);
                             buffer.feed_from(&volume);
 
                             // output the stream
-                            let playback = AudioPlayer::new(48000.0, None).unwrap();
+                            let playback =
+                                AudioPlayer::new(stream_settings.sample_rate, Some(256)).unwrap();
                             playback.feed_from(&buffer);
 
                             // notify frontend that audio is playing
