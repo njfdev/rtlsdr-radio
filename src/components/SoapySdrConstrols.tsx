@@ -57,11 +57,9 @@ export default function SoapySdrControls() {
   });
 
   return (
-    <div>
+    <div className="grid gap-3 min-w-[24rem]">
       <div className="grid w-full gap-1.5">
-        <div>
-          <Label htmlFor="fm_freq_slider">Fm Station</Label>
-        </div>
+        <Label htmlFor="fm_freq_slider">Fm Station</Label>
         <Input
           type="number"
           step={0.2}
@@ -78,9 +76,7 @@ export default function SoapySdrControls() {
         />
       </div>
       <div className="grid w-full gap-1.5">
-        <div>
-          <Label htmlFor="audio_sr">Audio Sample Rate</Label>
-        </div>
+        <Label htmlFor="audio_sr">Audio Sample Rate</Label>
         <Input
           type="number"
           id="audio_sr"
@@ -98,19 +94,18 @@ export default function SoapySdrControls() {
         />
       </div>
       <div className="grid w-full gap-1.5">
-        <div>
-          <Label htmlFor="volume_slider">Volume</Label>
-          <Slider
-            min={0.0}
-            max={1.0}
-            step={0.01}
-            value={[streamSettings.volume]}
-            id="volume_slider"
-            onValueChange={(values) => {
-              setStreamSettings((old) => ({ ...old, volume: values[0] }));
-            }}
-          />
-        </div>
+        <Label htmlFor="volume_slider">Volume</Label>
+        <Slider
+          min={0.0}
+          max={1.0}
+          step={0.01}
+          value={[streamSettings.volume]}
+          id="volume_slider"
+          className="py-[2px]"
+          onValueChange={(values) => {
+            setStreamSettings((old) => ({ ...old, volume: values[0] }));
+          }}
+        />
       </div>
       <Button
         onClick={() => {

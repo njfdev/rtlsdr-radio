@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <main className="flex h-screen w-screen flex-col items-center align-middle justify-center p-24 gap-4">
       <Nrsc5Controls />
-      <Separator />
+      <Separator className="w-[44rem]" />
       <SoapySdrControls />
     </main>
   );

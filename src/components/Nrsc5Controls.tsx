@@ -246,7 +246,7 @@ export default function Nrsc5Controls() {
       <div className="grid gap-2 grow basis-0 w-full">
         <div className="grid w-full gap-1.5">
           <Label htmlFor="fm_freq_slider" className="flex">
-            FM Station
+            HD Radio Station
           </Label>
           <Input
             id="fm_freq_slider"
