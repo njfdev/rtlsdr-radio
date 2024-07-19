@@ -18,6 +18,12 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  isStationSaved,
+  removeStation,
+  saveStation,
+} from "@/lib/stationsStorage";
+import { Station, StationSavingState, StationType } from "@/lib/types";
 
 enum Nrsc5Status {
   Stopped = "stopped",
@@ -35,6 +41,8 @@ interface StreamDetails {
   message?: string;
   audioBitRate?: number;
   bitErrorRate?: number;
+  frequency?: number;
+  channel?: number;
 }
 
 export default function Nrsc5Controls() {
@@ -44,8 +52,21 @@ export default function Nrsc5Controls() {
   const [nrsc5Status, setNrsc5Status] = useState(Nrsc5Status.Stopped);
   const [streamDetails, setStreamDetails] = useState<StreamDetails>({});
 
+  const [stationSavingStatus, setStationSavingStatus] = useState(
+    StationSavingState.Idle
+  );
+
+  const [isSaved, setIsSaved] = useState(
+    isStationSaved(
+      StationType.HDRadio,
+      streamDetails.frequency!,
+      streamDetails.channel
+    )
+  );
+
   const start_nrsc5 = () => {
     setNrsc5Status(Nrsc5Status.Starting);
+    setStreamDetails({ frequency: freq, channel });
     invoke<string>("start_nrsc5", {
       fmFreq: freq.toString(),
       channel: (channel - 1).toString(),
@@ -103,9 +124,49 @@ export default function Nrsc5Controls() {
     }));
   });
 
+  const SaveStationButton = () => {
+    return (
+      <Button
+        className="w-full"
+        variant={isSaved ? "secondary" : "default"}
+        onClick={async () => {
+          let stationData: Station = {
+            type: StationType.HDRadio,
+            title:
+              streamDetails.stationName ||
+              `HD Radio: ${streamDetails.frequency!}`,
+            frequency: streamDetails.frequency!,
+            channel: streamDetails.channel!,
+            isFavorite: false,
+          };
+
+          if (isSaved) {
+            setStationSavingStatus(StationSavingState.Removing);
+            await removeStation(stationData);
+            setIsSaved(false);
+          } else {
+            setStationSavingStatus(StationSavingState.Saving);
+            await saveStation(stationData);
+            setIsSaved(true);
+          }
+          setStationSavingStatus(StationSavingState.Idle);
+        }}
+      >
+        {stationSavingStatus == StationSavingState.Idle ? (
+          <>{isSaved ? "Remove " : "Save "} Station</>
+        ) : (
+          <>
+            {stationSavingStatus == StationSavingState.Saving ? "Sav" : "Remov"}
+            ting...
+          </>
+        )}
+      </Button>
+    );
+  };
+
   return (
     <div className="flex w-[48rem] gap-4">
-      <div className="flex items-center grow basis-0 justify-center align-middle min-w-[16rem] w-full">
+      <div className="flex flex-col gap-4 items-center grow basis-0 justify-center align-middle min-w-[16rem] w-full">
         <div className="grid grid-cols-1 grid-rows-1 relative w-full">
           <Tabs
             defaultValue="radioInfo"
@@ -242,6 +303,8 @@ export default function Nrsc5Controls() {
             </div>
           )}
         </div>
+        {(nrsc5Status == Nrsc5Status.Synced ||
+          nrsc5Status == Nrsc5Status.SyncLost) && <SaveStationButton />}
       </div>
       <div className="grid gap-2 grow basis-0 w-full">
         <div className="grid w-full gap-1.5">
