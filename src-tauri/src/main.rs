@@ -35,9 +35,8 @@ fn stop_nrsc5(window: Window, state: State<AppState>) {
 }
 
 #[tauri::command]
-async fn start_fm_stream(window: Window, state: State<'_, AppState>) -> Result<(),()> {
-  state.rtlSdrState.start_stream(window, "101.5".to_owned()).await;
-  Ok(())
+fn start_fm_stream(window: Window, state: State<AppState>) {
+  state.rtlSdrState.start_stream(window, "101.5".to_owned());
 }
 
 #[tauri::command]

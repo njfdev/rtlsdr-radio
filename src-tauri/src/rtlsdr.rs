@@ -3,13 +3,13 @@ pub mod rtlsdr {
 
     use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
     use tauri::{Window};
-    use tokio::{task, time};
+    use tokio::{self, time};
     use radiorust::{blocks::{io::{rf, audio::cpal::AudioPlayer}, modulation::FmDemod, FreqShifter}, prelude::*};
     use soapysdr::Direction;
 
   pub struct RtlSdrState(Arc<Mutex<RtlSdrData>>);
   pub struct RtlSdrData {
-    pub radio_stream_thread: Option<task::JoinHandle<()>>,
+    pub radio_stream_thread: Option<tokio::task::JoinHandle<()>>,
     pub shutdown_flag: Arc<AtomicBool>
   }
 
@@ -18,85 +18,90 @@ pub mod rtlsdr {
       RtlSdrState(Arc::new(Mutex::new(RtlSdrData { radio_stream_thread: None, shutdown_flag: Arc::new(AtomicBool::new(false)) })))
     }
 
-    pub async fn start_stream(&self, window: Window, fm_freq: String) {
+    pub fn start_stream(&self, window: Window, fm_freq: String) {
       let rtlsdr_state = self.0.clone();
       let rtlsdr_state_clone = rtlsdr_state.clone();
 
       let shutdown_flag = rtlsdr_state.lock().unwrap().shutdown_flag.clone();
-        // connect to SDR
-        let mut rtlsdr_dev = soapysdr::Device::new("driver=rtlsdr").unwrap();
 
-        // set sample rate
-        let sample_rate = 2.048e6;
-        rtlsdr_dev.set_sample_rate(Direction::Rx, 0, sample_rate);
-
-        // set center frequency
-        let sdr_freq = fm_freq.parse::<f64>().expect("FM Frequency could not be parsed as a float") * 1_000_000.0;
-        rtlsdr_dev.set_frequency(Direction::Rx, 0, sdr_freq, "").expect("Failed to set frequency");
-
-        // set the bandwidth
-        rtlsdr_dev.set_bandwidth(Direction::Rx, 0, 1.024e6);
-
-        // start sdr rx stream
-        let rx_stream = rtlsdr_dev.rx_stream::<Complex<f32>>(&[0]).unwrap();
-        let sdr_rx = rf::soapysdr::SoapySdrRx::new(rx_stream, sample_rate);
-        sdr_rx.activate().await.unwrap();
-
-        // add frequency shifter
-        let freq_shifter = blocks::FreqShifter::<f32>::with_shift(0.0e6);
-        freq_shifter.feed_from(&sdr_rx);
-
-        // add downsampler
-        let downsample1 = blocks::Downsampler::<f32>::new(16384, 384000.0, 200000.0);
-        downsample1.feed_from(&freq_shifter);
-
-        // add lowpass filter
-        let filter1 = blocks::Filter::new(|_, freq| {
-          if freq.abs() <= 100000.0 {
-            Complex::from(1.0)
-          } else {
-            Complex::from(0.0)
-          }
-        });
-        filter1.feed_from(&downsample1);
-
-        // demodulate fm signal
-        let demodulator = blocks::modulation::FmDemod::<f32>::new(150000.0);
-        demodulator.feed_from(&filter1);
-
-        // filter frequencies beyond normal human hearing range (20hz to 16 kHz)
-        let filter2 = blocks::filters::Filter::new_rectangular(|bin, freq| {
-          if bin.abs() >= 1 && freq.abs() >= 20.0 && freq.abs() <= 16000.0 {
-              blocks::filters::deemphasis_factor(50e-6, freq)
-          } else {
-              Complex::from(0.0)
-          }
-        });
-        filter2.feed_from(&demodulator);
-
-        // downsample so the output device can play the audio
-        let downsample2 = blocks::Downsampler::<f32>::new(4096, 48000.0, 2.0 * 20000.0);
-        downsample2.feed_from(&filter2);
-
-        // add a volume block
-        let volume = blocks::GainControl::<f32>::new(1.0);
-        volume.feed_from(&downsample2);
-
-        // add a buffer
-        let buffer = blocks::Buffer::new(0.0, 0.0, 0.0, 1.0);
-        buffer.feed_from(&volume);
-
-        // output the stream
-        let playback = AudioPlayer::new(48000.0, None).unwrap();
-        playback.feed_from(&buffer);
-
-        // notify frontend that audio is playing
-        window.emit("rtlsdr_status", "running")
-          .expect("failed to emit event");
-
-        while !shutdown_flag.load(Ordering::SeqCst) {
-          time::sleep(Duration::from_millis(100));
-        }
+      rtlsdr_state.lock().unwrap().radio_stream_thread = Some(tokio::task::spawn_blocking(move || {
+          tokio::runtime::Runtime::new().unwrap().block_on(async move {
+              // connect to SDR
+              let mut rtlsdr_dev = soapysdr::Device::new("driver=rtlsdr").unwrap();
+      
+              // set sample rate
+              let sample_rate = 1.024e6;
+              rtlsdr_dev.set_sample_rate(Direction::Rx, 0, sample_rate);
+      
+              // set center frequency
+              let sdr_freq = fm_freq.parse::<f64>().expect("FM Frequency could not be parsed as a float") * 1_000_000.0;
+              rtlsdr_dev.set_frequency(Direction::Rx, 0, sdr_freq, "").expect("Failed to set frequency");
+      
+              // set the bandwidth
+              rtlsdr_dev.set_bandwidth(Direction::Rx, 0, 1.024e6);
+      
+              // start sdr rx stream
+              let rx_stream = rtlsdr_dev.rx_stream::<Complex<f32>>(&[0]).unwrap();
+              let sdr_rx = rf::soapysdr::SoapySdrRx::new(rx_stream, sample_rate);
+              sdr_rx.activate().await.unwrap();
+      
+              // add frequency shifter
+              let freq_shifter = blocks::FreqShifter::<f32>::with_shift(0.0e6);
+              freq_shifter.feed_from(&sdr_rx);
+      
+              // add downsampler
+              let downsample1 = blocks::Downsampler::<f32>::new(16384, 384000.0, 200000.0);
+              downsample1.feed_from(&freq_shifter);
+      
+              // add lowpass filter
+              let filter1 = blocks::Filter::new(|_, freq| {
+                  if freq.abs() <= 100000.0 {
+                      Complex::from(1.0)
+                  } else {
+                      Complex::from(0.0)
+                  }
+              });
+              filter1.feed_from(&downsample1);
+      
+              // demodulate fm signal
+              let demodulator = blocks::modulation::FmDemod::<f32>::new(150000.0);
+              demodulator.feed_from(&filter1);
+      
+              // filter frequencies beyond normal human hearing range (20hz to 16 kHz)
+              let filter2 = blocks::filters::Filter::new_rectangular(|bin, freq| {
+                  if bin.abs() >= 1 && freq.abs() >= 20.0 && freq.abs() <= 16000.0 {
+                      blocks::filters::deemphasis_factor(50e-6, freq)
+                  } else {
+                      Complex::from(0.0)
+                  }
+              });
+              filter2.feed_from(&demodulator);
+      
+              // downsample so the output device can play the audio
+              let downsample2 = blocks::Downsampler::<f32>::new(4096, 48000.0, 2.0 * 20000.0);
+              downsample2.feed_from(&filter2);
+      
+              // add a volume block
+              let volume = blocks::GainControl::<f32>::new(1.0);
+              volume.feed_from(&downsample2);
+      
+              // add a buffer
+              let buffer = blocks::Buffer::new(0.0, 0.0, 0.0, 0.01);
+              buffer.feed_from(&volume);
+      
+              // output the stream
+              let playback = AudioPlayer::new(48000.0, None).unwrap();
+              playback.feed_from(&buffer);
+      
+              // notify frontend that audio is playing
+              window.emit("rtlsdr_status", "running")
+                  .expect("failed to emit event");
+      
+              while !shutdown_flag.load(Ordering::SeqCst) {
+                  time::sleep(Duration::from_millis(100)).await;
+              }
+          })
+      }));
     }
 
     pub async fn stop_stream(&self, window: Window) {
