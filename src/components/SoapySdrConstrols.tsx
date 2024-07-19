@@ -1,10 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { invoke } from "@tauri-apps/api";
 import { appWindow } from "@tauri-apps/api/window";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { Label } from "./ui/label";
 
 enum RtlSdrStatus {
   Stopped = "stopped",
@@ -14,12 +16,21 @@ enum RtlSdrStatus {
   Running = "running",
 }
 
+interface StreamSettings {
+  fm_freq: number;
+}
+
 export default function SoapySdrControls() {
   const [status, setStatus] = useState(RtlSdrStatus.Stopped);
+  const [streamSettings, setStreamSettings] = useState<StreamSettings>({
+    fm_freq: 101.5,
+  });
 
   const start_stream = () => {
     setStatus(RtlSdrStatus.Starting);
-    invoke<string>("start_fm_stream", {})
+    invoke<string>("start_fm_stream", {
+      streamSettings,
+    })
       .then((_result) => console.log("FM Stream Started"))
       .catch(console.error);
   };
@@ -42,6 +53,25 @@ export default function SoapySdrControls() {
 
   return (
     <div>
+      <div className="grid w-full gap-1.5">
+        <div>
+          <Label htmlFor="fm_freq_slider">Fm Station</Label>
+        </div>
+        <Input
+          type="number"
+          step={1}
+          min={1}
+          max={4}
+          placeholder="#"
+          value={streamSettings.fm_freq}
+          onChange={(e) =>
+            setStreamSettings((old) => ({
+              ...old,
+              fm_freq: parseFloat(e.target.value),
+            }))
+          }
+        />
+      </div>
       <Button
         onClick={() => {
           if (status == RtlSdrStatus.Stopped || status == RtlSdrStatus.Idle) {
