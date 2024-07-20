@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -11,13 +11,19 @@ import { getSavedStations, updateStation } from "@/lib/stationsStorage";
 import { Star } from "lucide-react";
 import { Button } from "./ui/button";
 
-export default function SavedStationsMenu() {
-  const [stations, setStations] = useState<Station[]>([]);
+export default function SavedStationsMenu({
+  setRequestedStation,
+}: {
+  setRequestedStation: Dispatch<SetStateAction<Station | undefined>>;
+}) {
+  const [stations, setStations] = useState<undefined | Station[]>(undefined);
 
   useEffect(() => {
-    (async () => {
-      setStations(await getSavedStations());
-    })();
+    if (stations === undefined) {
+      (async () => {
+        setStations(await getSavedStations());
+      })();
+    }
   }, [stations]);
 
   return (
@@ -29,50 +35,59 @@ export default function SavedStationsMenu() {
             <CardTitle>Saved Stations</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2">
-            {stations.map((station) => {
-              return (
-                <Card
-                  key={`${station.type}-${station.frequency}-${
-                    station.channel || 0
-                  }`}
-                >
-                  <CardHeader>
-                    <div className="flex justify-between align-middle">
-                      <CardTitle className="text-lg">{station.title}</CardTitle>
-                      <Star
-                        size="22px"
-                        className={`transition-all ${
-                          station.isFavorite
-                            ? "fill-yellow-300 stroke-yellow-300"
-                            : "fill-black"
-                        }`}
+            {stations &&
+              stations.map((station) => {
+                return (
+                  <Card
+                    key={`${station.type}-${station.frequency}-${
+                      station.channel || 0
+                    }`}
+                  >
+                    <CardHeader>
+                      <div className="flex justify-between align-middle">
+                        <CardTitle className="text-lg">
+                          {station.title}
+                        </CardTitle>
+                        <Star
+                          size="22px"
+                          className={`transition-all ${
+                            station.isFavorite
+                              ? "fill-yellow-300 stroke-yellow-300"
+                              : "fill-black"
+                          }`}
+                          onClick={() => {
+                            updateStation(station, {
+                              ...station,
+                              isFavorite: !station.isFavorite,
+                            });
+                          }}
+                        />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p>
+                        Type:{" "}
+                        {station.type == StationType.HDRadio
+                          ? "HD Radio"
+                          : station.type == StationType.FMRadio
+                          ? "FM Radio"
+                          : "Unknown"}
+                      </p>
+                      <p>Frequency: {station.frequency}</p>
+                      {station.channel && <p>Channel: {station.channel!}</p>}
+                    </CardContent>
+                    <CardFooter>
+                      <Button
                         onClick={() => {
-                          updateStation(station, {
-                            ...station,
-                            isFavorite: !station.isFavorite,
-                          });
+                          setRequestedStation(station);
                         }}
-                      />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p>
-                      Type:{" "}
-                      {station.type == StationType.HDRadio
-                        ? "HD Radio"
-                        : station.type == StationType.FMRadio
-                        ? "FM Radio"
-                        : "Unknown"}
-                    </p>
-                    <p>Frequency: {station.frequency}</p>
-                    {station.channel && <p>Channel: {station.channel!}</p>}
-                  </CardContent>
-                  <CardFooter>
-                    <Button>Start Station</Button>
-                  </CardFooter>
-                </Card>
-              );
-            })}
+                      >
+                        Start Station
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                );
+              })}
           </CardContent>
         </Card>
       </div>

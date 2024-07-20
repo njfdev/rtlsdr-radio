@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api";
 import { appWindow } from "@tauri-apps/api/window";
 import { Loader2 } from "lucide-react";
@@ -46,7 +46,15 @@ interface StreamDetails {
   channel?: number;
 }
 
-export default function Nrsc5Controls() {
+export default function Nrsc5Controls({
+  initialStation,
+  autoPlay = false,
+  setIsInUse,
+}: {
+  initialStation?: Station;
+  autoPlay?: boolean;
+  setIsInUse: Dispatch<SetStateAction<boolean>>;
+}) {
   const [freq, setFreq] = useState<number>(101.5);
   const [channel, setChannel] = useState<number>(1);
 
@@ -61,7 +69,19 @@ export default function Nrsc5Controls() {
     )
   );
 
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  useEffect(() => {
+    if (isInitialLoad && initialStation && autoPlay) {
+      setIsInitialLoad(false);
+      setFreq(initialStation.frequency);
+      setChannel(initialStation.channel!);
+      start_nrsc5();
+    }
+  });
+
   const start_nrsc5 = () => {
+    setIsInUse(true);
     setNrsc5Status(Nrsc5Status.Starting);
     setStreamDetails({ frequency: freq, channel });
     invoke<string>("start_nrsc5", {
@@ -77,10 +97,9 @@ export default function Nrsc5Controls() {
       )
       .catch(console.error);
   };
-  const stop_nrsc5 = () => {
-    invoke<string>("stop_nrsc5", {})
-      .then((_result) => setStreamDetails({}))
-      .catch(console.error);
+  const stop_nrsc5 = async () => {
+    await invoke<string>("stop_nrsc5", {});
+    setIsInUse(false);
   };
 
   appWindow.listen("nrsc5_status", (event: { payload: string }) => {
@@ -124,7 +143,9 @@ export default function Nrsc5Controls() {
   useEffect(() => {
     // this will run on unmount
     return () => {
-      stop_nrsc5();
+      (async () => {
+        await stop_nrsc5();
+      })();
     };
   }, []);
 

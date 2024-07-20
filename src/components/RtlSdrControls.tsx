@@ -13,7 +13,7 @@ import { Station, StationType } from "@/lib/types";
 import { invoke } from "@tauri-apps/api";
 import { appWindow } from "@tauri-apps/api/window";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
 enum RtlSdrStatus {
   Stopped = "stopped",
@@ -28,7 +28,15 @@ interface StreamSettings {
   sample_rate: number;
 }
 
-export default function RtlSdrControls() {
+export default function RtlSdrControls({
+  initialStation,
+  autoPlay = false,
+  setIsInUse,
+}: {
+  initialStation?: Station;
+  autoPlay?: boolean;
+  setIsInUse: Dispatch<SetStateAction<boolean>>;
+}) {
   const [status, setStatus] = useState(RtlSdrStatus.Stopped);
   const [streamSettings, setStreamSettings] = useState<StreamSettings>({
     fm_freq: 101.5,
@@ -40,7 +48,21 @@ export default function RtlSdrControls() {
     isStationSaved(StationType.FMRadio, streamSettings.fm_freq)
   );
 
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  useEffect(() => {
+    if (isInitialLoad && initialStation && autoPlay) {
+      setIsInitialLoad(false);
+      setStreamSettings((old) => ({
+        ...old,
+        fm_freq: initialStation.frequency,
+      }));
+      start_stream();
+    }
+  });
+
   const start_stream = () => {
+    setIsInUse(true);
     setStatus(RtlSdrStatus.Starting);
     invoke<string>("start_fm_stream", {
       streamSettings,
@@ -48,11 +70,11 @@ export default function RtlSdrControls() {
       .then((_result) => console.log("FM Stream Started"))
       .catch(console.error);
   };
-  const stop_stream = () => {
+  const stop_stream = async () => {
     setStatus(RtlSdrStatus.Pausing);
-    invoke<string>("stop_fm_stream", {})
-      .then((_result) => console.log("FM Stream Stopped"))
-      .catch(console.error);
+    await invoke<string>("stop_fm_stream", {});
+    console.log("FM Stream Stopped");
+    setIsInUse(false);
   };
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
@@ -71,7 +93,9 @@ export default function RtlSdrControls() {
       if (firstRun) {
         firstRun = false;
       } else {
-        stop_stream();
+        (async () => {
+          await stop_stream();
+        })();
       }
     };
   }, []);

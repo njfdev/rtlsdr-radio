@@ -18,9 +18,9 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.408.0",
-    "next": "^15.0.0-canary.68",
-    "react": "^19.0.0-rc-8b08e99e-20240713",
-    "react-dom": "^19.0.0-rc-8b08e99e-20240713",
+    "next": "^15.0.0-canary.74",
+    "react": "^19.0.0-rc-512b09b2-20240718",
+    "react-dom": "^19.0.0-rc-512b09b2-20240718",
     "tailwind-merge": "^2.4.0",
     "tailwindcss-animate": "^1.0.7"
   },
