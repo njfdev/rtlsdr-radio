@@ -53,10 +53,6 @@ export default function Nrsc5Controls() {
   const [nrsc5Status, setNrsc5Status] = useState(Nrsc5Status.Stopped);
   const [streamDetails, setStreamDetails] = useState<StreamDetails>({});
 
-  const [stationSavingStatus, setStationSavingStatus] = useState(
-    StationSavingState.Idle
-  );
-
   const [isSaved, setIsSaved] = useState(
     isStationSaved(
       StationType.HDRadio,
@@ -288,27 +284,15 @@ export default function Nrsc5Controls() {
               };
 
               if (isSaved) {
-                setStationSavingStatus(StationSavingState.Removing);
                 await removeStation(stationData);
                 setIsSaved(false);
               } else {
-                setStationSavingStatus(StationSavingState.Saving);
                 await saveStation(stationData);
                 setIsSaved(true);
               }
-              setStationSavingStatus(StationSavingState.Idle);
             }}
           >
-            {stationSavingStatus == StationSavingState.Idle ? (
-              <>{isSaved ? "Remove " : "Save "} Station</>
-            ) : (
-              <>
-                {stationSavingStatus == StationSavingState.Saving
-                  ? "Sav"
-                  : "Remov"}
-                ting...
-              </>
-            )}
+            {isSaved ? "Remove " : "Save "} Station
           </Button>
         )}
       </div>

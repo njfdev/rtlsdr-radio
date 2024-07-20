@@ -4,6 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import {
+  isStationSaved,
+  removeStation,
+  saveStation,
+} from "@/lib/stationsStorage";
+import { Station, StationType } from "@/lib/types";
 import { invoke } from "@tauri-apps/api";
 import { appWindow } from "@tauri-apps/api/window";
 import { Loader2 } from "lucide-react";
@@ -29,6 +35,10 @@ export default function SoapySdrControls() {
     volume: 1.0,
     sample_rate: 48000.0,
   });
+
+  const [isSaved, setIsSaved] = useState(
+    isStationSaved(StationType.FMRadio, streamSettings.fm_freq)
+  );
 
   const start_stream = () => {
     setStatus(RtlSdrStatus.Starting);
@@ -143,6 +153,30 @@ export default function SoapySdrControls() {
           "Start FM Stream"
         )}
       </Button>
+      {status == RtlSdrStatus.Running && (
+        <Button
+          className="w-full"
+          variant={isSaved ? "secondary" : "default"}
+          onClick={async () => {
+            let stationData: Station = {
+              type: StationType.FMRadio,
+              title: `FM Radio: ${streamSettings.fm_freq}`,
+              frequency: streamSettings.fm_freq,
+              isFavorite: false,
+            };
+
+            if (isSaved) {
+              await removeStation(stationData);
+              setIsSaved(false);
+            } else {
+              await saveStation(stationData);
+              setIsSaved(true);
+            }
+          }}
+        >
+          {isSaved ? "Remove " : "Save "} Station
+        </Button>
+      )}
     </div>
   );
 }

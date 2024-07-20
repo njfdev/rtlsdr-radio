@@ -5,8 +5,8 @@ export enum StationSavingState {
 }
 
 export enum StationType {
-  HDRadio,
-  FMStation,
+  HDRadio = 0,
+  FMRadio = 1,
 }
 
 export interface Station {
