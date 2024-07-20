@@ -63,3 +63,36 @@ export async function removeStation(station: Station) {
     JSON.stringify(updatedStations)
   );
 }
+
+export async function getSavedStations(): Promise<Station[]> {
+  let stations = localStorage.getItem(stationsStorageName);
+
+  if (!stations) return [];
+
+  let parsedStations: [Station] = JSON.parse(stations);
+
+  return parsedStations;
+}
+
+export async function updateStation(oldStation: Station, newStation: Station) {
+  if (
+    !isStationSaved(oldStation.type, oldStation.frequency, oldStation.channel)
+  )
+    await saveStation(newStation);
+
+  let stations: [Station] = JSON.parse(
+    localStorage.getItem(stationsStorageName)!
+  );
+
+  let filteredStations = stations.filter((station) => {
+    return (
+      station.type == oldStation.type &&
+      station.frequency == oldStation.frequency &&
+      (oldStation.channel ? station.channel == oldStation.channel : true)
+    );
+  });
+
+  stations[stations.indexOf(filteredStations[0])] = newStation;
+
+  await localStorage.setItem(stationsStorageName, JSON.stringify(stations));
+}
