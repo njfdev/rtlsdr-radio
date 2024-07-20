@@ -124,46 +124,6 @@ export default function Nrsc5Controls() {
     }));
   });
 
-  const SaveStationButton = () => {
-    return (
-      <Button
-        className="w-full"
-        variant={isSaved ? "secondary" : "default"}
-        onClick={async () => {
-          let stationData: Station = {
-            type: StationType.HDRadio,
-            title:
-              streamDetails.stationName ||
-              `HD Radio: ${streamDetails.frequency!}`,
-            frequency: streamDetails.frequency!,
-            channel: streamDetails.channel!,
-            isFavorite: false,
-          };
-
-          if (isSaved) {
-            setStationSavingStatus(StationSavingState.Removing);
-            await removeStation(stationData);
-            setIsSaved(false);
-          } else {
-            setStationSavingStatus(StationSavingState.Saving);
-            await saveStation(stationData);
-            setIsSaved(true);
-          }
-          setStationSavingStatus(StationSavingState.Idle);
-        }}
-      >
-        {stationSavingStatus == StationSavingState.Idle ? (
-          <>{isSaved ? "Remove " : "Save "} Station</>
-        ) : (
-          <>
-            {stationSavingStatus == StationSavingState.Saving ? "Sav" : "Remov"}
-            ting...
-          </>
-        )}
-      </Button>
-    );
-  };
-
   return (
     <div className="flex w-[48rem] gap-4">
       <div className="flex flex-col gap-4 items-center grow basis-0 justify-center align-middle min-w-[16rem] w-full">
@@ -304,7 +264,45 @@ export default function Nrsc5Controls() {
           )}
         </div>
         {(nrsc5Status == Nrsc5Status.Synced ||
-          nrsc5Status == Nrsc5Status.SyncLost) && <SaveStationButton />}
+          nrsc5Status == Nrsc5Status.SyncLost) && (
+          <Button
+            className="w-full"
+            variant={isSaved ? "secondary" : "default"}
+            onClick={async () => {
+              let stationData: Station = {
+                type: StationType.HDRadio,
+                title:
+                  streamDetails.stationName ||
+                  `HD Radio: ${streamDetails.frequency!}`,
+                frequency: streamDetails.frequency!,
+                channel: streamDetails.channel!,
+                isFavorite: false,
+              };
+
+              if (isSaved) {
+                setStationSavingStatus(StationSavingState.Removing);
+                await removeStation(stationData);
+                setIsSaved(false);
+              } else {
+                setStationSavingStatus(StationSavingState.Saving);
+                await saveStation(stationData);
+                setIsSaved(true);
+              }
+              setStationSavingStatus(StationSavingState.Idle);
+            }}
+          >
+            {stationSavingStatus == StationSavingState.Idle ? (
+              <>{isSaved ? "Remove " : "Save "} Station</>
+            ) : (
+              <>
+                {stationSavingStatus == StationSavingState.Saving
+                  ? "Sav"
+                  : "Remov"}
+                ting...
+              </>
+            )}
+          </Button>
+        )}
       </div>
       <div className="grid gap-2 grow basis-0 w-full">
         <div className="grid w-full gap-1.5">
