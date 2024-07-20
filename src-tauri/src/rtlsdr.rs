@@ -128,13 +128,13 @@ pub mod rtlsdr {
                                 AudioPlayer::new(stream_settings.sample_rate, None).unwrap();
                             playback.feed_from(&buffer);
 
-                            // notify frontend that audio is playing
-                            window
-                                .emit("rtlsdr_status", "running")
-                                .expect("failed to emit event");
-
                             while !shutdown_flag.load(Ordering::SeqCst) {
-                                time::sleep(Duration::from_millis(100)).await;
+                                // notify frontend that audio is playing
+                                window
+                                    .emit("rtlsdr_status", "running")
+                                    .expect("failed to emit event");
+
+                                time::sleep(Duration::from_millis(250)).await;
                             }
                         })
                 }));

@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { invoke } from "@tauri-apps/api";
 import { appWindow } from "@tauri-apps/api/window";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 enum RtlSdrStatus {
   Stopped = "stopped",
@@ -54,6 +54,17 @@ export default function SoapySdrControls() {
       ]
     );
   });
+
+  let firstRun = true;
+  useEffect(() => {
+    return () => {
+      if (firstRun) {
+        firstRun = false;
+      } else {
+        stop_stream();
+      }
+    };
+  }, []);
 
   return (
     <div className="grid gap-3 min-w-[24rem]">

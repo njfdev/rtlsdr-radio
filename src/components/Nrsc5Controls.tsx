@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api";
 import { appWindow } from "@tauri-apps/api/window";
 import { Loader2 } from "lucide-react";
@@ -124,6 +124,13 @@ export default function Nrsc5Controls() {
       bitErrorRate: parseFloat(event.payload),
     }));
   });
+
+  useEffect(() => {
+    // this will run on unmount
+    return () => {
+      stop_nrsc5();
+    };
+  }, []);
 
   return (
     <div className="flex flex-row-reverse w-[48rem] gap-4">
