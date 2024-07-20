@@ -7,14 +7,22 @@ import {
   CardTitle,
 } from "./ui/card";
 import { Station, StationType } from "@/lib/types";
-import { getSavedStations, updateStation } from "@/lib/stationsStorage";
+import {
+  areStationsEqual,
+  getSavedStations,
+  updateStation,
+} from "@/lib/stationsStorage";
 import { Star } from "lucide-react";
 import { Button } from "./ui/button";
 
 export default function SavedStationsMenu({
   setRequestedStation,
+  requestedStation,
+  isStationPlaying,
 }: {
   setRequestedStation: Dispatch<SetStateAction<Station | undefined>>;
+  requestedStation: Station | undefined;
+  isStationPlaying: boolean;
 }) {
   const [stations, setStations] = useState<undefined | Station[]>(undefined);
 
@@ -37,6 +45,11 @@ export default function SavedStationsMenu({
           <CardContent className="grid gap-2">
             {stations &&
               stations.map((station) => {
+                const isCurrentStationPlaying =
+                  isStationPlaying &&
+                  requestedStation &&
+                  areStationsEqual(station, requestedStation);
+                console.log(requestedStation);
                 return (
                   <Card
                     key={`${station.type}-${station.frequency}-${
@@ -79,10 +92,16 @@ export default function SavedStationsMenu({
                     <CardFooter>
                       <Button
                         onClick={() => {
-                          setRequestedStation(station);
+                          if (isCurrentStationPlaying) {
+                            setRequestedStation(undefined);
+                          } else {
+                            setRequestedStation(station);
+                          }
                         }}
                       >
-                        Start Station
+                        {isCurrentStationPlaying
+                          ? "Stop Station"
+                          : "Start Station"}
                       </Button>
                     </CardFooter>
                   </Card>

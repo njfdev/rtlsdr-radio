@@ -158,5 +158,9 @@ pub mod rtlsdr {
                 return;
             }
         }
+
+        pub fn is_playing(&self) -> bool {
+            return self.0.clone().lock().unwrap().radio_stream_thread.is_some();
+        }
     }
 }

@@ -102,6 +102,12 @@ export default function Nrsc5Controls({
     setIsInUse(false);
   };
 
+  useEffect(() => {
+    if (!initialStation && nrsc5Status != Nrsc5Status.Stopped) {
+      stop_nrsc5();
+    }
+  });
+
   appWindow.listen("nrsc5_status", (event: { payload: string }) => {
     setNrsc5Status(
       Nrsc5Status[

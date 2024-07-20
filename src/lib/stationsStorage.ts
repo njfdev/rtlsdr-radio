@@ -96,3 +96,11 @@ export async function updateStation(oldStation: Station, newStation: Station) {
 
   await localStorage.setItem(stationsStorageName, JSON.stringify(stations));
 }
+
+export function areStationsEqual(stationA: Station, stationB: Station) {
+  return (
+    stationA.type == stationB.type &&
+    stationA.frequency == stationB.frequency &&
+    stationA.channel == stationB.channel
+  );
+}

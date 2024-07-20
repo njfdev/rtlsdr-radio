@@ -42,6 +42,9 @@ async fn main() {
 
 #[tauri::command]
 fn start_nrsc5(window: Window, state: State<AppState>, fm_freq: String, channel: String) {
+    if state.nrsc5State.is_playing() {
+        return;
+    };
     state.nrsc5State.start_thread(window, fm_freq, channel);
 }
 
@@ -52,6 +55,9 @@ fn stop_nrsc5(window: Window, state: State<AppState>) {
 
 #[tauri::command]
 fn start_fm_stream(window: Window, state: State<AppState>, stream_settings: StreamSettings) {
+    if state.rtlSdrState.lock().unwrap().is_playing() {
+        return;
+    };
     state
         .rtlSdrState
         .lock()

@@ -97,6 +97,10 @@ pub mod nrsc5 {
             }
         }
 
+        pub fn is_playing(&self) -> bool {
+            return self.0.clone().lock().unwrap().nrsc5_thread.is_some();
+        }
+
         fn is_timestamp(string: String) -> bool {
             let parts: Vec<&str> = string.split(":").collect();
 

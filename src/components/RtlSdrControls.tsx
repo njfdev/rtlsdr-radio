@@ -61,6 +61,12 @@ export default function RtlSdrControls({
     }
   });
 
+  useEffect(() => {
+    if (!initialStation && status != RtlSdrStatus.Stopped) {
+      stop_stream();
+    }
+  });
+
   const start_stream = () => {
     setIsInUse(true);
     setStatus(RtlSdrStatus.Starting);

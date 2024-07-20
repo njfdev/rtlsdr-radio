@@ -16,6 +16,8 @@ export default function Home() {
   const [requestedStation, setRequestedStation] = useState<undefined | Station>(
     undefined
   );
+  const [isRequestedStationPlaying, setIsRequestedStationPlaying] =
+    useState(false);
   const [isSdrInUse, setIsSdrInUse] = useState(false);
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
@@ -35,13 +37,27 @@ export default function Home() {
       setOpenTab("");
     }
 
-    if (!requestedStation) {
-    } else if (requestedStation.type == StationType.HDRadio) {
+    if (!requestedStation) return;
+
+    if (requestedStation.type == StationType.HDRadio) {
       setOpenTab("hd-radio");
     } else if (requestedStation.type == StationType.FMRadio) {
       setOpenTab("fm-radio");
     }
   }, [requestedStation, isSdrInUse]);
+
+  useEffect(() => {
+    if (
+      (requestedStation?.type == StationType.HDRadio &&
+        openTab != "hd-radio") ||
+      (requestedStation?.type == StationType.FMRadio && openTab != "fm-radio")
+    ) {
+      setIsRequestedStationPlaying(false);
+      return;
+    }
+
+    setIsRequestedStationPlaying(true);
+  });
 
   return (
     <main className="flex h-screen w-screen gap-4">
@@ -82,7 +98,11 @@ export default function Home() {
           </TabsContent>
         </Tabs>
       </div>
-      <SaveStationsMenu setRequestedStation={setRequestedStation} />
+      <SaveStationsMenu
+        setRequestedStation={setRequestedStation}
+        requestedStation={requestedStation}
+        isStationPlaying={isRequestedStationPlaying}
+      />
     </main>
   );
 }
