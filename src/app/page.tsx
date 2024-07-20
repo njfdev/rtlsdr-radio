@@ -2,6 +2,7 @@
 
 import Nrsc5Controls from "@/components/Nrsc5Controls";
 import RtlSdrControls from "@/components/RtlSdrControls";
+import SavedStationsMenu from "@/components/SavedStationsMenu";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { appWindow } from "@tauri-apps/api/window";
@@ -23,25 +24,28 @@ export default function Home() {
   });
 
   return (
-    <main className="flex h-screen w-screen flex-col items-center align-middle justify-center p-24 gap-4">
-      <Tabs
-        value={openTab}
-        onValueChange={(value) => {
-          setOpenTab(value as typeof openTab);
-        }}
-        className="flex flex-col justify-start items-center align-middle h-[18rem]"
-      >
-        <TabsList>
-          <TabsTrigger value="hd-radio">HD Radio</TabsTrigger>
-          <TabsTrigger value="fm-radio">FM Radio</TabsTrigger>
-        </TabsList>
-        <TabsContent value="hd-radio">
-          <Nrsc5Controls />
-        </TabsContent>
-        <TabsContent value="fm-radio">
-          <RtlSdrControls />
-        </TabsContent>
-      </Tabs>
+    <main className="flex h-screen w-screen gap-4">
+      <div className="flex align-middle justify-center p-12 w-full h-screen overflow-y-scroll">
+        <Tabs
+          value={openTab}
+          onValueChange={(value) => {
+            setOpenTab(value as typeof openTab);
+          }}
+          className="flex flex-col justify-start items-center align-middle mt-8"
+        >
+          <TabsList>
+            <TabsTrigger value="hd-radio">HD Radio</TabsTrigger>
+            <TabsTrigger value="fm-radio">FM Radio</TabsTrigger>
+          </TabsList>
+          <TabsContent value="hd-radio">
+            <Nrsc5Controls />
+          </TabsContent>
+          <TabsContent value="fm-radio">
+            <RtlSdrControls />
+          </TabsContent>
+        </Tabs>
+      </div>
+      <SavedStationsMenu />
     </main>
   );
 }

@@ -129,7 +129,7 @@ export default function Nrsc5Controls() {
   }, []);
 
   return (
-    <div className="flex flex-row-reverse w-[48rem] gap-4">
+    <div className="flex flex-col-reverse xl:flex-row-reverse xl:w-[48rem] w-[24rem] gap-4">
       <div className="flex flex-col gap-4 items-center grow basis-0 justify-center align-middle w-full">
         <div className="grid grid-cols-1 grid-rows-1 relative w-full">
           <Tabs
