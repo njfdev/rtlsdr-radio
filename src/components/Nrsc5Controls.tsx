@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Separator } from "./ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -125,8 +126,8 @@ export default function Nrsc5Controls() {
   });
 
   return (
-    <div className="flex w-[48rem] gap-4">
-      <div className="flex flex-col gap-4 items-center grow basis-0 justify-center align-middle min-w-[16rem] w-full">
+    <div className="flex flex-row-reverse w-[48rem] gap-4">
+      <div className="flex flex-col gap-4 items-center grow basis-0 justify-center align-middle w-full">
         <div className="grid grid-cols-1 grid-rows-1 relative w-full">
           <Tabs
             defaultValue="radioInfo"
@@ -304,7 +305,8 @@ export default function Nrsc5Controls() {
           </Button>
         )}
       </div>
-      <div className="grid gap-2 grow basis-0 w-full">
+      <Separator orientation="vertical" />
+      <div className="grid gap-2 grow basis-0">
         <div className="grid w-full gap-1.5">
           <Label htmlFor="fm_freq_slider" className="flex">
             HD Radio Station
