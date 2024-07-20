@@ -81,6 +81,7 @@ export default function RtlSdrControls({
     await invoke<string>("stop_fm_stream", {});
     console.log("FM Stream Stopped");
     setIsInUse(false);
+    setIsInitialLoad(true);
   };
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {

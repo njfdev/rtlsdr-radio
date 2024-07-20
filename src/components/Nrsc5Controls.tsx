@@ -100,6 +100,7 @@ export default function Nrsc5Controls({
   const stop_nrsc5 = async () => {
     await invoke<string>("stop_nrsc5", {});
     setIsInUse(false);
+    setIsInitialLoad(true);
   };
 
   useEffect(() => {
