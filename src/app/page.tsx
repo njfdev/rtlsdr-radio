@@ -1,7 +1,7 @@
 "use client";
 
 import Nrsc5Controls from "@/components/Nrsc5Controls";
-import SoapySdrControls from "@/components/SoapySdrConstrols";
+import RtlSdrControls from "@/components/RtlSdrControls";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { appWindow } from "@tauri-apps/api/window";
@@ -39,7 +39,7 @@ export default function Home() {
           <Nrsc5Controls />
         </TabsContent>
         <TabsContent value="fm-radio">
-          <SoapySdrControls />
+          <RtlSdrControls />
         </TabsContent>
       </Tabs>
     </main>

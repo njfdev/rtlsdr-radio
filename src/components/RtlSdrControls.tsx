@@ -28,7 +28,7 @@ interface StreamSettings {
   sample_rate: number;
 }
 
-export default function SoapySdrControls() {
+export default function RtlSdrControls() {
   const [status, setStatus] = useState(RtlSdrStatus.Stopped);
   const [streamSettings, setStreamSettings] = useState<StreamSettings>({
     fm_freq: 101.5,
