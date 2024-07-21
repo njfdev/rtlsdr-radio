@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import { Station, StationType } from "@/lib/types";
+import { Station, StationDetails, StationType } from "@/lib/types";
 import {
   areStationsEqual,
   getSavedStations,
@@ -24,7 +24,9 @@ export default function SavedStationsMenu({
   requestedStation: Station | undefined;
   isStationPlaying: boolean;
 }) {
-  const [stations, setStations] = useState<undefined | Station[]>(undefined);
+  const [stations, setStations] = useState<undefined | StationDetails[]>(
+    undefined
+  );
 
   useEffect(() => {
     if (stations === undefined) {

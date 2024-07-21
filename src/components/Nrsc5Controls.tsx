@@ -24,7 +24,12 @@ import {
   removeStation,
   saveStation,
 } from "@/lib/stationsStorage";
-import { Station, StationSavingState, StationType } from "@/lib/types";
+import {
+  Station,
+  StationDetails,
+  StationSavingState,
+  StationType,
+} from "@/lib/types";
 
 enum Nrsc5Status {
   Stopped = "stopped",
@@ -47,12 +52,14 @@ interface StreamDetails {
 }
 
 export default function Nrsc5Controls({
-  initialStation,
-  autoPlay = false,
+  currentStation,
+  setCurrentStation,
+  isInUse,
   setIsInUse,
 }: {
-  initialStation?: Station;
-  autoPlay?: boolean;
+  currentStation: Station | undefined;
+  setCurrentStation: Dispatch<SetStateAction<Station | undefined>>;
+  isInUse: boolean;
   setIsInUse: Dispatch<SetStateAction<boolean>>;
 }) {
   const [freq, setFreq] = useState<number>(101.5);
@@ -69,13 +76,15 @@ export default function Nrsc5Controls({
     )
   );
 
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-
   useEffect(() => {
-    if (isInitialLoad && initialStation && autoPlay) {
-      setIsInitialLoad(false);
-      setFreq(initialStation.frequency);
-      setChannel(initialStation.channel!);
+    if (
+      !isInUse &&
+      currentStation &&
+      currentStation.type == StationType.HDRadio
+    ) {
+      setIsInUse(true);
+      setFreq(currentStation.frequency);
+      setChannel(currentStation.channel!);
       start_nrsc5();
     }
   });
@@ -100,11 +109,13 @@ export default function Nrsc5Controls({
   const stop_nrsc5 = async () => {
     await invoke<string>("stop_nrsc5", {});
     setIsInUse(false);
-    setIsInitialLoad(true);
+    if (currentStation?.type == StationType.HDRadio && setCurrentStation) {
+      setCurrentStation(undefined);
+    }
   };
 
   useEffect(() => {
-    if (!initialStation && nrsc5Status != Nrsc5Status.Stopped) {
+    if (!currentStation && nrsc5Status != Nrsc5Status.Stopped) {
       stop_nrsc5();
     }
   });
@@ -301,7 +312,7 @@ export default function Nrsc5Controls({
             className="w-full"
             variant={isSaved ? "secondary" : "default"}
             onClick={async () => {
-              let stationData: Station = {
+              let stationData: StationDetails = {
                 type: StationType.HDRadio,
                 title:
                   streamDetails.stationName ||
@@ -357,9 +368,13 @@ export default function Nrsc5Controls({
         <Button
           onClick={() => {
             if (nrsc5Status == Nrsc5Status.Stopped) {
-              start_nrsc5();
+              setCurrentStation({
+                type: StationType.HDRadio,
+                frequency: freq,
+                channel,
+              });
             } else if (nrsc5Status != Nrsc5Status.Starting) {
-              stop_nrsc5();
+              setCurrentStation(undefined);
             }
           }}
           disabled={nrsc5Status == Nrsc5Status.Starting}

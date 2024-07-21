@@ -4,7 +4,7 @@ import Nrsc5Controls from "@/components/Nrsc5Controls";
 import RtlSdrControls from "@/components/RtlSdrControls";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Station, StationType } from "@/lib/types";
+import { Station, StationDetails, StationType } from "@/lib/types";
 import { appWindow } from "@tauri-apps/api/window";
 import { useEffect, useState } from "react";
 import SaveStationsMenu from "@/components/SavedStationsMenu";
@@ -13,7 +13,7 @@ export default function Home() {
   const [openTab, setOpenTab] = useState<"hd-radio" | "fm-radio" | "">(
     "hd-radio"
   );
-  const [requestedStation, setRequestedStation] = useState<undefined | Station>(
+  const [currentStation, setCurrentStation] = useState<undefined | Station>(
     undefined
   );
   const [isRequestedStationPlaying, setIsRequestedStationPlaying] =
@@ -33,24 +33,23 @@ export default function Home() {
   });
 
   useEffect(() => {
-    if (isSdrInUse && requestedStation) {
+    if (isSdrInUse && currentStation) {
       setOpenTab("");
     }
 
-    if (!requestedStation) return;
+    if (!currentStation) return;
 
-    if (requestedStation.type == StationType.HDRadio) {
+    if (currentStation.type == StationType.HDRadio) {
       setOpenTab("hd-radio");
-    } else if (requestedStation.type == StationType.FMRadio) {
+    } else if (currentStation.type == StationType.FMRadio) {
       setOpenTab("fm-radio");
     }
-  }, [requestedStation, isSdrInUse]);
+  }, [currentStation, isSdrInUse]);
 
   useEffect(() => {
     if (
-      (requestedStation?.type == StationType.HDRadio &&
-        openTab != "hd-radio") ||
-      (requestedStation?.type == StationType.FMRadio && openTab != "fm-radio")
+      (currentStation?.type == StationType.HDRadio && openTab != "hd-radio") ||
+      (currentStation?.type == StationType.FMRadio && openTab != "fm-radio")
     ) {
       setIsRequestedStationPlaying(false);
       return;
@@ -66,7 +65,7 @@ export default function Home() {
           value={openTab}
           onValueChange={(value) => {
             setOpenTab(value as typeof openTab);
-            setRequestedStation(undefined);
+            setCurrentStation(undefined);
           }}
           className="flex flex-col justify-start items-center align-middle mt-8"
         >
@@ -75,32 +74,26 @@ export default function Home() {
             <TabsTrigger value="fm-radio">FM Radio</TabsTrigger>
           </TabsList>
           <TabsContent value="hd-radio">
-            {requestedStation?.type == StationType.HDRadio ? (
-              <Nrsc5Controls
-                initialStation={requestedStation}
-                autoPlay={true}
-                setIsInUse={setIsSdrInUse}
-              />
-            ) : (
-              <Nrsc5Controls setIsInUse={setIsSdrInUse} />
-            )}
+            <Nrsc5Controls
+              currentStation={currentStation}
+              setCurrentStation={setCurrentStation}
+              isInUse={isSdrInUse}
+              setIsInUse={setIsSdrInUse}
+            />
           </TabsContent>
           <TabsContent value="fm-radio">
-            {requestedStation?.type == StationType.FMRadio ? (
-              <RtlSdrControls
-                initialStation={requestedStation}
-                autoPlay={true}
-                setIsInUse={setIsSdrInUse}
-              />
-            ) : (
-              <RtlSdrControls setIsInUse={setIsSdrInUse} />
-            )}
+            <RtlSdrControls
+              initialStation={currentStation}
+              setInitialStation={setCurrentStation}
+              autoPlay={true}
+              setIsInUse={setIsSdrInUse}
+            />
           </TabsContent>
         </Tabs>
       </div>
       <SaveStationsMenu
-        setRequestedStation={setRequestedStation}
-        requestedStation={requestedStation}
+        setRequestedStation={setCurrentStation}
+        requestedStation={currentStation}
         isStationPlaying={isRequestedStationPlaying}
       />
     </main>

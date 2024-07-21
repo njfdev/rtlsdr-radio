@@ -9,10 +9,16 @@ export enum StationType {
   FMRadio = 1,
 }
 
-export interface Station {
+export interface StationDetails {
   type: StationType;
   title: string;
   channel?: number;
   frequency: number;
   isFavorite: boolean;
+}
+
+export interface Station {
+  type: StationType;
+  frequency: number;
+  channel?: number;
 }
