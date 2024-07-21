@@ -11,8 +11,8 @@ import SaveStationsMenu from "@/components/SavedStationsMenu";
 import { areStationsEqual } from "@/lib/stationsStorage";
 
 export default function Home() {
-  const [openTab, setOpenTab] = useState<"hd-radio" | "fm-radio" | "">(
-    "hd-radio"
+  const [openTab, setOpenTab] = useState<string>(
+    StationType.HDRadio.toString()
   );
   const [requestedStation, setRequestedStation] = useState<undefined | Station>(
     undefined
@@ -24,33 +24,38 @@ export default function Home() {
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
     if (event.payload != "stopped" && event.payload != "pausing") {
-      setOpenTab("fm-radio");
+      setOpenTab(StationType.FMRadio.toString());
     }
   });
 
   appWindow.listen("nrsc5_status", (event: { payload: string }) => {
     if (event.payload != "stopped") {
-      setOpenTab("hd-radio");
+      setOpenTab(StationType.HDRadio.toString());
     }
   });
 
   useEffect(() => {
-    if (isSdrInUse && requestedStation) {
+    if (
+      isSdrInUse &&
+      requestedStation &&
+      !areStationsEqual(currentStation, requestedStation) &&
+      openTab != requestedStation.type.toString()
+    ) {
       setOpenTab("");
     }
 
     if (
       !requestedStation ||
-      (isSdrInUse && areStationsEqual(currentStation, requestedStation))
+      (isSdrInUse && !areStationsEqual(currentStation, requestedStation))
     )
       return;
 
     if (requestedStation.type == StationType.HDRadio) {
-      setOpenTab("hd-radio");
+      setOpenTab(StationType.HDRadio.toString());
     } else if (requestedStation.type == StationType.FMRadio) {
-      setOpenTab("fm-radio");
+      setOpenTab(StationType.FMRadio.toString());
     }
-  }, [requestedStation, isSdrInUse]);
+  }, [requestedStation, isSdrInUse, currentStation]);
 
   return (
     <main className="flex h-screen w-screen gap-4">
@@ -64,10 +69,14 @@ export default function Home() {
           className="flex flex-col justify-start items-center align-middle mt-8"
         >
           <TabsList>
-            <TabsTrigger value="hd-radio">HD Radio</TabsTrigger>
-            <TabsTrigger value="fm-radio">FM Radio</TabsTrigger>
+            <TabsTrigger value={StationType.HDRadio.toString()}>
+              HD Radio
+            </TabsTrigger>
+            <TabsTrigger value={StationType.FMRadio.toString()}>
+              FM Radio
+            </TabsTrigger>
           </TabsList>
-          <TabsContent value="hd-radio">
+          <TabsContent value={StationType.HDRadio.toString()}>
             <Nrsc5Controls
               currentStation={currentStation}
               setCurrentStation={setCurrentStation}
@@ -77,7 +86,7 @@ export default function Home() {
               setIsInUse={setIsSdrInUse}
             />
           </TabsContent>
-          <TabsContent value="fm-radio">
+          <TabsContent value={StationType.FMRadio.toString()}>
             <RtlSdrControls
               currentStation={currentStation}
               setCurrentStation={setCurrentStation}

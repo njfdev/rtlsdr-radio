@@ -111,6 +111,7 @@ export function areStationsEqual(
   return (
     stationA.type == stationB.type &&
     stationA.frequency == stationB.frequency &&
-    stationA.channel == stationB.channel
+    ((!stationA.channel && !stationB.channel) ||
+      stationA.channel == stationB.channel)
   );
 }
