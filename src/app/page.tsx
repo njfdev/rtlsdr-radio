@@ -63,6 +63,7 @@ export default function Home() {
         <Tabs
           value={openTab}
           onValueChange={(value) => {
+            setRequestedStation(undefined);
             setCurrentStation(undefined);
             setOpenTab(value as typeof openTab);
           }}
