@@ -74,22 +74,16 @@ export default function Nrsc5Controls({
   const [streamDetails, setStreamDetails] = useState<StreamDetails>({});
 
   const [isSaved, setIsSaved] = useState(
-    isStationSaved(
-      StationType.HDRadio,
-      streamDetails.frequency!,
-      streamDetails.channel
-    )
+    isStationSaved({
+      type: StationType.HDRadio,
+      frequency: streamDetails.frequency!,
+      channel: streamDetails.channel,
+    })
   );
 
   useEffect(() => {
     if (currentStation) {
-      setIsSaved(
-        isStationSaved(
-          currentStation.type,
-          currentStation.frequency,
-          currentStation.channel
-        )
-      );
+      setIsSaved(isStationSaved(currentStation));
     }
   });
 

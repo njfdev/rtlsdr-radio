@@ -53,12 +53,15 @@ export default function RtlSdrControls({
   const [isProcessingRequest, setIsProcessingRequest] = useState(false);
 
   const [isSaved, setIsSaved] = useState(
-    isStationSaved(StationType.FMRadio, streamSettings.fm_freq)
+    isStationSaved({
+      type: StationType.FMRadio,
+      frequency: streamSettings.fm_freq,
+    })
   );
 
   useEffect(() => {
     if (currentStation) {
-      setIsSaved(isStationSaved(currentStation.type, currentStation.frequency));
+      setIsSaved(isStationSaved(currentStation));
     }
   });
 

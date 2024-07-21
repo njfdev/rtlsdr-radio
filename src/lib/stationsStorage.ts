@@ -3,7 +3,7 @@ import { Station, StationDetails, StationType } from "./types";
 const stationsStorageName = "savedStations";
 
 export async function saveStation(station: StationDetails) {
-  if (isStationSaved(station.type, station.frequency, station.channel)) return;
+  if (isStationSaved(station)) return;
 
   let oldStations = localStorage.getItem(stationsStorageName);
 
@@ -22,22 +22,18 @@ export async function saveStation(station: StationDetails) {
   dispatchEvent(new Event("saved_stations"));
 }
 
-export function isStationSaved(
-  type: StationType,
-  frequency: number,
-  channel?: number
-) {
+export function isStationSaved(station: Station) {
   let stations = localStorage.getItem(stationsStorageName);
 
   if (!stations) return false;
 
   let parsedStations: [StationDetails] = JSON.parse(stations);
 
-  let filteredStations = parsedStations.filter((station) => {
+  let filteredStations = parsedStations.filter((e_station) => {
     return (
-      station.type == type &&
-      station.frequency == frequency &&
-      (channel ? station.channel == channel : true)
+      e_station.type == station.type &&
+      e_station.frequency == station.frequency &&
+      (station.channel ? e_station.channel == station.channel : true)
     );
   });
 
@@ -45,7 +41,7 @@ export function isStationSaved(
 }
 
 export async function removeStation(station: StationDetails) {
-  if (!isStationSaved(station.type, station.frequency, station.channel)) return;
+  if (!isStationSaved(station)) return;
 
   let stations: [StationDetails] = JSON.parse(
     localStorage.getItem(stationsStorageName)!
@@ -80,10 +76,7 @@ export async function updateStation(
   oldStation: StationDetails,
   newStation: StationDetails
 ) {
-  if (
-    !isStationSaved(oldStation.type, oldStation.frequency, oldStation.channel)
-  )
-    await saveStation(newStation);
+  if (!isStationSaved(oldStation)) await saveStation(newStation);
 
   let stations: [StationDetails] = JSON.parse(
     localStorage.getItem(stationsStorageName)!
