@@ -56,7 +56,7 @@ export default function SavedStationsMenu({
     <>
       <div className="max-w-[24rem] float-right w-full m-2" />
       <div className="max-w-[24rem] right-0 w-full m-2 h-[calc(100vh_-_1rem)] absolute">
-        <Card className="h-full">
+        <Card className="h-full overflow-y-scroll">
           <CardHeader>
             <CardTitle>Saved Stations</CardTitle>
           </CardHeader>
@@ -122,6 +122,9 @@ export default function SavedStationsMenu({
                           }
                         }}
                         disabled={isLoading}
+                        variant={
+                          isCurrentStationPlaying ? "secondary" : "default"
+                        }
                       >
                         {isLoading ? (
                           <>
