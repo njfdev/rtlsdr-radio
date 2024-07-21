@@ -10,6 +10,7 @@ import { Station, StationDetails, StationType } from "@/lib/types";
 import {
   areStationsEqual,
   getSavedStations,
+  removeStation,
   updateStation,
 } from "@/lib/stationsStorage";
 import { Loader2, RadioTower, Star } from "lucide-react";
@@ -146,7 +147,7 @@ function SavedStationCard({
           <Badge variant="secondary">Channel: {station.channel}</Badge>
         )}
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex gap-2">
         <Button
           onClick={() => {
             if (isCurrentStationPlaying) {
@@ -161,6 +162,7 @@ function SavedStationCard({
           }}
           disabled={isLoading}
           variant={isCurrentStationPlaying ? "secondary" : "default"}
+          className="grow basis-0"
         >
           {isLoading ? (
             <>
@@ -169,6 +171,15 @@ function SavedStationCard({
           ) : (
             <>{isCurrentStationPlaying ? "Stop Station" : "Start Station"}</>
           )}
+        </Button>
+        <Button
+          className="grow basis-0"
+          variant={"destructive"}
+          onClick={() => {
+            removeStation(station);
+          }}
+        >
+          Remove
         </Button>
       </CardFooter>
     </Card>
