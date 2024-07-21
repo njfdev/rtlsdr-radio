@@ -29,6 +29,9 @@ interface StreamSettings {
   sample_rate: number;
 }
 
+const srStorageName = "fm_radio_sample_rate";
+const volumeStorageName = "fm_radio_volume";
+
 export default function RtlSdrControls({
   currentStation,
   setCurrentStation,
@@ -47,8 +50,8 @@ export default function RtlSdrControls({
   const [status, setStatus] = useState(RtlSdrStatus.Stopped);
   const [streamSettings, setStreamSettings] = useState<StreamSettings>({
     fm_freq: 101.5,
-    volume: 1.0,
-    sample_rate: 48000.0,
+    volume: parseFloat(localStorage.getItem(volumeStorageName) || "0.5"),
+    sample_rate: parseFloat(localStorage.getItem(srStorageName) || "48000.0"),
   });
   const [isProcessingRequest, setIsProcessingRequest] = useState(false);
 
@@ -58,6 +61,11 @@ export default function RtlSdrControls({
       frequency: streamSettings.fm_freq,
     })
   );
+
+  useEffect(() => {
+    localStorage.setItem(volumeStorageName, streamSettings.volume.toString());
+    localStorage.setItem(srStorageName, streamSettings.sample_rate.toString());
+  });
 
   useEffect(() => {
     if (currentStation) {
