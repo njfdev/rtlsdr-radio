@@ -12,8 +12,9 @@ import {
   getSavedStations,
   updateStation,
 } from "@/lib/stationsStorage";
-import { Loader2, Star } from "lucide-react";
+import { Loader2, RadioTower, Star } from "lucide-react";
 import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 
 export default function SavedStationsMenu({
   setRequestedStation,
@@ -101,7 +102,7 @@ function SavedStationCard({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-0">
         <div className="flex justify-between align-middle">
           <CardTitle className="text-lg">{station.title}</CardTitle>
           <Star
@@ -120,17 +121,30 @@ function SavedStationCard({
           />
         </div>
       </CardHeader>
-      <CardContent>
-        <p>
-          Type:{" "}
+      <CardContent className="flex gap-1 pb-4">
+        <Badge
+          variant="secondary"
+          className={`before:content-[''] before:inline-block before:w-2 before:h-2 ${
+            station.type == StationType.HDRadio
+              ? "before:bg-purple-500"
+              : station.type == StationType.FMRadio
+              ? "before:bg-blue-400"
+              : "before:bg-gray-400"
+          } before:rounded-full before:mr-2`}
+        >
           {station.type == StationType.HDRadio
             ? "HD Radio"
             : station.type == StationType.FMRadio
             ? "FM Radio"
             : "Unknown"}
-        </p>
-        <p>Frequency: {station.frequency}</p>
-        {station.channel && <p>Channel: {station.channel!}</p>}
+        </Badge>
+        <Badge variant="secondary">
+          <RadioTower className="-ml-1.5 h-[0.8rem]" />
+          {station.frequency}
+        </Badge>
+        {station.channel && (
+          <Badge variant="secondary">Channel: {station.channel}</Badge>
+        )}
       </CardContent>
       <CardFooter>
         <Button
