@@ -82,6 +82,18 @@ export default function Nrsc5Controls({
   );
 
   useEffect(() => {
+    if (currentStation) {
+      setIsSaved(
+        isStationSaved(
+          currentStation.type,
+          currentStation.frequency,
+          currentStation.channel
+        )
+      );
+    }
+  });
+
+  useEffect(() => {
     (async () => {
       if (
         requestedStation &&

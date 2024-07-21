@@ -19,6 +19,7 @@ export async function saveStation(station: StationDetails) {
     stationsStorageName,
     JSON.stringify(parsedStations)
   );
+  dispatchEvent(new Event("saved_stations"));
 }
 
 export function isStationSaved(
@@ -62,6 +63,7 @@ export async function removeStation(station: StationDetails) {
     stationsStorageName,
     JSON.stringify(updatedStations)
   );
+  dispatchEvent(new Event("saved_stations"));
 }
 
 export async function getSavedStations(): Promise<StationDetails[]> {
@@ -98,6 +100,7 @@ export async function updateStation(
   stations[stations.indexOf(filteredStations[0])] = newStation;
 
   await localStorage.setItem(stationsStorageName, JSON.stringify(stations));
+  dispatchEvent(new Event("saved_stations"));
 }
 
 export function areStationsEqual(

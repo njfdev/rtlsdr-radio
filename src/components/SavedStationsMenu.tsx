@@ -48,6 +48,10 @@ export default function SavedStationsMenu({
     await setRequestedStation(station);
   };
 
+  addEventListener("saved_stations", () => {
+    setStations(undefined);
+  });
+
   return (
     <>
       <div className="max-w-[24rem] float-right w-full m-2" />

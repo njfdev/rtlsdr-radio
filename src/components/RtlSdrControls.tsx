@@ -57,6 +57,12 @@ export default function RtlSdrControls({
   );
 
   useEffect(() => {
+    if (currentStation) {
+      setIsSaved(isStationSaved(currentStation.type, currentStation.frequency));
+    }
+  });
+
+  useEffect(() => {
     if (isProcessingRequest) return;
     (async () => {
       if (
