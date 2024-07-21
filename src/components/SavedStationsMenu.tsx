@@ -50,8 +50,8 @@ export default function SavedStationsMenu({
     await setRequestedStation(station);
   };
 
-  addEventListener("saved_stations", () => {
-    setStations(undefined);
+  addEventListener("saved_stations", async () => {
+    setStations(await getSavedStations());
   });
 
   return (
