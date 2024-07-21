@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import {
+  areStationsEqual,
   isStationSaved,
   removeStation,
   saveStation,
 } from "@/lib/stationsStorage";
-import { Station, StationType } from "@/lib/types";
+import { Station, StationDetails, StationType } from "@/lib/types";
 import { invoke } from "@tauri-apps/api";
 import { appWindow } from "@tauri-apps/api/window";
 import { Loader2 } from "lucide-react";
@@ -29,12 +30,18 @@ interface StreamSettings {
 }
 
 export default function RtlSdrControls({
-  initialStation,
-  autoPlay = false,
+  currentStation,
+  setCurrentStation,
+  requestedStation,
+  setRequestedStation,
+  isInUse,
   setIsInUse,
 }: {
-  initialStation?: Station;
-  autoPlay?: boolean;
+  currentStation: Station | undefined;
+  setCurrentStation: Dispatch<SetStateAction<Station | undefined>>;
+  requestedStation: Station | undefined;
+  setRequestedStation: Dispatch<SetStateAction<Station | undefined>>;
+  isInUse: boolean;
   setIsInUse: Dispatch<SetStateAction<boolean>>;
 }) {
   const [status, setStatus] = useState(RtlSdrStatus.Stopped);
@@ -43,45 +50,60 @@ export default function RtlSdrControls({
     volume: 1.0,
     sample_rate: 48000.0,
   });
+  const [isProcessingRequest, setIsProcessingRequest] = useState(false);
 
   const [isSaved, setIsSaved] = useState(
     isStationSaved(StationType.FMRadio, streamSettings.fm_freq)
   );
 
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-
   useEffect(() => {
-    if (isInitialLoad && initialStation && autoPlay) {
-      setIsInitialLoad(false);
-      setStreamSettings((old) => ({
-        ...old,
-        fm_freq: initialStation.frequency,
-      }));
-      start_stream();
-    }
+    if (isProcessingRequest) return;
+    (async () => {
+      if (
+        requestedStation &&
+        requestedStation.type == StationType.FMRadio &&
+        !areStationsEqual(requestedStation, currentStation)
+      ) {
+        await setIsProcessingRequest(true);
+        if (isInUse) {
+          console.log("stopping stream");
+          await stop_stream();
+        }
+
+        setIsInUse(true);
+        await setStreamSettings((old) => ({
+          ...old,
+          fm_freq: requestedStation.frequency,
+        }));
+        await start_stream();
+        setIsProcessingRequest(false);
+      }
+    })();
   });
 
   useEffect(() => {
-    if (!initialStation && status != RtlSdrStatus.Stopped) {
+    if (!requestedStation && status != RtlSdrStatus.Stopped) {
       stop_stream();
     }
   });
 
-  const start_stream = () => {
+  const start_stream = async () => {
     setIsInUse(true);
     setStatus(RtlSdrStatus.Starting);
-    invoke<string>("start_fm_stream", {
+    await invoke<string>("start_fm_stream", {
       streamSettings,
-    })
-      .then((_result) => console.log("FM Stream Started"))
-      .catch(console.error);
+    });
+    setCurrentStation({
+      type: StationType.FMRadio,
+      frequency: streamSettings.fm_freq,
+      channel: undefined,
+    });
   };
   const stop_stream = async () => {
     setStatus(RtlSdrStatus.Pausing);
     await invoke<string>("stop_fm_stream", {});
-    console.log("FM Stream Stopped");
-    setIsInUse(false);
-    setIsInitialLoad(true);
+    await setIsInUse(false);
+    setCurrentStation(undefined);
   };
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
@@ -161,9 +183,12 @@ export default function RtlSdrControls({
       <Button
         onClick={() => {
           if (status == RtlSdrStatus.Stopped) {
-            start_stream();
+            setRequestedStation({
+              type: StationType.FMRadio,
+              frequency: streamSettings.fm_freq,
+            });
           } else if (status == RtlSdrStatus.Running) {
-            stop_stream();
+            setRequestedStation(undefined);
           }
         }}
         disabled={
@@ -189,7 +214,7 @@ export default function RtlSdrControls({
           className="w-full"
           variant={isSaved ? "secondary" : "default"}
           onClick={async () => {
-            let stationData: Station = {
+            let stationData: StationDetails = {
               type: StationType.FMRadio,
               title: `FM Radio: ${streamSettings.fm_freq}`,
               frequency: streamSettings.fm_freq,

@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  areStationsEqual,
   isStationSaved,
   removeStation,
   saveStation,
@@ -54,11 +55,15 @@ interface StreamDetails {
 export default function Nrsc5Controls({
   currentStation,
   setCurrentStation,
+  requestedStation,
+  setRequestedStation,
   isInUse,
   setIsInUse,
 }: {
   currentStation: Station | undefined;
   setCurrentStation: Dispatch<SetStateAction<Station | undefined>>;
+  requestedStation: Station | undefined;
+  setRequestedStation: Dispatch<SetStateAction<Station | undefined>>;
   isInUse: boolean;
   setIsInUse: Dispatch<SetStateAction<boolean>>;
 }) {
@@ -77,16 +82,22 @@ export default function Nrsc5Controls({
   );
 
   useEffect(() => {
-    if (
-      !isInUse &&
-      currentStation &&
-      currentStation.type == StationType.HDRadio
-    ) {
-      setIsInUse(true);
-      setFreq(currentStation.frequency);
-      setChannel(currentStation.channel!);
-      start_nrsc5();
-    }
+    (async () => {
+      if (
+        requestedStation &&
+        requestedStation.type == StationType.HDRadio &&
+        !areStationsEqual(requestedStation, currentStation)
+      ) {
+        if (isInUse) {
+          await stop_nrsc5();
+        }
+
+        setIsInUse(true);
+        await setFreq(requestedStation.frequency);
+        await setChannel(requestedStation.channel!);
+        start_nrsc5();
+      }
+    })();
   });
 
   const start_nrsc5 = () => {
@@ -97,25 +108,28 @@ export default function Nrsc5Controls({
       fmFreq: freq.toString(),
       channel: (channel - 1).toString(),
     })
-      .then((_result) =>
+      .then((_result) => {
         setStreamDetails((old) => ({
           ...old,
           audioBitRate: 0,
           bitErrorRate: 0,
-        }))
-      )
+        }));
+        setCurrentStation({
+          type: StationType.HDRadio,
+          frequency: freq,
+          channel,
+        });
+      })
       .catch(console.error);
   };
   const stop_nrsc5 = async () => {
     await invoke<string>("stop_nrsc5", {});
-    setIsInUse(false);
-    if (currentStation?.type == StationType.HDRadio && setCurrentStation) {
-      setCurrentStation(undefined);
-    }
+    await setIsInUse(false);
+    setCurrentStation(undefined);
   };
 
   useEffect(() => {
-    if (!currentStation && nrsc5Status != Nrsc5Status.Stopped) {
+    if (!requestedStation && nrsc5Status != Nrsc5Status.Stopped) {
       stop_nrsc5();
     }
   });
@@ -368,13 +382,13 @@ export default function Nrsc5Controls({
         <Button
           onClick={() => {
             if (nrsc5Status == Nrsc5Status.Stopped) {
-              setCurrentStation({
+              setRequestedStation({
                 type: StationType.HDRadio,
                 frequency: freq,
                 channel,
               });
             } else if (nrsc5Status != Nrsc5Status.Starting) {
-              setCurrentStation(undefined);
+              setRequestedStation(undefined);
             }
           }}
           disabled={nrsc5Status == Nrsc5Status.Starting}

@@ -12,21 +12,22 @@ import {
   getSavedStations,
   updateStation,
 } from "@/lib/stationsStorage";
-import { Star } from "lucide-react";
+import { Loader2, Star } from "lucide-react";
 import { Button } from "./ui/button";
 
 export default function SavedStationsMenu({
   setRequestedStation,
-  requestedStation,
+  currentStation,
   isStationPlaying,
 }: {
   setRequestedStation: Dispatch<SetStateAction<Station | undefined>>;
-  requestedStation: Station | undefined;
+  currentStation: Station | undefined;
   isStationPlaying: boolean;
 }) {
   const [stations, setStations] = useState<undefined | StationDetails[]>(
     undefined
   );
+  const [loadingStation, setLoadingStation] = useState<undefined | Station>();
 
   useEffect(() => {
     if (stations === undefined) {
@@ -35,6 +36,17 @@ export default function SavedStationsMenu({
       })();
     }
   }, [stations]);
+
+  useEffect(() => {
+    if (areStationsEqual(currentStation, loadingStation)) {
+      setLoadingStation(undefined);
+    }
+  });
+
+  const updateRequestedStation = async (station: Station | undefined) => {
+    await setLoadingStation(station);
+    await setRequestedStation(station);
+  };
 
   return (
     <>
@@ -49,9 +61,10 @@ export default function SavedStationsMenu({
               stations.map((station) => {
                 const isCurrentStationPlaying =
                   isStationPlaying &&
-                  requestedStation &&
-                  areStationsEqual(station, requestedStation);
-                console.log(requestedStation);
+                  currentStation &&
+                  areStationsEqual(station, currentStation);
+                const isLoading = areStationsEqual(loadingStation, station);
+
                 return (
                   <Card
                     key={`${station.type}-${station.frequency}-${
@@ -95,15 +108,28 @@ export default function SavedStationsMenu({
                       <Button
                         onClick={() => {
                           if (isCurrentStationPlaying) {
-                            setRequestedStation(undefined);
+                            updateRequestedStation(undefined);
                           } else {
-                            setRequestedStation(station);
+                            updateRequestedStation({
+                              type: station.type,
+                              frequency: station.frequency,
+                              channel: station.channel,
+                            });
                           }
                         }}
+                        disabled={isLoading}
                       >
-                        {isCurrentStationPlaying
-                          ? "Stop Station"
-                          : "Start Station"}
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="animate-spin mr-2" /> Loading...
+                          </>
+                        ) : (
+                          <>
+                            {isCurrentStationPlaying
+                              ? "Stop Station"
+                              : "Start Station"}
+                          </>
+                        )}
                       </Button>
                     </CardFooter>
                   </Card>

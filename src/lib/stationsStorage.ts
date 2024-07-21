@@ -101,9 +101,13 @@ export async function updateStation(
 }
 
 export function areStationsEqual(
-  stationA: StationDetails | Station,
-  stationB: StationDetails | Station
+  stationA: StationDetails | Station | undefined,
+  stationB: StationDetails | Station | undefined
 ) {
+  if (!stationA || !stationB) {
+    return stationA == stationB;
+  }
+
   return (
     stationA.type == stationB.type &&
     stationA.frequency == stationB.frequency &&

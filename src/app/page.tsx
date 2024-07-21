@@ -8,16 +8,18 @@ import { Station, StationDetails, StationType } from "@/lib/types";
 import { appWindow } from "@tauri-apps/api/window";
 import { useEffect, useState } from "react";
 import SaveStationsMenu from "@/components/SavedStationsMenu";
+import { areStationsEqual } from "@/lib/stationsStorage";
 
 export default function Home() {
   const [openTab, setOpenTab] = useState<"hd-radio" | "fm-radio" | "">(
     "hd-radio"
   );
+  const [requestedStation, setRequestedStation] = useState<undefined | Station>(
+    undefined
+  );
   const [currentStation, setCurrentStation] = useState<undefined | Station>(
     undefined
   );
-  const [isRequestedStationPlaying, setIsRequestedStationPlaying] =
-    useState(false);
   const [isSdrInUse, setIsSdrInUse] = useState(false);
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
@@ -33,30 +35,22 @@ export default function Home() {
   });
 
   useEffect(() => {
-    if (isSdrInUse && currentStation) {
+    if (isSdrInUse && requestedStation) {
       setOpenTab("");
     }
 
-    if (!currentStation) return;
+    if (
+      !requestedStation ||
+      (isSdrInUse && areStationsEqual(currentStation, requestedStation))
+    )
+      return;
 
-    if (currentStation.type == StationType.HDRadio) {
+    if (requestedStation.type == StationType.HDRadio) {
       setOpenTab("hd-radio");
-    } else if (currentStation.type == StationType.FMRadio) {
+    } else if (requestedStation.type == StationType.FMRadio) {
       setOpenTab("fm-radio");
     }
-  }, [currentStation, isSdrInUse]);
-
-  useEffect(() => {
-    if (
-      (currentStation?.type == StationType.HDRadio && openTab != "hd-radio") ||
-      (currentStation?.type == StationType.FMRadio && openTab != "fm-radio")
-    ) {
-      setIsRequestedStationPlaying(false);
-      return;
-    }
-
-    setIsRequestedStationPlaying(true);
-  });
+  }, [requestedStation, isSdrInUse]);
 
   return (
     <main className="flex h-screen w-screen gap-4">
@@ -64,8 +58,8 @@ export default function Home() {
         <Tabs
           value={openTab}
           onValueChange={(value) => {
-            setOpenTab(value as typeof openTab);
             setCurrentStation(undefined);
+            setOpenTab(value as typeof openTab);
           }}
           className="flex flex-col justify-start items-center align-middle mt-8"
         >
@@ -77,24 +71,33 @@ export default function Home() {
             <Nrsc5Controls
               currentStation={currentStation}
               setCurrentStation={setCurrentStation}
+              requestedStation={requestedStation}
+              setRequestedStation={setRequestedStation}
               isInUse={isSdrInUse}
               setIsInUse={setIsSdrInUse}
             />
           </TabsContent>
           <TabsContent value="fm-radio">
             <RtlSdrControls
-              initialStation={currentStation}
-              setInitialStation={setCurrentStation}
-              autoPlay={true}
+              currentStation={currentStation}
+              setCurrentStation={setCurrentStation}
+              requestedStation={requestedStation}
+              setRequestedStation={setRequestedStation}
+              isInUse={isSdrInUse}
               setIsInUse={setIsSdrInUse}
             />
           </TabsContent>
         </Tabs>
       </div>
       <SaveStationsMenu
-        setRequestedStation={setCurrentStation}
-        requestedStation={currentStation}
-        isStationPlaying={isRequestedStationPlaying}
+        setRequestedStation={setRequestedStation}
+        currentStation={requestedStation}
+        isStationPlaying={
+          (currentStation &&
+            requestedStation &&
+            areStationsEqual(currentStation, requestedStation)) ||
+          false
+        }
       />
     </main>
   );
