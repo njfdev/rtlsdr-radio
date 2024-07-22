@@ -6,16 +6,30 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import { Station, StationDetails, StationType } from "@/lib/types";
+import {
+  Station,
+  StationDetails,
+  StationSortOption,
+  StationType,
+} from "@/lib/types";
 import {
   areStationsEqual,
   getSavedStations,
   removeStation,
+  stationSortComparison,
   updateStation,
 } from "@/lib/stationsStorage";
 import { Loader2, RadioTower, Star } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 export default function SavedStationsMenu({
   setRequestedStation,
@@ -29,7 +43,11 @@ export default function SavedStationsMenu({
   const [stations, setStations] = useState<undefined | StationDetails[]>(
     undefined
   );
+  const [sortedStations, setSortedStations] = useState<
+    undefined | StationDetails[]
+  >(stations);
   const [loadingStation, setLoadingStation] = useState<undefined | Station>();
+  const [sortOption, setSortOption] = useState(StationSortOption.FreqAsc);
 
   useEffect(() => {
     if (stations === undefined) {
@@ -54,6 +72,17 @@ export default function SavedStationsMenu({
     setStations(await getSavedStations());
   });
 
+  useEffect(() => {
+    if (!stations) {
+      setSortedStations(undefined);
+    } else {
+      let updatedStations = [...stations]?.sort((a, b) => {
+        return stationSortComparison(a, b, sortOption);
+      });
+      setSortedStations(updatedStations);
+    }
+  }, [stations, sortOption]);
+
   return (
     <>
       <div className="max-w-[24rem] float-right w-full m-2" />
@@ -63,7 +92,39 @@ export default function SavedStationsMenu({
             <CardTitle>Saved Stations</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2">
-            {stations?.map((station) => (
+            <Select
+              value={(
+                Object.keys(StationSortOption) as Array<
+                  keyof typeof StationSortOption
+                >
+              ).find((key) => StationSortOption[key] === sortOption)}
+              onValueChange={(newValue) => {
+                setSortOption(
+                  StationSortOption[newValue as keyof typeof StationSortOption]
+                );
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {Object.entries(StationSortOption).map(
+                    (sortString, index) => {
+                      return (
+                        <SelectItem
+                          key={`saved-stations-sort-option-${sortString[0]}`}
+                          value={sortString[0]}
+                        >
+                          {sortString[1]}
+                        </SelectItem>
+                      );
+                    }
+                  )}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            {sortedStations?.map((station) => (
               <SavedStationCard
                 key={`${station.type}-${station.frequency}-${
                   station.channel || 0

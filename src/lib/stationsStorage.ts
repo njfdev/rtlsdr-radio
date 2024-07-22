@@ -1,4 +1,9 @@
-import { Station, StationDetails, StationType } from "./types";
+import {
+  Station,
+  StationDetails,
+  StationSortOption,
+  StationType,
+} from "./types";
 
 const stationsStorageName = "savedStations";
 
@@ -110,4 +115,27 @@ export function areStationsEqual(
     ((!stationA.channel && !stationB.channel) ||
       stationA.channel == stationB.channel)
   );
+}
+
+export function stationSortComparison(
+  a: StationDetails,
+  b: StationDetails,
+  sortType: StationSortOption
+) {
+  switch (sortType) {
+    case StationSortOption.AlphaDes:
+      let tmp_b = b;
+      b = a;
+      a = tmp_b;
+    case StationSortOption.AlphaAsc:
+      if (a.title < b.title) return -1;
+      if (a.title > b.title) return 1;
+      return 0;
+    case StationSortOption.FreqAsc:
+      return a.frequency - b.frequency;
+    case StationSortOption.FreqDes:
+      return b.frequency - a.frequency;
+    case StationSortOption.StationType:
+      return a.type - b.type;
+  }
 }
