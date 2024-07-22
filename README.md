@@ -10,6 +10,13 @@ RTL-SDR Radio is your one-stop shop for listening to the radio frequencies in th
 
 Installation should be as simple as going to the [GitHub Releases](https://github.com/njfdev/rtlsdr-radio/releases) and downloading the most recent application from the "Assets" dropdown for your specific OS.
 
+There is one extra step if you get an error like: `"RTL-SDR Radio" is damaged and can't be opned. You should move it to the Trash.`. I, [njfdev](https://github.com/njfdev), do not have an Apple Developer Account so I cannot sign/notarize the app. This means your Mac will automatically move RTL-SDR Radio to the quarantine, so you will need to remove it:
+
+```bash
+# ONLY on MacOS
+xattr -d com.apple.quarantine /Applications/RTL-SDR\ Radio.app
+```
+
 ## Compiling from Source
 
 > ⚠️ Building on Windows is not tested so there are no instructions to do so.
