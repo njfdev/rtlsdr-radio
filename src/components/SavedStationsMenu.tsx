@@ -88,11 +88,11 @@ export default function SavedStationsMenu({
     <>
       <div className="max-w-[24rem] float-right w-full m-2" />
       <div className="max-w-[24rem] right-0 w-full m-2 h-[calc(100vh_-_1rem)] absolute">
-        <Card className="h-full overflow-y-scroll">
+        <Card className="flex flex-col h-full">
           <CardHeader>
             <CardTitle>Saved Stations</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-2">
+          <CardContent className="flex flex-col gap-2 h-full overflow-y-clip">
             <Label htmlFor="saved-stations-sort">Sort</Label>
             <Select
               value={(
@@ -126,24 +126,26 @@ export default function SavedStationsMenu({
                 </SelectGroup>
               </SelectContent>
             </Select>
-            {sortedStations && sortedStations.length > 0 ? (
-              sortedStations?.map((station) => (
-                <SavedStationCard
-                  key={`${station.type}-${station.frequency}-${
-                    station.channel || 0
-                  }`}
-                  station={station}
-                  isStationPlaying={isStationPlaying}
-                  currentStation={currentStation}
-                  loadingStation={loadingStation}
-                  updateRequestedStation={updateRequestedStation}
-                />
-              ))
-            ) : (
-              <div className="flex items-center align-middle justify-center w-full h-[12rem]">
-                <span className="text-gray-400">No Saved Stations!</span>
-              </div>
-            )}
+            <div className="h-full grid gap-2 overflow-y-scroll">
+              {sortedStations && sortedStations.length > 0 ? (
+                sortedStations?.map((station) => (
+                  <SavedStationCard
+                    key={`${station.type}-${station.frequency}-${
+                      station.channel || 0
+                    }`}
+                    station={station}
+                    isStationPlaying={isStationPlaying}
+                    currentStation={currentStation}
+                    loadingStation={loadingStation}
+                    updateRequestedStation={updateRequestedStation}
+                  />
+                ))
+              ) : (
+                <div className="flex items-center align-middle justify-center w-full h-[12rem]">
+                  <span className="text-gray-400">No Saved Stations!</span>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
