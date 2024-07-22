@@ -16,7 +16,7 @@ jobs:
         include:
           - platform: "macos-latest" # for Arm based Macs
             args: "--target aarch64-apple-darwin"
-          - platform: "macos-13" # for Intel based Macs
+          - platform: "macos-latest" # for Intel based Macs
             args: "--target x86_64-apple-darwin"
           - platform: "ubuntu-20.04"
             args: ""
@@ -37,10 +37,10 @@ jobs:
           node-version: lts/*
 
       - name: Install Rust Stable
-        uses: dtolnay/rust-toolchain@stable
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           # If on Mac, we need to include both architectures
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          target: ${{ matrix.args == '--target aarch64-apple-darwin' && 'aarch64-apple-darwin' || matrix.args == '--target x86_64-apple-darwin' && 'x86_64-apple-darwin' || '' }}
 
         # required to run build scripts
       - name: Install Python
@@ -52,14 +52,14 @@ jobs:
         if: matrix.platform == 'ubuntu-20.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev librsvg2-dev patchelf librtlsdr-dev libsoapysdr-dev soapysdr-module-rtlsdr
+          sudo apt-get install -y libwebkit2gtk-4.0-dev librsvg2-dev patchelf librtlsdr-dev libsoapysdr-dev soapysdr-module-rtlsdr libasound2-dev libudev-dev
 
       - name: Install Dependencies (MacOS Only)
         if: matrix.platform == 'macos-latest' || matrix.platform == 'macos-13'
         run: |
           brew tap pothosware/homebrew-pothos
           brew update
-          brew install librtlsdr soapyrtlsdr soapysdr
+          brew install librtlsdr soapyrtlsdr soapysdr libao
 
       - name: install frontend dependencies
         run: yarn install
