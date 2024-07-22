@@ -10,9 +10,14 @@ import { useEffect, useState } from "react";
 import SaveStationsMenu from "@/components/SavedStationsMenu";
 import { areStationsEqual } from "@/lib/stationsStorage";
 
+const isNrsc5Available =
+  process.env.NEXT_PUBLIC_EXCLUDE_SIDECAR == "true" ? false : true;
+
 export default function Home() {
   const [openTab, setOpenTab] = useState<string>(
-    StationType.HDRadio.toString()
+    isNrsc5Available
+      ? StationType.HDRadio.toString()
+      : StationType.FMRadio.toString()
   );
   const [requestedStation, setRequestedStation] = useState<undefined | Station>(
     undefined
@@ -70,23 +75,28 @@ export default function Home() {
           className="flex flex-col justify-start items-center align-middle mt-8"
         >
           <TabsList>
-            <TabsTrigger value={StationType.HDRadio.toString()}>
+            <TabsTrigger
+              disabled={!isNrsc5Available}
+              value={StationType.HDRadio.toString()}
+            >
               HD Radio
             </TabsTrigger>
             <TabsTrigger value={StationType.FMRadio.toString()}>
               FM Radio
             </TabsTrigger>
           </TabsList>
-          <TabsContent value={StationType.HDRadio.toString()}>
-            <Nrsc5Controls
-              currentStation={currentStation}
-              setCurrentStation={setCurrentStation}
-              requestedStation={requestedStation}
-              setRequestedStation={setRequestedStation}
-              isInUse={isSdrInUse}
-              setIsInUse={setIsSdrInUse}
-            />
-          </TabsContent>
+          {isNrsc5Available && (
+            <TabsContent value={StationType.HDRadio.toString()}>
+              <Nrsc5Controls
+                currentStation={currentStation}
+                setCurrentStation={setCurrentStation}
+                requestedStation={requestedStation}
+                setRequestedStation={setRequestedStation}
+                isInUse={isSdrInUse}
+                setIsInUse={setIsSdrInUse}
+              />
+            </TabsContent>
+          )}
           <TabsContent value={StationType.FMRadio.toString()}>
             <RtlSdrControls
               currentStation={currentStation}
