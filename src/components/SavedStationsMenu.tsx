@@ -47,7 +47,7 @@ export default function SavedStationsMenu({
     undefined | StationDetails[]
   >(stations);
   const [loadingStation, setLoadingStation] = useState<undefined | Station>();
-  const [sortOption, setSortOption] = useState(StationSortOption.FreqAsc);
+  const [sortOption, setSortOption] = useState(StationSortOption.Favorites);
 
   useEffect(() => {
     if (stations === undefined) {

@@ -10,6 +10,7 @@ export enum StationType {
 }
 
 export enum StationSortOption {
+  Favorites = "Favorites",
   AlphaAsc = "A -> Z",
   AlphaDes = "Z -> A",
   FreqAsc = "88.1 -> 107.9",

@@ -123,6 +123,10 @@ export function stationSortComparison(
   sortType: StationSortOption
 ) {
   switch (sortType) {
+    case StationSortOption.Favorites:
+      if (a.isFavorite && !b.isFavorite) return -1;
+      if (!a.isFavorite && b.isFavorite) return 1;
+      return a.frequency - b.frequency;
     case StationSortOption.AlphaDes:
       let tmp_b = b;
       b = a;
