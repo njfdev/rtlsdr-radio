@@ -124,18 +124,24 @@ export default function SavedStationsMenu({
                 </SelectGroup>
               </SelectContent>
             </Select>
-            {sortedStations?.map((station) => (
-              <SavedStationCard
-                key={`${station.type}-${station.frequency}-${
-                  station.channel || 0
-                }`}
-                station={station}
-                isStationPlaying={isStationPlaying}
-                currentStation={currentStation}
-                loadingStation={loadingStation}
-                updateRequestedStation={updateRequestedStation}
-              />
-            ))}
+            {sortedStations && sortedStations.length > 0 ? (
+              sortedStations?.map((station) => (
+                <SavedStationCard
+                  key={`${station.type}-${station.frequency}-${
+                    station.channel || 0
+                  }`}
+                  station={station}
+                  isStationPlaying={isStationPlaying}
+                  currentStation={currentStation}
+                  loadingStation={loadingStation}
+                  updateRequestedStation={updateRequestedStation}
+                />
+              ))
+            ) : (
+              <div className="flex items-center align-middle justify-center w-full h-[12rem]">
+                <span className="text-gray-400">No Saved Stations!</span>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
