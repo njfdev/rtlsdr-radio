@@ -201,17 +201,16 @@ function SavedStationCard({
           } before:rounded-full before:mr-2`}
         >
           {station.type == StationType.HDRadio
-            ? "HD Radio"
+            ? "HD "
             : station.type == StationType.FMRadio
-            ? "FM Radio"
-            : "Unknown"}
-        </Badge>
-        <Badge variant="secondary">
-          <RadioTower className="-ml-1.5 h-[0.8rem]" />
+            ? "FM "
+            : ""}
           {station.frequency}
         </Badge>
         {station.channel && (
-          <Badge variant="secondary">Channel: {station.channel}</Badge>
+          <Badge variant="secondary">
+            <RadioTower className="-ml-1.5 h-[0.8rem]" /> {station.channel}
+          </Badge>
         )}
       </CardContent>
       <CardFooter className="flex gap-2">
