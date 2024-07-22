@@ -147,7 +147,18 @@ export default function RtlSdrControls({
   }, []);
 
   return (
-    <div className="grid gap-3 min-w-[24rem]">
+    <form
+      className="grid gap-3 min-w-[24rem]"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (status == RtlSdrStatus.Stopped) {
+          setRequestedStation({
+            type: StationType.FMRadio,
+            frequency: streamSettings.fm_freq,
+          });
+        }
+      }}
+    >
       <div className="grid w-full gap-1.5">
         <Label htmlFor="fm_freq_slider">Fm Station</Label>
         <Input
@@ -199,12 +210,7 @@ export default function RtlSdrControls({
       </div>
       <Button
         onClick={() => {
-          if (status == RtlSdrStatus.Stopped) {
-            setRequestedStation({
-              type: StationType.FMRadio,
-              frequency: streamSettings.fm_freq,
-            });
-          } else if (status == RtlSdrStatus.Running) {
+          if (status == RtlSdrStatus.Running) {
             setRequestedStation(undefined);
           }
         }}
@@ -250,6 +256,6 @@ export default function RtlSdrControls({
           {isSaved ? "Remove " : "Save "} Station
         </Button>
       )}
-    </div>
+    </form>
   );
 }

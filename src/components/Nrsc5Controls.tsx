@@ -356,7 +356,19 @@ export default function Nrsc5Controls({
         )}
       </div>
       <Separator orientation="vertical" />
-      <div className="grid gap-2 grow basis-0">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (nrsc5Status == Nrsc5Status.Stopped) {
+            setRequestedStation({
+              type: StationType.HDRadio,
+              frequency: freq,
+              channel,
+            });
+          }
+        }}
+        className="grid gap-2 grow basis-0"
+      >
         <div className="grid w-full gap-1.5">
           <Label htmlFor="fm_freq_slider" className="flex">
             HD Radio Station
@@ -387,13 +399,7 @@ export default function Nrsc5Controls({
         </div>
         <Button
           onClick={() => {
-            if (nrsc5Status == Nrsc5Status.Stopped) {
-              setRequestedStation({
-                type: StationType.HDRadio,
-                frequency: freq,
-                channel,
-              });
-            } else if (nrsc5Status != Nrsc5Status.Starting) {
+            if (nrsc5Status != Nrsc5Status.Starting) {
               setRequestedStation(undefined);
             }
           }}
@@ -408,7 +414,7 @@ export default function Nrsc5Controls({
             ? "Starting..."
             : "Stop nrsc5"}
         </Button>
-      </div>
+      </form>
     </div>
   );
 }
