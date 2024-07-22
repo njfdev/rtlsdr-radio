@@ -54,6 +54,7 @@ export default function RtlSdrControls({
     sample_rate: parseFloat(localStorage.getItem(srStorageName) || "48000.0"),
   });
   const [isProcessingRequest, setIsProcessingRequest] = useState(false);
+  const [error, setError] = useState("");
 
   const [isSaved, setIsSaved] = useState(
     isStationSaved({
@@ -110,6 +111,7 @@ export default function RtlSdrControls({
     await invoke<string>("start_fm_stream", {
       streamSettings,
     });
+    setError("");
     setCurrentStation({
       type: StationType.FMRadio,
       frequency: streamSettings.fm_freq,
@@ -133,6 +135,13 @@ export default function RtlSdrControls({
     );
   });
 
+  appWindow.listen("rtlsdr_err", async (event: { payload: string }) => {
+    setError(event.payload);
+    await setCurrentStation(undefined);
+    await setRequestedStation(undefined);
+    setIsInUse(false);
+  });
+
   let firstRun = true;
   useEffect(() => {
     return () => {
@@ -148,7 +157,7 @@ export default function RtlSdrControls({
 
   return (
     <form
-      className="grid gap-3 min-w-[24rem]"
+      className="grid gap-3 max-w-[24rem] w-[24rem]"
       onSubmit={(e) => {
         e.preventDefault();
         if (status == RtlSdrStatus.Stopped) {
@@ -232,6 +241,9 @@ export default function RtlSdrControls({
           "Start FM Stream"
         )}
       </Button>
+      {error.length > 0 && (
+        <span className="text-center text-red-400">{error}</span>
+      )}
       {status == RtlSdrStatus.Running && (
         <Button
           className="w-full"

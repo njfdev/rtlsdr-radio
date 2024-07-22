@@ -18,7 +18,7 @@ pub mod rtlsdr {
         },
         prelude::*,
     };
-    use soapysdr::Direction;
+    use soapysdr::{Direction, ErrorCode};
     use tauri::{async_runtime, Window};
     use tokio::{self, time};
 
@@ -45,16 +45,33 @@ pub mod rtlsdr {
 
         pub fn start_stream(&self, window: Window, stream_settings: StreamSettings) {
             let rtlsdr_state = self.0.clone();
+            let rtlsdr_state_clone = rtlsdr_state.clone();
 
             let shutdown_flag = rtlsdr_state.lock().unwrap().shutdown_flag.clone();
 
-            rtlsdr_state.lock().unwrap().radio_stream_thread =
-                Some(async_runtime::spawn_blocking(move || {
+            rtlsdr_state.lock().unwrap().radio_stream_thread = Some(async_runtime::spawn_blocking(
+                move || {
                     tokio::runtime::Runtime::new()
                         .unwrap()
                         .block_on(async move {
                             // connect to SDR
-                            let mut rtlsdr_dev = soapysdr::Device::new("driver=rtlsdr").unwrap();
+                            let rtlsdr_dev_result = soapysdr::Device::new("driver=rtlsdr");
+
+                            if rtlsdr_dev_result.is_err() {
+                                // notify frontend of error
+                                window
+                                    .emit("rtlsdr_err", "Could not connect to your RTL-SDR. Make sure it is plugged in!")
+                                    .expect("failed to emit event");
+                                window
+                                    .emit("rtlsdr_status", "stopped")
+                                    .expect("failed to emit event");
+
+                                // remove the reference to the thread
+                                drop(rtlsdr_state_clone.lock().unwrap().radio_stream_thread.take());
+                                return;
+                            }
+
+                            let mut rtlsdr_dev = rtlsdr_dev_result.unwrap();
 
                             // set sample rate
                             let sample_rate = 1.024e6;
@@ -137,7 +154,8 @@ pub mod rtlsdr {
                                 time::sleep(Duration::from_millis(250)).await;
                             }
                         })
-                }));
+                },
+            ));
         }
 
         pub async fn stop_stream(&self, window: Window) {
