@@ -10,7 +10,6 @@ pub mod nrsc5 {
 
     use tauri::{
         api::process::{Command, CommandEvent},
-        async_runtime::block_on,
         Window,
     };
 
@@ -31,12 +30,11 @@ pub mod nrsc5 {
         pub fn start_thread(&self, window: Window, fm_freq: String, channel: String) {
             // we can make a clone because a clone of Arc is just making another reference to the original
             let nrsc5_state = self.0.clone();
-            let nrsc5_state_clone = nrsc5_state.clone();
 
             let shutdown_flag = nrsc5_state.lock().unwrap().shutdown_flag.clone();
 
             let nrsc5_thread = thread::spawn(move || {
-                let (mut rx, mut child) = Command::new_sidecar("nrsc5")
+                let (mut rx, child) = Command::new_sidecar("nrsc5")
                     .expect("failed to create `nrsc5` binary command")
                     .args([fm_freq, channel])
                     .spawn()
@@ -132,7 +130,7 @@ pub mod nrsc5 {
                 let message = line.split(" ").skip(1).collect::<Vec<&str>>().join(" ");
 
                 // continuously send synchronized message to keep frontend updated (a timestamp always means synced)
-                if (!message.starts_with("Lost synchronization")) {
+                if !message.starts_with("Lost synchronization") {
                     window
                         .emit("nrsc5_status", Some("synchronized"))
                         .expect("failed to emit event");

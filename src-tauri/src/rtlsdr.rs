@@ -1,24 +1,17 @@
 pub mod rtlsdr {
     use std::{
-        ops::DerefMut,
         sync::{
             atomic::{AtomicBool, Ordering},
             Arc, Mutex,
         },
-        thread,
         time::Duration,
     };
 
-    use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
     use radiorust::{
-        blocks::{
-            io::{audio::cpal::AudioPlayer, rf},
-            modulation::FmDemod,
-            FreqShifter,
-        },
+        blocks::io::{audio::cpal::AudioPlayer, rf},
         prelude::*,
     };
-    use soapysdr::{Direction, ErrorCode};
+    use soapysdr::Direction;
     use tauri::{async_runtime, Window};
     use tokio::{self, time};
 
@@ -71,11 +64,11 @@ pub mod rtlsdr {
                                 return;
                             }
 
-                            let mut rtlsdr_dev = rtlsdr_dev_result.unwrap();
+                            let rtlsdr_dev = rtlsdr_dev_result.unwrap();
 
                             // set sample rate
                             let sample_rate = 1.024e6;
-                            rtlsdr_dev.set_sample_rate(Direction::Rx, 0, sample_rate);
+                            let _ = rtlsdr_dev.set_sample_rate(Direction::Rx, 0, sample_rate);
 
                             // set center frequency
                             let sdr_freq = stream_settings.fm_freq * 1_000_000.0;
@@ -84,7 +77,7 @@ pub mod rtlsdr {
                                 .expect("Failed to set frequency");
 
                             // set the bandwidth
-                            rtlsdr_dev.set_bandwidth(Direction::Rx, 0, 1.024e6);
+                            let _ = rtlsdr_dev.set_bandwidth(Direction::Rx, 0, 1.024e6);
 
                             // start sdr rx stream
                             let rx_stream = rtlsdr_dev.rx_stream::<Complex<f32>>(&[0]).unwrap();
@@ -159,14 +152,14 @@ pub mod rtlsdr {
         }
 
         pub async fn stop_stream(&self, window: Window) {
-            if let Ok(mut rtlSdrData) = self.0.clone().lock() {
-                rtlSdrData.shutdown_flag.store(true, Ordering::SeqCst);
+            if let Ok(mut rtl_sdr_data) = self.0.clone().lock() {
+                rtl_sdr_data.shutdown_flag.store(true, Ordering::SeqCst);
 
-                if let Some(thread) = rtlSdrData.radio_stream_thread.take() {
+                if let Some(thread) = rtl_sdr_data.radio_stream_thread.take() {
                     thread.await.expect("Failed to join thread");
                 }
 
-                rtlSdrData.shutdown_flag.store(false, Ordering::SeqCst);
+                rtl_sdr_data.shutdown_flag.store(false, Ordering::SeqCst);
 
                 window
                     .emit("rtlsdr_status", Some("stopped"))
