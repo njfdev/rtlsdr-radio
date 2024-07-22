@@ -31,6 +31,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Dependencies (MacOS Only)
+        if: matrix.platform == 'macos-latest' || matrix.platform == 'macos-13'
+        run: |
+          brew tap pothosware/homebrew-pothos
+          brew update
+          brew install librtlsdr soapyrtlsdr soapysdr libao
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -53,13 +60,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.0-dev librsvg2-dev patchelf librtlsdr-dev libsoapysdr-dev soapysdr-module-rtlsdr libasound2-dev libudev-dev
-
-      - name: Install Dependencies (MacOS Only)
-        if: matrix.platform == 'macos-latest' || matrix.platform == 'macos-13'
-        run: |
-          brew tap pothosware/homebrew-pothos
-          brew update
-          brew install librtlsdr soapyrtlsdr soapysdr libao
 
       - name: install frontend dependencies
         run: yarn install
