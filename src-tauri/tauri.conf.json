@@ -60,10 +60,12 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 600,
+        "height": 750,
         "resizable": true,
         "title": "RTL-SDR Radio",
-        "width": 800
+        "width": 1000,
+        "minHeight": 450,
+        "minWidth": 800
       }
     ]
   }
