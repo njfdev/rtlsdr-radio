@@ -126,7 +126,7 @@ export default function SavedStationsMenu({
                 </SelectGroup>
               </SelectContent>
             </Select>
-            <div className="h-full grid gap-2 overflow-y-scroll">
+            <div className="h-full flex flex-col gap-2 overflow-y-scroll">
               {sortedStations && sortedStations.length > 0 ? (
                 sortedStations?.map((station) => (
                   <SavedStationCard
