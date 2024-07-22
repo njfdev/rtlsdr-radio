@@ -14,7 +14,8 @@
       "all": false,
       "shell": {
         "sidecar": true,
-        "scope": [{ "name": "../build/bin/nrsc5", "sidecar": true }]
+        "scope": [{ "name": "../build/bin/nrsc5", "sidecar": true }],
+        "open": true
       }
     },
     "bundle": {

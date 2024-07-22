@@ -9,6 +9,7 @@ import { appWindow } from "@tauri-apps/api/window";
 import { useEffect, useState } from "react";
 import SaveStationsMenu from "@/components/SavedStationsMenu";
 import { areStationsEqual } from "@/lib/stationsStorage";
+import Link from "next/link";
 
 const isNrsc5Available =
   process.env.NEXT_PUBLIC_EXCLUDE_SIDECAR == "true" ? false : true;
@@ -75,18 +76,15 @@ export default function Home() {
           className="flex flex-col justify-start items-center align-middle mt-8"
         >
           <TabsList>
-            <TabsTrigger
-              disabled={!isNrsc5Available}
-              value={StationType.HDRadio.toString()}
-            >
+            <TabsTrigger value={StationType.HDRadio.toString()}>
               HD Radio
             </TabsTrigger>
             <TabsTrigger value={StationType.FMRadio.toString()}>
               FM Radio
             </TabsTrigger>
           </TabsList>
-          {isNrsc5Available && (
-            <TabsContent value={StationType.HDRadio.toString()}>
+          <TabsContent value={StationType.HDRadio.toString()}>
+            {isNrsc5Available ? (
               <Nrsc5Controls
                 currentStation={currentStation}
                 setCurrentStation={setCurrentStation}
@@ -95,8 +93,21 @@ export default function Home() {
                 isInUse={isSdrInUse}
                 setIsInUse={setIsSdrInUse}
               />
-            </TabsContent>
-          )}
+            ) : (
+              <div className="max-w-[32rem] text-center my-8 text-gray-400">
+                HD Radio is disabled in the precompiled version of RTL-SDR
+                Radio. Please{" "}
+                <Link
+                  className="text-blue-400 hover:underline"
+                  href="https://github.com/njfdev/rtlsdr-radio#compiling-from-source"
+                  target="_blank"
+                >
+                  build from source
+                </Link>{" "}
+                to enable HD Radio features.
+              </div>
+            )}
+          </TabsContent>
           <TabsContent value={StationType.FMRadio.toString()}>
             <RtlSdrControls
               currentStation={currentStation}
