@@ -189,7 +189,7 @@ export default function Nrsc5Controls({
 
   return (
     <div className="flex flex-col-reverse xl:flex-row-reverse xl:w-[48rem] w-[24rem] gap-4">
-      <div className="flex flex-col gap-4 items-center grow basis-0 justify-center align-middle w-full">
+      <div className="flex flex-col gap-2 items-center grow basis-0 justify-center align-middle w-full">
         <div className="grid grid-cols-1 grid-rows-1 relative w-full">
           <Tabs
             defaultValue="radioInfo"
@@ -367,7 +367,7 @@ export default function Nrsc5Controls({
             });
           }
         }}
-        className="grid gap-2 grow basis-0"
+        className="grid gap-2 grow basis-0 h-max"
       >
         <div className="grid w-full gap-1.5">
           <Label htmlFor="fm_freq_slider" className="flex">
