@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import os
+from pathlib import Path
 
 if (not os.getenv("NEXT_PUBLIC_EXCLUDE_SIDECAR") == "true"):
     if "win32" in sys.platform:
@@ -20,4 +21,12 @@ else:
     # decode the string
     rust_target_string = stdout.decode('utf-8').strip()
 
-    open("./build/bin/nrsc5-" + rust_target_string, 'w').close()
+    if (os.getenv("TAURI_PLATFORM") == "macos"):
+        if (os.getenv("TAURI_ARCH") == "aarch64"):
+            rust_target_string = "aarch64-apple-darwin"
+        elif (os.getenv("TAURI_ARCH") == "x86_64"):
+            rust_target_string = "x86_64-apple-darwin"
+
+    file = Path("./build/bin/nrsc5-" + rust_target_string)
+    file.parent.mkdir(parents=True, exist_ok=True)
+    file.write_bytes(b"")
