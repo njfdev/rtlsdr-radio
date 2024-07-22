@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { Label } from "./ui/label";
 
 export default function SavedStationsMenu({
   setRequestedStation,
@@ -92,6 +93,7 @@ export default function SavedStationsMenu({
             <CardTitle>Saved Stations</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2">
+            <Label htmlFor="saved-stations-sort">Sort</Label>
             <Select
               value={(
                 Object.keys(StationSortOption) as Array<
@@ -104,7 +106,7 @@ export default function SavedStationsMenu({
                 );
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger id="saved-stations-sort">
                 <SelectValue placeholder="Sort" />
               </SelectTrigger>
               <SelectContent>
