@@ -65,7 +65,7 @@ export default function Home() {
 
   return (
     <main className="flex h-screen w-screen gap-4">
-      <div className="flex align-middle justify-center p-12 w-full h-screen overflow-y-scroll">
+      <div className="flex align-middle justify-center p-12 w-full h-screen overflow-y-auto">
         <Tabs
           value={openTab}
           onValueChange={(value) => {
