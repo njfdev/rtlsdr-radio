@@ -167,6 +167,8 @@ function SavedStationCard({
   loadingStation: Station | undefined;
   updateRequestedStation: (station?: Station) => void;
 }) {
+  const [newTitle, setNewTitle] = useState(station.title);
+
   const isCurrentStationPlaying =
     isStationPlaying &&
     currentStation &&
@@ -179,12 +181,15 @@ function SavedStationCard({
         <div className="flex justify-between align-middle items-center gap-4">
           <CardTitle>
             <Input
-              value={station.title}
+              value={newTitle}
               className="text-lg"
               onChange={(e) => {
+                setNewTitle(e.target.value || "");
+              }}
+              onBlur={() => {
                 updateStation(station, {
                   ...station,
-                  title: e.target.value || "",
+                  title: newTitle,
                 });
               }}
             />
