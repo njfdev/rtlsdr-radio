@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Label } from "./ui/label";
+import { Input } from "./ui/input";
 
 export default function SavedStationsMenu({
   setRequestedStation,
@@ -174,9 +175,20 @@ function SavedStationCard({
 
   return (
     <Card>
-      <CardHeader className="pb-0">
-        <div className="flex justify-between align-middle">
-          <CardTitle className="text-lg">{station.title}</CardTitle>
+      <CardHeader className="pb-2">
+        <div className="flex justify-between align-middle items-center gap-4">
+          <CardTitle>
+            <Input
+              value={station.title}
+              className="text-lg"
+              onChange={(e) => {
+                updateStation(station, {
+                  ...station,
+                  title: e.target.value || "",
+                });
+              }}
+            />
+          </CardTitle>
           <Star
             size="22px"
             className={`transition-all ${
