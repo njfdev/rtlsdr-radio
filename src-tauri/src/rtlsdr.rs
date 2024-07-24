@@ -134,17 +134,7 @@ pub mod rtlsdr {
                                     Complex::from(0.0)
                                 }
                             });
-
-                            if stream_settings.stream_type == StreamType::FM {
-                                // demodulate fm signal
-                                let demodulator = blocks::modulation::FmDemod::<f32>::new(150000.0);
-                                demodulator.feed_from(&gain);
-                                filter1.feed_from(&demodulator);
-                            } else if stream_settings.stream_type == StreamType::AM {
-                                let demodulator = AmDemod::<f32>::new();
-                                demodulator.feed_from(&gain);
-                                filter1.feed_from(&demodulator);
-                            }
+                            filter1.feed_from(&gain);
 
                             // filter frequencies beyond normal human hearing range (20hz to 16 kHz)
                             let filter2 = blocks::filters::Filter::new_rectangular(|bin, freq| {
@@ -154,7 +144,17 @@ pub mod rtlsdr {
                                     Complex::from(0.0)
                                 }
                             });
-                            filter2.feed_from(&filter1);
+
+                            if stream_settings.stream_type == StreamType::FM {
+                                // demodulate fm signal
+                                let demodulator = blocks::modulation::FmDemod::<f32>::new(150000.0);
+                                demodulator.feed_from(&filter1);
+                                filter2.feed_from(&demodulator);
+                            } else if stream_settings.stream_type == StreamType::AM {
+                                let demodulator = AmDemod::<f32>::new();
+                                demodulator.feed_from(&filter1);
+                                filter2.feed_from(&demodulator);
+                            }
 
                             // downsample so the output device can play the audio
                             let downsample2 = blocks::Downsampler::<f32>::new(
