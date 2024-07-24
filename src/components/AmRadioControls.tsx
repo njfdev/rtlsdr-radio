@@ -24,7 +24,12 @@ export default function AmRadioControls() {
   };
 
   return (
-    <div>
+    <div className="flex flex-col items-center align-middle justify-center gap-4">
+      <span className="text-center text-amber-300">
+        RTL-SDRs often struggle with AM radio signals below 24 MHz (without an
+        upconvertor), resulting in significant static. Reception quality will
+        likely be poor.
+      </span>
       <Button onClick={() => start_stream()}>Start AM Stream</Button>
     </div>
   );
