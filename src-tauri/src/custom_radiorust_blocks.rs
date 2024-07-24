@@ -67,7 +67,7 @@ pub mod custom_radiorust_blocks {
                                 // apply the lowpass filter (easy way to demodulate am)
                                 let filtered_magnitude = filter.unwrap().run(magnitude.into());
                                 output_chunk.push(Complex {
-                                    re: Flt::from(filtered_magnitude).unwrap(),
+                                    re: Flt::from(magnitude).unwrap(),
                                     im: Flt::from(0.0).unwrap(),
                                 });
                             }

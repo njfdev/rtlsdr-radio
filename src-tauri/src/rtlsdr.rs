@@ -121,15 +121,9 @@ pub mod rtlsdr {
                                 blocks::Downsampler::<f32>::new(16384, 384000.0, required_bandwidth);
                             downsample1.feed_from(&freq_shifter);
 
-                            // add lowpass filter
-                            let filter1 = blocks::Filter::new(|_, freq| {
-                                if freq.abs() <= /*10000*/0.0 {
-                                    Complex::from(1.0)
-                                } else {
-                                    Complex::from(0.0)
-                                }
-                            });
-                            filter1.feed_from(&downsample1);
+                            // add gain
+                            let gain = blocks::GainControl::<f32>::new(10.0);
+                            gain.feed_from(&downsample1);
 
                             // filter frequencies beyond normal human hearing range (20hz to 16 kHz)
                             let filter2 = blocks::filters::Filter::new_rectangular(|bin, freq| {
@@ -143,24 +137,34 @@ pub mod rtlsdr {
                             if stream_settings.stream_type == StreamType::FM {
                                 // demodulate fm signal
                                 let demodulator = blocks::modulation::FmDemod::<f32>::new(150000.0);
-                                demodulator.feed_from(&filter1);
+                                demodulator.feed_from(&gain);
                                 filter2.feed_from(&demodulator);
                             } else if stream_settings.stream_type == StreamType::AM {
                                 let demodulator = AmDemod::<f32>::new();
-                                demodulator.feed_from(&filter1);
+                                demodulator.feed_from(&gain);
                                 filter2.feed_from(&demodulator);
                             }
+
+                            // add lowpass filter
+                            let filter1 = blocks::Filter::new(|_, freq| {
+                                if freq.abs() <= 15000.0 {
+                                    Complex::from(1.0)
+                                } else {
+                                    Complex::from(0.0)
+                                }
+                            });
+                            filter1.feed_from(&filter2);
 
                             // downsample so the output device can play the audio
                             let downsample2 = blocks::Downsampler::<f32>::new(
                                 4096,
                                 stream_settings.sample_rate,
-                                2.0 * 20000.0,
+                                2.0 * (required_bandwidth / 10.0),
                             );
-                            downsample2.feed_from(&filter2);
+                            downsample2.feed_from(&filter1);
 
                             // add a volume block
-                            let volume = blocks::GainControl::<f32>::new(stream_settings.volume);
+                            let volume = blocks::GainControl::<f32>::new(1.0);
                             volume.feed_from(&downsample2);
 
                             // add a buffer
