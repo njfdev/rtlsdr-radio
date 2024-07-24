@@ -212,5 +212,23 @@ pub mod rtlsdr {
         pub fn is_playing(&self) -> bool {
             return self.0.clone().lock().unwrap().radio_stream_thread.is_some();
         }
+
+        pub fn send_message(
+            stream_settings: &StreamSettings,
+            window: Window,
+            event: &str,
+            payload: &str,
+        ) {
+            let prefix: &str;
+
+            match stream_settings.stream_type {
+                StreamType::AM => prefix = "am",
+                StreamType::FM => prefix = "fm",
+            }
+
+            window
+                .emit(format!("{}_{}", prefix, event).as_str(), Some(payload))
+                .expect("failed to emit event");
+        }
     }
 }
