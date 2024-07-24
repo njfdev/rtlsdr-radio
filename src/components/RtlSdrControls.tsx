@@ -132,10 +132,12 @@ export default function RtlSdrControls({
   };
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
+    let fixed_payload = event.payload.replace("fm_", "").replace("am_", "");
+
     setStatus(
       RtlSdrStatus[
         Object.keys(RtlSdrStatus)[
-          Object.values(RtlSdrStatus).indexOf(event.payload as RtlSdrStatus)
+          Object.values(RtlSdrStatus).indexOf(fixed_payload as RtlSdrStatus)
         ] as keyof typeof RtlSdrStatus
       ]
     );

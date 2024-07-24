@@ -1,5 +1,6 @@
 pub mod rtlsdr {
     use std::{
+        fmt::format,
         sync::{
             atomic::{AtomicBool, Ordering},
             Arc, Mutex,
@@ -177,10 +178,18 @@ pub mod rtlsdr {
                                 AudioPlayer::new(stream_settings.sample_rate, None).unwrap();
                             playback.feed_from(&buffer);
 
+                            let prefix: &str;
+
+                            if stream_settings.stream_type == StreamType::FM {
+                                prefix = "fm";
+                            } else {
+                                prefix = "am";
+                            }
+
                             while !shutdown_flag.load(Ordering::SeqCst) {
                                 // notify frontend that audio is playing
                                 window
-                                    .emit("rtlsdr_status", "running")
+                                    .emit("rtlsdr_status", format!("{}_{}", prefix, "running"))
                                     .expect("failed to emit event");
 
                                 time::sleep(Duration::from_millis(250)).await;
@@ -211,24 +220,6 @@ pub mod rtlsdr {
 
         pub fn is_playing(&self) -> bool {
             return self.0.clone().lock().unwrap().radio_stream_thread.is_some();
-        }
-
-        pub fn send_message(
-            stream_settings: &StreamSettings,
-            window: Window,
-            event: &str,
-            payload: &str,
-        ) {
-            let prefix: &str;
-
-            match stream_settings.stream_type {
-                StreamType::AM => prefix = "am",
-                StreamType::FM => prefix = "fm",
-            }
-
-            window
-                .emit(format!("{}_{}", prefix, event).as_str(), Some(payload))
-                .expect("failed to emit event");
         }
     }
 }

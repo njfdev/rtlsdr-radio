@@ -30,7 +30,11 @@ export default function Home() {
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
     if (event.payload != "stopped" && event.payload != "pausing") {
-      //setOpenTab(StationType.FMRadio.toString());
+      if (event.payload.startsWith("fm")) {
+        setOpenTab(StationType.FMRadio.toString());
+      } else if (event.payload.startsWith("am")) {
+        setOpenTab(StationType.AMRadio.toString());
+      }
     }
   });
 
