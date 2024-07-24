@@ -44,6 +44,7 @@ export interface Station {
 export interface StreamSettings {
   freq: number;
   volume: number;
+  gain: number;
   sample_rate: number;
   stream_type: StreamType;
 }

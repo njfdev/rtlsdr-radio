@@ -34,6 +34,7 @@ pub mod rtlsdr {
     pub struct StreamSettings {
         freq: f64,
         volume: f64,
+        gain: f64,
         sample_rate: f64,
         stream_type: StreamType,
     }
@@ -122,13 +123,13 @@ pub mod rtlsdr {
                             downsample1.feed_from(&freq_shifter);
 
                             // add gain
-                            let gain = blocks::GainControl::<f32>::new(10.0);
+                            let gain = blocks::GainControl::<f32>::new(stream_settings.gain);
                             gain.feed_from(&downsample1);
 
-                            // filter frequencies beyond normal human hearing range (20hz to 16 kHz)
-                            let filter2 = blocks::filters::Filter::new_rectangular(|bin, freq| {
-                                if bin.abs() >= 1 && freq.abs() >= 20.0 && freq.abs() <= 16000.0 {
-                                    blocks::filters::deemphasis_factor(50e-6, freq)
+                            // add lowpass filter
+                            let filter1 = blocks::Filter::new(|_, freq| {
+                                if freq.abs() <= 100000.0 {
+                                    Complex::from(1.0)
                                 } else {
                                     Complex::from(0.0)
                                 }
@@ -138,22 +139,22 @@ pub mod rtlsdr {
                                 // demodulate fm signal
                                 let demodulator = blocks::modulation::FmDemod::<f32>::new(150000.0);
                                 demodulator.feed_from(&gain);
-                                filter2.feed_from(&demodulator);
+                                filter1.feed_from(&demodulator);
                             } else if stream_settings.stream_type == StreamType::AM {
                                 let demodulator = AmDemod::<f32>::new();
                                 demodulator.feed_from(&gain);
-                                filter2.feed_from(&demodulator);
+                                filter1.feed_from(&demodulator);
                             }
 
-                            // add lowpass filter
-                            let filter1 = blocks::Filter::new(|_, freq| {
-                                if freq.abs() <= 15000.0 {
-                                    Complex::from(1.0)
+                            // filter frequencies beyond normal human hearing range (20hz to 16 kHz)
+                            let filter2 = blocks::filters::Filter::new_rectangular(|bin, freq| {
+                                if bin.abs() >= 1 && freq.abs() >= 20.0 && freq.abs() <= 16000.0 {
+                                    blocks::filters::deemphasis_factor(50e-6, freq)
                                 } else {
                                     Complex::from(0.0)
                                 }
                             });
-                            filter1.feed_from(&filter2);
+                            filter2.feed_from(&filter1);
 
                             // downsample so the output device can play the audio
                             let downsample2 = blocks::Downsampler::<f32>::new(
@@ -161,10 +162,10 @@ pub mod rtlsdr {
                                 stream_settings.sample_rate,
                                 2.0 * (required_bandwidth / 10.0),
                             );
-                            downsample2.feed_from(&filter1);
+                            downsample2.feed_from(&filter2);
 
                             // add a volume block
-                            let volume = blocks::GainControl::<f32>::new(1.0);
+                            let volume = blocks::GainControl::<f32>::new(stream_settings.volume);
                             volume.feed_from(&downsample2);
 
                             // add a buffer

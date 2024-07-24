@@ -50,6 +50,7 @@ export default function RtlSdrControls({
   const [streamSettings, setStreamSettings] = useState<StreamSettings>({
     freq: 101.5,
     volume: parseFloat(localStorage.getItem(volumeStorageName) || "0.5"),
+    gain: 1.0,
     sample_rate: parseFloat(localStorage.getItem(srStorageName) || "48000.0"),
     stream_type: StreamType.FM,
   });

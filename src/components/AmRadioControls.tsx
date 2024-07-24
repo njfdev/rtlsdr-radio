@@ -11,7 +11,8 @@ import {
 export default function AmRadioControls() {
   const [streamSettings, setStreamSettings] = useState<StreamSettings>({
     freq: 680,
-    volume: parseFloat(localStorage.getItem(volumeStorageName) || "0.5"),
+    volume: parseFloat(localStorage.getItem(volumeStorageName) || "1.0"),
+    gain: 10.0,
     sample_rate: parseFloat(localStorage.getItem(srStorageName) || "48000.0"),
     stream_type: StreamType.AM,
   });
