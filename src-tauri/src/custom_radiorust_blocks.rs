@@ -40,7 +40,7 @@ pub mod custom_radiorust_blocks {
                             sample_rate,
                             chunk: input_chunk,
                         } => {
-                            // if a lowpass filter isn't already create, create one with sample_rate info
+                            // if a lowpass filter isn't already created, create one with sample_rate info
                             if coeffs.is_none() {
                                 // create a lowpass filter with biquad
                                 // no AM broadcast should have frequencies higher than 15khz
@@ -55,6 +55,7 @@ pub mod custom_radiorust_blocks {
                                     .unwrap(),
                                 );
                                 filter = Some(DirectForm1::<f64>::new(coeffs.unwrap()));
+                                println!("Filter coefficients set: {:?}", coeffs);
                             }
 
                             let mut output_chunk = buf_pool.get_with_capacity(input_chunk.len());
@@ -69,6 +70,11 @@ pub mod custom_radiorust_blocks {
                                     re: Flt::from(filtered_magnitude).unwrap(),
                                     im: Flt::from(0.0).unwrap(),
                                 });
+                            }
+
+                            // Print some samples for debugging
+                            for i in 0..10 {
+                                //println!("Output sample {}: {:?}", i, output_chunk[i]);
                             }
 
                             let Ok(()) = sender

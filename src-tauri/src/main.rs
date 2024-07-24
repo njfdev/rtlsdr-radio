@@ -25,8 +25,8 @@ async fn main() {
         .invoke_handler(tauri::generate_handler![
             start_nrsc5,
             stop_nrsc5,
-            start_fm_stream,
-            stop_fm_stream
+            start_stream,
+            stop_stream
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -46,7 +46,7 @@ fn stop_nrsc5(window: Window, state: State<AppState>) {
 }
 
 #[tauri::command]
-fn start_fm_stream(window: Window, state: State<AppState>, stream_settings: StreamSettings) {
+fn start_stream(window: Window, state: State<AppState>, stream_settings: StreamSettings) {
     if state.rtl_sdr_state.lock().unwrap().is_playing() {
         return;
     };
@@ -58,7 +58,7 @@ fn start_fm_stream(window: Window, state: State<AppState>, stream_settings: Stre
 }
 
 #[tauri::command]
-async fn stop_fm_stream(window: Window, state: State<'_, AppState>) -> Result<String, ()> {
+async fn stop_stream(window: Window, state: State<'_, AppState>) -> Result<String, ()> {
     let rtlsdr_state_clone = state.rtl_sdr_state.clone();
 
     tokio::task::spawn_blocking(move || {

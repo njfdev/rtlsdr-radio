@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import SaveStationsMenu from "@/components/SavedStationsMenu";
 import { areStationsEqual } from "@/lib/stationsStorage";
 import Link from "next/link";
+import AmRadioControls from "@/components/AmRadioControls";
 
 const isNrsc5Available =
   process.env.NEXT_PUBLIC_EXCLUDE_SIDECAR == "true" ? false : true;
@@ -30,7 +31,7 @@ export default function Home() {
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
     if (event.payload != "stopped" && event.payload != "pausing") {
-      setOpenTab(StationType.FMRadio.toString());
+      //setOpenTab(StationType.FMRadio.toString());
     }
   });
 
@@ -56,10 +57,13 @@ export default function Home() {
     )
       return;
 
+    // TODO: Optimize this by put in for loop
     if (requestedStation.type == StationType.HDRadio) {
       setOpenTab(StationType.HDRadio.toString());
     } else if (requestedStation.type == StationType.FMRadio) {
       setOpenTab(StationType.FMRadio.toString());
+    } else if (requestedStation.type == StationType.AMRadio) {
+      setOpenTab(StationType.AMRadio.toString());
     }
   }, [requestedStation, isSdrInUse, currentStation]);
 
@@ -81,6 +85,9 @@ export default function Home() {
             </TabsTrigger>
             <TabsTrigger value={StationType.FMRadio.toString()}>
               FM Radio
+            </TabsTrigger>
+            <TabsTrigger value={StationType.AMRadio.toString()}>
+              AM Radio
             </TabsTrigger>
           </TabsList>
           <TabsContent value={StationType.HDRadio.toString()}>
@@ -117,6 +124,9 @@ export default function Home() {
               isInUse={isSdrInUse}
               setIsInUse={setIsSdrInUse}
             />
+          </TabsContent>
+          <TabsContent value={StationType.AMRadio.toString()}>
+            <AmRadioControls />
           </TabsContent>
         </Tabs>
       </div>

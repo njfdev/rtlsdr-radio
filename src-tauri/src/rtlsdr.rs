@@ -7,6 +7,7 @@ pub mod rtlsdr {
         time::Duration,
     };
 
+    use blocks::modulation::FmDemod;
     use radiorust::{
         blocks::io::{audio::cpal::AudioPlayer, rf},
         prelude::*,
@@ -14,6 +15,14 @@ pub mod rtlsdr {
     use soapysdr::Direction;
     use tauri::{async_runtime, Window};
     use tokio::{self, time};
+
+    use crate::custom_radiorust_blocks::custom_radiorust_blocks::AmDemod;
+
+    #[derive(serde::Deserialize, PartialEq)]
+    pub enum StreamType {
+        FM = 0,
+        AM = 1,
+    }
 
     pub struct RtlSdrState(Arc<Mutex<RtlSdrData>>);
     pub struct RtlSdrData {
@@ -23,9 +32,10 @@ pub mod rtlsdr {
 
     #[derive(serde::Deserialize)]
     pub struct StreamSettings {
-        fm_freq: f64,
+        freq: f64,
         volume: f64,
         sample_rate: f64,
+        stream_type: StreamType,
     }
 
     impl RtlSdrState {
@@ -41,6 +51,16 @@ pub mod rtlsdr {
             let rtlsdr_state_clone = rtlsdr_state.clone();
 
             let shutdown_flag = rtlsdr_state.lock().unwrap().shutdown_flag.clone();
+
+            // set defaults for FM Radio
+            let mut freq_mul: f64 = 1_000_000.0;
+            let mut required_bandwidth: f64 = 200_000.0;
+
+            // if AM Radio, use KHz instead
+            if stream_settings.stream_type == StreamType::AM {
+                freq_mul = 1_000.0;
+                required_bandwidth = 10_000.0;
+            }
 
             rtlsdr_state.lock().unwrap().radio_stream_thread = Some(async_runtime::spawn_blocking(
                 move || {
@@ -71,13 +91,21 @@ pub mod rtlsdr {
                             let _ = rtlsdr_dev.set_sample_rate(Direction::Rx, 0, sample_rate);
 
                             // set center frequency
-                            let sdr_freq = stream_settings.fm_freq * 1_000_000.0;
+                            let sdr_freq = stream_settings.freq * freq_mul;
+                            println!("{}hz", sdr_freq);
                             rtlsdr_dev
                                 .set_frequency(Direction::Rx, 0, sdr_freq, "")
                                 .expect("Failed to set frequency");
 
                             // set the bandwidth
                             let _ = rtlsdr_dev.set_bandwidth(Direction::Rx, 0, 1.024e6);
+
+                            // turn on direct sampling mode if in low frequencies
+                            if stream_settings.stream_type == StreamType::AM {
+                                // 0 -> disabled, 1 -> I-branch direct sampling, 2 -> Q-branch direct sampling
+                                let _ = rtlsdr_dev.write_setting("direct_samp", "2");
+                                let _ = rtlsdr_dev.write_setting("digital_agc", "true");
+                            }
 
                             // start sdr rx stream
                             let rx_stream = rtlsdr_dev.rx_stream::<Complex<f32>>(&[0]).unwrap();
@@ -90,22 +118,18 @@ pub mod rtlsdr {
 
                             // add downsampler
                             let downsample1 =
-                                blocks::Downsampler::<f32>::new(16384, 384000.0, 200000.0);
+                                blocks::Downsampler::<f32>::new(16384, 384000.0, required_bandwidth);
                             downsample1.feed_from(&freq_shifter);
 
                             // add lowpass filter
                             let filter1 = blocks::Filter::new(|_, freq| {
-                                if freq.abs() <= 100000.0 {
+                                if freq.abs() <= /*10000*/0.0 {
                                     Complex::from(1.0)
                                 } else {
                                     Complex::from(0.0)
                                 }
                             });
                             filter1.feed_from(&downsample1);
-
-                            // demodulate fm signal
-                            let demodulator = blocks::modulation::FmDemod::<f32>::new(150000.0);
-                            demodulator.feed_from(&filter1);
 
                             // filter frequencies beyond normal human hearing range (20hz to 16 kHz)
                             let filter2 = blocks::filters::Filter::new_rectangular(|bin, freq| {
@@ -115,7 +139,17 @@ pub mod rtlsdr {
                                     Complex::from(0.0)
                                 }
                             });
-                            filter2.feed_from(&demodulator);
+
+                            if stream_settings.stream_type == StreamType::FM {
+                                // demodulate fm signal
+                                let demodulator = blocks::modulation::FmDemod::<f32>::new(150000.0);
+                                demodulator.feed_from(&filter1);
+                                filter2.feed_from(&demodulator);
+                            } else if stream_settings.stream_type == StreamType::AM {
+                                let demodulator = AmDemod::<f32>::new();
+                                demodulator.feed_from(&filter1);
+                                filter2.feed_from(&demodulator);
+                            }
 
                             // downsample so the output device can play the audio
                             let downsample2 = blocks::Downsampler::<f32>::new(

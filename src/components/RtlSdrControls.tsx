@@ -10,7 +10,15 @@ import {
   removeStation,
   saveStation,
 } from "@/lib/stationsStorage";
-import { Station, StationDetails, StationType } from "@/lib/types";
+import {
+  srStorageName,
+  Station,
+  StationDetails,
+  StationType,
+  StreamSettings,
+  StreamType,
+  volumeStorageName,
+} from "@/lib/types";
 import { invoke } from "@tauri-apps/api";
 import { appWindow } from "@tauri-apps/api/window";
 import { Loader2 } from "lucide-react";
@@ -22,15 +30,6 @@ enum RtlSdrStatus {
   Pausing = "pausing",
   Running = "running",
 }
-
-interface StreamSettings {
-  fm_freq: number;
-  volume: number;
-  sample_rate: number;
-}
-
-const srStorageName = "fm_radio_sample_rate";
-const volumeStorageName = "fm_radio_volume";
 
 export default function RtlSdrControls({
   currentStation,
@@ -49,9 +48,10 @@ export default function RtlSdrControls({
 }) {
   const [status, setStatus] = useState(RtlSdrStatus.Stopped);
   const [streamSettings, setStreamSettings] = useState<StreamSettings>({
-    fm_freq: 101.5,
+    freq: 101.5,
     volume: parseFloat(localStorage.getItem(volumeStorageName) || "0.5"),
     sample_rate: parseFloat(localStorage.getItem(srStorageName) || "48000.0"),
+    stream_type: StreamType.FM,
   });
   const [isProcessingRequest, setIsProcessingRequest] = useState(false);
   const [error, setError] = useState("");
@@ -59,7 +59,7 @@ export default function RtlSdrControls({
   const [isSaved, setIsSaved] = useState(
     isStationSaved({
       type: StationType.FMRadio,
-      frequency: streamSettings.fm_freq,
+      frequency: streamSettings.freq,
     })
   );
 
@@ -91,7 +91,7 @@ export default function RtlSdrControls({
         setIsInUse(true);
         await setStreamSettings((old) => ({
           ...old,
-          fm_freq: requestedStation.frequency,
+          freq: requestedStation.frequency,
         }));
         await start_stream();
         setIsProcessingRequest(false);
@@ -108,19 +108,19 @@ export default function RtlSdrControls({
   const start_stream = async () => {
     setIsInUse(true);
     setStatus(RtlSdrStatus.Starting);
-    await invoke<string>("start_fm_stream", {
+    await invoke<string>("start_stream", {
       streamSettings,
     });
     setError("");
     setCurrentStation({
       type: StationType.FMRadio,
-      frequency: streamSettings.fm_freq,
+      frequency: streamSettings.freq,
       channel: undefined,
     });
   };
   const stop_stream = async () => {
     setStatus(RtlSdrStatus.Pausing);
-    await invoke<string>("stop_fm_stream", {});
+    await invoke<string>("stop_stream", {});
     await setIsInUse(false);
     setCurrentStation(undefined);
   };
@@ -163,7 +163,7 @@ export default function RtlSdrControls({
         if (status == RtlSdrStatus.Stopped) {
           setRequestedStation({
             type: StationType.FMRadio,
-            frequency: streamSettings.fm_freq,
+            frequency: streamSettings.freq,
           });
         }
       }}
@@ -176,11 +176,11 @@ export default function RtlSdrControls({
           min={88.1}
           max={107.9}
           placeholder="#"
-          value={streamSettings.fm_freq}
+          value={streamSettings.freq}
           onChange={(e) =>
             setStreamSettings((old) => ({
               ...old,
-              fm_freq: parseFloat(e.target.value),
+              freq: parseFloat(e.target.value),
             }))
           }
         />
@@ -251,8 +251,8 @@ export default function RtlSdrControls({
           onClick={async () => {
             let stationData: StationDetails = {
               type: StationType.FMRadio,
-              title: `FM Radio: ${streamSettings.fm_freq}`,
-              frequency: streamSettings.fm_freq,
+              title: `FM Radio: ${streamSettings.freq}`,
+              frequency: streamSettings.freq,
               isFavorite: false,
             };
 

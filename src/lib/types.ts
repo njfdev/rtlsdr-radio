@@ -1,3 +1,6 @@
+export const srStorageName = "fm_radio_sample_rate";
+export const volumeStorageName = "fm_radio_volume";
+
 export enum StationSavingState {
   Idle,
   Saving,
@@ -5,8 +8,14 @@ export enum StationSavingState {
 }
 
 export enum StationType {
-  HDRadio = 0,
-  FMRadio = 1,
+  HDRadio,
+  FMRadio,
+  AMRadio,
+}
+
+export enum StreamType {
+  FM = "FM",
+  AM = "AM",
 }
 
 export enum StationSortOption {
@@ -30,4 +39,11 @@ export interface Station {
   type: StationType;
   frequency: number;
   channel?: number;
+}
+
+export interface StreamSettings {
+  freq: number;
+  volume: number;
+  sample_rate: number;
+  stream_type: StreamType;
 }
