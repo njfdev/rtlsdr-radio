@@ -218,6 +218,8 @@ function SavedStationCard({
               ? "before:bg-purple-500"
               : station.type == StationType.FMRadio
               ? "before:bg-blue-400"
+              : station.type == StationType.AMRadio
+              ? "before:bg-orange-300"
               : "before:bg-gray-400"
           } before:rounded-full before:mr-2`}
         >
@@ -225,6 +227,8 @@ function SavedStationCard({
             ? "HD "
             : station.type == StationType.FMRadio
             ? "FM "
+            : station.type == StationType.AMRadio
+            ? "AM "
             : ""}
           {station.frequency}
         </Badge>

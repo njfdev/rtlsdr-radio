@@ -8,7 +8,7 @@ export enum StationSavingState {
 }
 
 export enum StationType {
-  HDRadio,
+  HDRadio = 0,
   FMRadio,
   AMRadio,
 }

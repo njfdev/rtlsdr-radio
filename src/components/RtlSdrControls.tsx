@@ -263,7 +263,7 @@ export default function RtlSdrControls({
           variant={isSaved ? "secondary" : "default"}
           onClick={async () => {
             let stationData: StationDetails = {
-              type: StationType.FMRadio,
+              type: currentStationType,
               title: `${streamType.valueOf()} Radio: ${streamSettings.freq}`,
               frequency: streamSettings.freq,
               isFavorite: false,
