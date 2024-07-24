@@ -4,13 +4,12 @@ import Nrsc5Controls from "@/components/Nrsc5Controls";
 import RtlSdrControls from "@/components/RtlSdrControls";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Station, StationDetails, StationType } from "@/lib/types";
+import { Station, StationDetails, StationType, StreamType } from "@/lib/types";
 import { appWindow } from "@tauri-apps/api/window";
 import { useEffect, useState } from "react";
 import SaveStationsMenu from "@/components/SavedStationsMenu";
 import { areStationsEqual } from "@/lib/stationsStorage";
 import Link from "next/link";
-import AmRadioControls from "@/components/AmRadioControls";
 
 const isNrsc5Available =
   process.env.NEXT_PUBLIC_EXCLUDE_SIDECAR == "true" ? false : true;
@@ -123,10 +122,19 @@ export default function Home() {
               setRequestedStation={setRequestedStation}
               isInUse={isSdrInUse}
               setIsInUse={setIsSdrInUse}
+              streamType={StreamType.FM}
             />
           </TabsContent>
           <TabsContent value={StationType.AMRadio.toString()}>
-            <AmRadioControls />
+            <RtlSdrControls
+              currentStation={currentStation}
+              setCurrentStation={setCurrentStation}
+              requestedStation={requestedStation}
+              setRequestedStation={setRequestedStation}
+              isInUse={isSdrInUse}
+              setIsInUse={setIsSdrInUse}
+              streamType={StreamType.AM}
+            />
           </TabsContent>
         </Tabs>
       </div>

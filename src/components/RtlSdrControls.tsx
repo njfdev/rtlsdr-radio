@@ -38,6 +38,7 @@ export default function RtlSdrControls({
   setRequestedStation,
   isInUse,
   setIsInUse,
+  streamType,
 }: {
   currentStation: Station | undefined;
   setCurrentStation: Dispatch<SetStateAction<Station | undefined>>;
@@ -45,21 +46,25 @@ export default function RtlSdrControls({
   setRequestedStation: Dispatch<SetStateAction<Station | undefined>>;
   isInUse: boolean;
   setIsInUse: Dispatch<SetStateAction<boolean>>;
+  streamType: StreamType;
 }) {
+  let currentStationType =
+    streamType == StreamType.FM ? StationType.FMRadio : StationType.AMRadio;
+
   const [status, setStatus] = useState(RtlSdrStatus.Stopped);
   const [streamSettings, setStreamSettings] = useState<StreamSettings>({
-    freq: 101.5,
+    freq: streamType == StreamType.FM ? 101.5 : 850,
     volume: parseFloat(localStorage.getItem(volumeStorageName) || "0.5"),
-    gain: 1.0,
+    gain: streamType == StreamType.FM ? 1.0 : 25.0,
     sample_rate: parseFloat(localStorage.getItem(srStorageName) || "48000.0"),
-    stream_type: StreamType.FM,
+    stream_type: streamType,
   });
   const [isProcessingRequest, setIsProcessingRequest] = useState(false);
   const [error, setError] = useState("");
 
   const [isSaved, setIsSaved] = useState(
     isStationSaved({
-      type: StationType.FMRadio,
+      type: currentStationType,
       frequency: streamSettings.freq,
     })
   );
@@ -80,7 +85,7 @@ export default function RtlSdrControls({
     (async () => {
       if (
         requestedStation &&
-        requestedStation.type == StationType.FMRadio &&
+        requestedStation.type == currentStationType &&
         !areStationsEqual(requestedStation, currentStation)
       ) {
         await setIsProcessingRequest(true);
@@ -114,7 +119,7 @@ export default function RtlSdrControls({
     });
     setError("");
     setCurrentStation({
-      type: StationType.FMRadio,
+      type: currentStationType,
       frequency: streamSettings.freq,
       channel: undefined,
     });
@@ -163,19 +168,26 @@ export default function RtlSdrControls({
         e.preventDefault();
         if (status == RtlSdrStatus.Stopped) {
           setRequestedStation({
-            type: StationType.FMRadio,
+            type: currentStationType,
             frequency: streamSettings.freq,
           });
         }
       }}
     >
+      {streamType == StreamType.AM && (
+        <span className="text-center text-amber-300">
+          RTL-SDRs often struggle with AM radio signals below 24 MHz (without an
+          upconvertor), resulting in significant static. Reception quality will
+          likely be poor.
+        </span>
+      )}
       <div className="grid w-full gap-1.5">
-        <Label htmlFor="fm_freq_slider">Fm Station</Label>
+        <Label htmlFor="freq_slider">{streamType.valueOf()} Station</Label>
         <Input
           type="number"
-          step={0.2}
-          min={88.1}
-          max={107.9}
+          step={streamType == StreamType.FM ? 0.2 : 10}
+          min={streamType == StreamType.FM ? 88.1 : 540}
+          max={streamType == StreamType.FM ? 107.9 : 1700}
           placeholder="#"
           value={streamSettings.freq}
           onChange={(e) =>
@@ -229,7 +241,7 @@ export default function RtlSdrControls({
         }
       >
         {status == RtlSdrStatus.Running ? (
-          "Stop FM Stream"
+          `Stop ${streamType.valueOf()} Stream`
         ) : status == RtlSdrStatus.Starting ? (
           <>
             <Loader2 className="animate-spin mr-2" /> Starting...
@@ -239,7 +251,7 @@ export default function RtlSdrControls({
             <Loader2 className="animate-spin mr-2" /> Stopping...
           </>
         ) : (
-          "Start FM Stream"
+          `Start ${streamType.valueOf()} Stream`
         )}
       </Button>
       {error.length > 0 && (
@@ -252,7 +264,7 @@ export default function RtlSdrControls({
           onClick={async () => {
             let stationData: StationDetails = {
               type: StationType.FMRadio,
-              title: `FM Radio: ${streamSettings.freq}`,
+              title: `${streamType.valueOf()} Radio: ${streamSettings.freq}`,
               frequency: streamSettings.freq,
               isFavorite: false,
             };
