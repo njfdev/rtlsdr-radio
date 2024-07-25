@@ -8,8 +8,12 @@ pub mod custom_radiorust_blocks {
     };
 
     use biquad::{
-        Biquad, Coefficients, DirectForm1, DirectForm2Transposed, ToHertz, Type, Q_BUTTERWORTH_F32,
-        Q_BUTTERWORTH_F64,
+        self, Biquad, Coefficients, DirectForm1, DirectForm2Transposed, ToHertz, Type,
+        Q_BUTTERWORTH_F32, Q_BUTTERWORTH_F64,
+    };
+    use fundsp::{
+        hacker::{self, AudioNode, BiquadCoefs, BufferMut, BufferRef},
+        F32x,
     };
     use hound::{WavSpec, WavWriter};
     use radiorust::{
@@ -115,8 +119,9 @@ pub mod custom_radiorust_blocks {
     }
 
     // constants for RDBS Decoding
-    const RDBS_CARRIER_FREQ: f64 = 57_000.0;
-    const RDBS_CLOCK_FREQ: f64 = RDBS_CARRIER_FREQ / 48.0; // as defined in the RDS spec
+    const RBDS_CARRIER_FREQ: f64 = 57_000.0;
+    const RBDS_BANDWIDTH: f64 = 4_000.0;
+    const RDBS_CLOCK_FREQ: f64 = RBDS_CARRIER_FREQ / 48.0; // as defined in the RDS spec
 
     pub struct RbdsDecode<Flt> {
         receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
@@ -136,7 +141,8 @@ pub mod custom_radiorust_blocks {
             let mut wav_writer: Arc<Mutex<Option<WavWriter<BufWriter<fs::File>>>>> =
                 Arc::new(Mutex::new(None));
 
-            let mut bandpass_filter: Option<DirectForm2Transposed<f64>> = None;
+            let mut bandpass_filter: Arc<Mutex<Option<hacker::Biquad<f64>>>> =
+                Arc::new(Mutex::new(None));
 
             let mut lowpass_filter: Option<DirectForm1<f64>> = None;
 
@@ -151,22 +157,29 @@ pub mod custom_radiorust_blocks {
                             chunk: input_chunk,
                         } => {
                             // Step 1: Band-Pass Filter to "select" RBDS sub-carrier
-                            if bandpass_filter.is_none() {
-                                let filter_coefficients = Coefficients::<f64>::from_params(
-                                    Type::BandPass,
-                                    ToHertz::hz(sample_rate),
-                                    ToHertz::hz(RDBS_CARRIER_FREQ),
-                                    Q_BUTTERWORTH_F64,
+                            if bandpass_filter.clone().lock().unwrap().is_none() {
+                                let filter_coefficients = BiquadCoefs::resonator(
+                                    sample_rate,
+                                    RBDS_CARRIER_FREQ,
+                                    RBDS_BANDWIDTH,
                                 );
-                                bandpass_filter = Some(DirectForm2Transposed::<f64>::new(
-                                    filter_coefficients.unwrap(),
-                                ));
+                                *(bandpass_filter.lock().unwrap()) =
+                                    Some(hacker::Biquad::with_coefs(filter_coefficients));
                             }
                             // NOTE: The input_chunk should already be FM demodulated, so the imaginary part of the Complex Number is 0 and can be ignored
-                            let bandpassed_samples: Vec<f64> = input_chunk
+                            let mut bandpassed_samples_buffer = BufferMut::empty();
+                            let mut processed_input = input_chunk
                                 .iter()
-                                .map(|&sample| bandpass_filter.unwrap().run(sample.re.into()))
-                                .collect();
+                                .map(|&sample| F32x::splat(sample.re.to_f32().unwrap()))
+                                .collect::<Vec<F32x>>();
+                            let mut input_mut_slice = processed_input.as_mut_slice();
+                            let mut input_buffer = BufferMut::new(&mut input_mut_slice);
+                            bandpass_filter.lock().unwrap().as_mut().unwrap().process(
+                                input_chunk.len(),
+                                &input_buffer.buffer_ref(),
+                                &mut bandpassed_samples_buffer,
+                            );
+                            let bandpassed_samples = bandpassed_samples_buffer.channel_f32_mut(0);
 
                             // Step 2: Downmix to baseband
                             let downmixed_samples: Vec<f64> = bandpassed_samples
@@ -174,7 +187,7 @@ pub mod custom_radiorust_blocks {
                                 .enumerate()
                                 .map(|(i, &sample)| {
                                     let t = (i as f64 / sample_rate);
-                                    sample * (2.0 * PI * RDBS_CARRIER_FREQ * t).cos()
+                                    (sample as f64) * (2.0 * PI * RBDS_CARRIER_FREQ * t).cos()
                                 })
                                 .collect();
 
@@ -183,7 +196,7 @@ pub mod custom_radiorust_blocks {
                                 let filter_coefficients = Coefficients::<f64>::from_params(
                                     Type::LowPass,
                                     ToHertz::hz(sample_rate),
-                                    ToHertz::hz(RDBS_CARRIER_FREQ),
+                                    ToHertz::hz(RBDS_CARRIER_FREQ),
                                     Q_BUTTERWORTH_F64,
                                 );
                                 lowpass_filter =
@@ -205,13 +218,13 @@ pub mod custom_radiorust_blocks {
                                 *(wav_writer.lock().unwrap()) =
                                     Some(WavWriter::create("rbds_output.wav", wav_spec).unwrap());
                             }
-                            for sample in lowpassed_samples {
+                            for sample in bandpassed_samples {
                                 wav_writer
                                     .lock()
                                     .unwrap()
                                     .as_mut()
                                     .unwrap()
-                                    .write_sample(sample as f32)
+                                    .write_sample(sample.clone())
                                     .unwrap();
                             }
 
