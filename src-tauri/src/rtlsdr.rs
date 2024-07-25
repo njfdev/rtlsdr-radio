@@ -13,11 +13,12 @@ pub mod rtlsdr {
         blocks::io::{audio::cpal::AudioPlayer, rf},
         prelude::*,
     };
+    use rustfft::num_complex::ComplexFloat;
     use soapysdr::Direction;
     use tauri::{async_runtime, Window};
     use tokio::{self, time};
 
-    use crate::custom_radiorust_blocks::custom_radiorust_blocks::{AmDemod, RbdsDecode};
+    use crate::custom_radiorust_blocks::custom_radiorust_blocks::{AmDemod, DownMixer, RbdsDecode};
 
     #[derive(serde::Deserialize, PartialEq)]
     pub enum StreamType {
@@ -152,9 +153,33 @@ pub mod rtlsdr {
                                 demodulator.feed_from(&filter1);
                                 filter2.feed_from(&demodulator);
 
+                                // Step 1. apply bandpass signal to 57Khz with bandwidth of 4KHz for RBDS decoding
+                                let rbds_bandpass_filter = blocks::Filter::new(|_, freq| {
+                                    if freq.abs() >= 57_000.0 && freq.abs() <= 59_000.0 {
+                                        Complex::from(1.0)
+                                    } else {
+                                        Complex::from(0.0)
+                                    }
+                                });
+                                rbds_bandpass_filter.feed_from(&demodulator);
+
+                                // Step 2. downmix the signal
+                                let rbds_downmixer = DownMixer::<f32>::new(57_000.0);
+                                rbds_downmixer.feed_from(&rbds_bandpass_filter);
+
+                                // Step 3. remove high-frequency data and very-low frequency data
+                                let rbds_lowpass_filter = blocks::Filter::new(|_, freq| {
+                                    if freq.abs() >= 10.0 && freq.abs() <= (57_000.0) {
+                                        Complex::from(1.0)
+                                    } else {
+                                        Complex::from(0.0)
+                                    }
+                                });
+                                rbds_lowpass_filter.feed_from(&rbds_downmixer);
+
                                 // add rbds decoder to output FM stream
                                 let rdbs_decoder = RbdsDecode::<f32>::new(window.clone());
-                                rdbs_decoder.feed_from(&demodulator);
+                                rdbs_decoder.feed_from(&rbds_lowpass_filter);
                             } else if stream_settings.stream_type == StreamType::AM {
                                 let demodulator = AmDemod::<f32>::new();
                                 demodulator.feed_from(&filter1);

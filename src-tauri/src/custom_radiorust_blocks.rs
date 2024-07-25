@@ -24,6 +24,7 @@ pub mod custom_radiorust_blocks {
         prelude::{ChunkBufPool, Complex},
         signal::Signal,
     };
+    use rustfft::num_traits::ToPrimitive;
     use tauri::Window;
     use tokio::spawn;
 
@@ -118,6 +119,77 @@ pub mod custom_radiorust_blocks {
         }
     }
 
+    pub struct DownMixer<Flt> {
+        receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
+        sender_connector: SenderConnector<Signal<Complex<Flt>>>,
+        freq: Flt,
+    }
+
+    impl_block_trait! { <Flt> Consumer<Signal<Complex<Flt>>> for DownMixer<Flt> }
+    impl_block_trait! { <Flt> Producer<Signal<Complex<Flt>>> for DownMixer<Flt> }
+
+    impl<Flt> DownMixer<Flt>
+    where
+        Flt: Float,
+    {
+        pub fn new(freq: Flt) -> Self {
+            let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
+            let (sender, sender_connector) = new_sender::<Signal<Complex<Flt>>>();
+
+            let mut buf_pool = ChunkBufPool::<Complex<Flt>>::new();
+
+            spawn(async move {
+                loop {
+                    let Ok(signal) = receiver.recv().await else {
+                        return;
+                    };
+                    match signal {
+                        Signal::Samples {
+                            sample_rate,
+                            chunk: input_chunk,
+                        } => {
+                            let mut output_chunk = buf_pool.get_with_capacity(input_chunk.len());
+
+                            let mut i = 0;
+                            // get the magnitude for each sample
+                            for &sample in input_chunk.iter() {
+                                let t = i as f64 / sample_rate;
+                                let downmixed_value = sample.re.to_f64().unwrap()
+                                    * (2.0 * PI * freq.to_f64().unwrap() * t).cos();
+
+                                output_chunk.push(Complex {
+                                    re: Flt::from(downmixed_value).unwrap(),
+                                    im: Flt::from(0.0).unwrap(),
+                                });
+                                i += 1;
+                            }
+
+                            let Ok(()) = sender
+                                .send(Signal::Samples {
+                                    sample_rate,
+                                    chunk: output_chunk.finalize(),
+                                })
+                                .await
+                            else {
+                                return;
+                            };
+                        }
+                        Signal::Event(event) => {
+                            let Ok(()) = sender.send(Signal::Event(event)).await else {
+                                return;
+                            };
+                        }
+                    }
+                }
+            });
+            Self {
+                receiver_connector,
+                sender_connector,
+                freq,
+            }
+        }
+    }
+
     // constants for RDBS Decoding
     const RBDS_CARRIER_FREQ: f64 = 57_000.0;
     const RBDS_BANDWIDTH: f64 = 4_000.0;
@@ -132,7 +204,7 @@ pub mod custom_radiorust_blocks {
 
     impl<Flt> RbdsDecode<Flt>
     where
-        Flt: Float + Into<f64>,
+        Flt: Float + Into<f64> + Into<f32>,
     {
         pub fn new(window: Window) -> Self {
             let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
@@ -156,57 +228,6 @@ pub mod custom_radiorust_blocks {
                             sample_rate,
                             chunk: input_chunk,
                         } => {
-                            // Step 1: Band-Pass Filter to "select" RBDS sub-carrier
-                            if bandpass_filter.clone().lock().unwrap().is_none() {
-                                let filter_coefficients = BiquadCoefs::resonator(
-                                    sample_rate,
-                                    RBDS_CARRIER_FREQ,
-                                    RBDS_BANDWIDTH,
-                                );
-                                *(bandpass_filter.lock().unwrap()) =
-                                    Some(hacker::Biquad::with_coefs(filter_coefficients));
-                            }
-                            // NOTE: The input_chunk should already be FM demodulated, so the imaginary part of the Complex Number is 0 and can be ignored
-                            let mut bandpassed_samples_buffer = BufferMut::empty();
-                            let mut processed_input = input_chunk
-                                .iter()
-                                .map(|&sample| F32x::splat(sample.re.to_f32().unwrap()))
-                                .collect::<Vec<F32x>>();
-                            let mut input_mut_slice = processed_input.as_mut_slice();
-                            let mut input_buffer = BufferMut::new(&mut input_mut_slice);
-                            bandpass_filter.lock().unwrap().as_mut().unwrap().process(
-                                input_chunk.len(),
-                                &input_buffer.buffer_ref(),
-                                &mut bandpassed_samples_buffer,
-                            );
-                            let bandpassed_samples = bandpassed_samples_buffer.channel_f32_mut(0);
-
-                            // Step 2: Downmix to baseband
-                            let downmixed_samples: Vec<f64> = bandpassed_samples
-                                .iter()
-                                .enumerate()
-                                .map(|(i, &sample)| {
-                                    let t = (i as f64 / sample_rate);
-                                    (sample as f64) * (2.0 * PI * RBDS_CARRIER_FREQ * t).cos()
-                                })
-                                .collect();
-
-                            // Step 3: Apply Lowpass Filter to Remove High-Frequency Component (the 57KHz sub-carrier)
-                            if lowpass_filter.is_none() {
-                                let filter_coefficients = Coefficients::<f64>::from_params(
-                                    Type::LowPass,
-                                    ToHertz::hz(sample_rate),
-                                    ToHertz::hz(RBDS_CARRIER_FREQ),
-                                    Q_BUTTERWORTH_F64,
-                                );
-                                lowpass_filter =
-                                    Some(DirectForm1::<f64>::new(filter_coefficients.unwrap()));
-                            }
-                            let lowpassed_samples: Vec<f64> = downmixed_samples
-                                .iter()
-                                .map(|sample| lowpass_filter.unwrap().run(*sample))
-                                .collect();
-
                             // Step 4: Save to WAV file for Testing
                             if wav_writer.clone().lock().unwrap().is_none() {
                                 let wav_spec = WavSpec {
@@ -218,13 +239,13 @@ pub mod custom_radiorust_blocks {
                                 *(wav_writer.lock().unwrap()) =
                                     Some(WavWriter::create("rbds_output.wav", wav_spec).unwrap());
                             }
-                            for sample in bandpassed_samples {
+                            for sample in input_chunk.iter() {
                                 wav_writer
                                     .lock()
                                     .unwrap()
                                     .as_mut()
                                     .unwrap()
-                                    .write_sample(sample.clone())
+                                    .write_sample(sample.re.to_f32().unwrap())
                                     .unwrap();
                             }
 
