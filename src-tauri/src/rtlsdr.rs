@@ -17,7 +17,7 @@ pub mod rtlsdr {
     use tauri::{async_runtime, Window};
     use tokio::{self, time};
 
-    use crate::custom_radiorust_blocks::custom_radiorust_blocks::AmDemod;
+    use crate::custom_radiorust_blocks::custom_radiorust_blocks::{AmDemod, RbdsDecode};
 
     #[derive(serde::Deserialize, PartialEq)]
     pub enum StreamType {
@@ -151,6 +151,10 @@ pub mod rtlsdr {
                                 let demodulator = blocks::modulation::FmDemod::<f32>::new(150000.0);
                                 demodulator.feed_from(&filter1);
                                 filter2.feed_from(&demodulator);
+
+                                // add rbds decoder to output FM stream
+                                let rdbs_decoder = RbdsDecode::<f32>::new(window.clone());
+                                rdbs_decoder.feed_from(&demodulator);
                             } else if stream_settings.stream_type == StreamType::AM {
                                 let demodulator = AmDemod::<f32>::new();
                                 demodulator.feed_from(&filter1);

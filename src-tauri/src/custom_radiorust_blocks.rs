@@ -1,4 +1,6 @@
 pub mod custom_radiorust_blocks {
+    use std::sync::{Arc, Mutex};
+
     use biquad::{Biquad, Coefficients, DirectForm1, ToHertz, Type, Q_BUTTERWORTH_F64};
     use radiorust::{
         blocks,
@@ -8,6 +10,7 @@ pub mod custom_radiorust_blocks {
         prelude::{ChunkBufPool, Complex},
         signal::Signal,
     };
+    use tauri::Window;
     use tokio::spawn;
 
     pub struct AmDemod<Flt> {
@@ -98,6 +101,46 @@ pub mod custom_radiorust_blocks {
 
         fn calc_magnitude(c: Complex<Flt>) -> f64 {
             (c.re.powi(2) + c.im.powi(2)).sqrt().into()
+        }
+    }
+
+    pub struct RbdsDecode<Flt> {
+        receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
+        window: Window,
+    }
+
+    impl_block_trait! { <Flt> Consumer<Signal<Complex<Flt>>> for RbdsDecode<Flt> }
+
+    impl<Flt> RbdsDecode<Flt>
+    where
+        Flt: Float + Into<f64>,
+    {
+        pub fn new(window: Window) -> Self {
+            let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
+
+            let mut chunk_num = 0;
+
+            spawn(async move {
+                loop {
+                    let Ok(signal) = receiver.recv().await else {
+                        return;
+                    };
+                    match signal {
+                        Signal::Samples {
+                            sample_rate,
+                            chunk: input_chunk,
+                        } => {
+
+                            // unlike other blocks, this just "eats" the signal and does not pass it on
+                        }
+                        Signal::Event(event) => {}
+                    }
+                }
+            });
+            Self {
+                receiver_connector,
+                window,
+            }
         }
     }
 }
