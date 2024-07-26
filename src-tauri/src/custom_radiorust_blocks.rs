@@ -220,6 +220,8 @@ pub mod custom_radiorust_blocks {
 
             let desired_clock_freq = 57000.0 / 48.0;
 
+            let mut buf_pool = ChunkBufPool::<f32>::new();
+
             spawn(async move {
                 loop {
                     let Ok(signal) = receiver.recv().await else {
@@ -230,12 +232,22 @@ pub mod custom_radiorust_blocks {
                             sample_rate,
                             chunk: input_chunk,
                         } => {
+                            let mut output_chunk = buf_pool.get_with_capacity(input_chunk.len());
+
                             let desired_samples_length = sample_rate / desired_clock_freq;
                             // calculate the average clock rate by watch time between crossing 0
                             for sample in input_chunk.iter() {
                                 samples_since_last_crossing = samples_since_last_crossing + 1;
 
                                 let sample_value = sample.re.to_f64().unwrap();
+
+                                if sample_value.is_sign_positive() {
+                                    output_chunk.push(1.0);
+                                } else if sample_value.is_sign_negative() {
+                                    output_chunk.push(-1.0);
+                                } else {
+                                    output_chunk.push(0.0);
+                                }
 
                                 if !((last_sample_value.is_sign_positive()
                                     && sample_value.is_sign_positive())
@@ -247,6 +259,7 @@ pub mod custom_radiorust_blocks {
                                     {
                                         samples_between_crossings_history.pop_back();
                                     }
+
                                     let mut fixed_samples_length =
                                         (samples_since_last_crossing.clone() as u32)
                                             .rem_euclid(desired_samples_length as u32);
@@ -279,7 +292,7 @@ pub mod custom_radiorust_blocks {
                             // Step 4: Save to WAV file for Testing
                             if wav_writer.clone().lock().unwrap().is_none() {
                                 let wav_spec = WavSpec {
-                                    channels: 1,
+                                    channels: 2,
                                     sample_rate: sample_rate as u32,
                                     bits_per_sample: 32,
                                     sample_format: hound::SampleFormat::Float,
@@ -287,13 +300,20 @@ pub mod custom_radiorust_blocks {
                                 *(wav_writer.lock().unwrap()) =
                                     Some(WavWriter::create("rbds_output.wav", wav_spec).unwrap());
                             }
-                            for sample in input_chunk.iter() {
+                            for (i, sample) in input_chunk.iter().enumerate() {
                                 wav_writer
                                     .lock()
                                     .unwrap()
                                     .as_mut()
                                     .unwrap()
                                     .write_sample(sample.re.to_f32().unwrap())
+                                    .unwrap();
+                                wav_writer
+                                    .lock()
+                                    .unwrap()
+                                    .as_mut()
+                                    .unwrap()
+                                    .write_sample(output_chunk[i])
                                     .unwrap();
                             }
 
