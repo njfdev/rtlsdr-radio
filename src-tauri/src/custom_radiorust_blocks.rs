@@ -14,6 +14,7 @@ pub mod custom_radiorust_blocks {
     };
     use fundsp::{
         hacker::{self, AudioNode, BiquadCoefs, BufferMut, BufferRef},
+        typenum::int::Z0,
         F32x,
     };
     use hound::{WavSpec, WavWriter};
@@ -218,6 +219,11 @@ pub mod custom_radiorust_blocks {
             let mut last_sample_value: f64 = 0.0;
             let mut samples_between_crossings_history: VecDeque<usize> = VecDeque::new();
 
+            let mut acceptable_timing_error: f64 = 0.75; // should be between 0.5 and 1, preferably in the middle
+            let mut is_clock_synced = false;
+            let mut samples_since_last_clock: f64 = 0.0;
+            let mut last_clock_value: f64 = 0.0;
+
             let desired_clock_freq = 57000.0 / 48.0;
 
             let mut buf_pool = ChunkBufPool::<f32>::new();
@@ -235,25 +241,59 @@ pub mod custom_radiorust_blocks {
                             let mut output_chunk = buf_pool.get_with_capacity(input_chunk.len());
 
                             let desired_samples_length = sample_rate / desired_clock_freq;
+                            let mut buffer_time_between_clocks =
+                                desired_samples_length * acceptable_timing_error;
                             // calculate the average clock rate by watch time between crossing 0
                             for sample in input_chunk.iter() {
                                 samples_since_last_crossing = samples_since_last_crossing + 1;
+                                samples_since_last_clock = samples_since_last_clock + 1.0;
 
                                 let sample_value = sample.re.to_f64().unwrap();
 
+                                let mut digitized_bit = 0.0;
+
                                 if sample_value.is_sign_positive() {
-                                    output_chunk.push(1.0);
+                                    digitized_bit = 1.0;
                                 } else if sample_value.is_sign_negative() {
-                                    output_chunk.push(-1.0);
-                                } else {
-                                    output_chunk.push(0.0);
+                                    digitized_bit = -1.0;
                                 }
 
-                                if !((last_sample_value.is_sign_positive()
-                                    && sample_value.is_sign_positive())
-                                    || (last_sample_value.is_sign_negative()
-                                        && sample_value.is_sign_negative()))
-                                {
+                                output_chunk.push(digitized_bit.clone());
+
+                                if is_crossing(last_sample_value, sample_value) {
+                                    // If clock is not synced, go until a suitable change for clock is found
+                                    if !is_clock_synced {
+                                        if samples_since_last_clock < buffer_time_between_clocks {
+                                            // clock is faster than expected
+                                            samples_since_last_clock = 0.0;
+                                            println!("Clock is too fast!");
+                                        } else if samples_since_last_clock
+                                            > (desired_samples_length - buffer_time_between_clocks)
+                                                + desired_samples_length
+                                        {
+                                            // clock is slower than exepcted
+                                            samples_since_last_clock = 0.0;
+                                            println!("Clock is too slow!");
+                                        } else {
+                                            // clock is within acceptable range
+                                            samples_since_last_clock = 0.0;
+                                            is_clock_synced = true;
+                                            println!("Clock is synced!");
+                                        }
+                                    } else {
+                                        // if clock is synced and clock is expected, run clock logic
+                                        if samples_since_last_clock > buffer_time_between_clocks {
+                                            if last_clock_value == (digitized_bit as f64) {
+                                                print!("0");
+                                            } else {
+                                                print!("1");
+                                            }
+
+                                            last_clock_value = digitized_bit.clone() as f64;
+                                            samples_since_last_clock = 0.0;
+                                        }
+                                    }
+
                                     if samples_between_crossings_history.len()
                                         >= (sample_rate) as usize
                                     {
@@ -278,6 +318,7 @@ pub mod custom_radiorust_blocks {
                                 last_sample_value = sample_value;
                             }
 
+                            /*
                             println!(
                                 "Avg Samples Between Crossing: {}, Moving Clock Average: {}hz",
                                 (samples_between_crossings_history.iter().sum::<usize>() as f64
@@ -288,6 +329,7 @@ pub mod custom_radiorust_blocks {
                                         / samples_between_crossings_history.len() as f64)
                                     / 4.0)
                             );
+                            */
 
                             // Step 4: Save to WAV file for Testing
                             if wav_writer.clone().lock().unwrap().is_none() {
@@ -328,5 +370,10 @@ pub mod custom_radiorust_blocks {
                 window,
             }
         }
+    }
+
+    fn is_crossing(last: f64, new: f64) -> bool {
+        !((last.is_sign_positive() && new.is_sign_positive())
+            || (last.is_sign_negative() && new.is_sign_negative()))
     }
 }
