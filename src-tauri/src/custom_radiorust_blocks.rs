@@ -23,7 +23,7 @@ pub mod custom_radiorust_blocks {
         flow::{new_receiver, new_sender, Consumer, Message, ReceiverConnector, SenderConnector},
         impl_block_trait,
         numbers::Float,
-        prelude::{ChunkBufPool, Complex},
+        prelude::{ChunkBuf, ChunkBufPool, Complex},
         signal::Signal,
     };
     use rustfft::num_traits::{Signed, ToPrimitive};
@@ -238,7 +238,10 @@ pub mod custom_radiorust_blocks {
                             sample_rate,
                             chunk: input_chunk,
                         } => {
-                            let mut output_chunk = buf_pool.get_with_capacity(input_chunk.len());
+                            let mut bitstream_output_chunk =
+                                buf_pool.get_with_capacity(input_chunk.len());
+                            let mut decoded_output_chunk =
+                                buf_pool.get_with_capacity(input_chunk.len());
 
                             let desired_samples_length = sample_rate / desired_clock_freq;
                             let mut buffer_time_between_clocks =
@@ -258,11 +261,17 @@ pub mod custom_radiorust_blocks {
                                     digitized_bit = -1.0;
                                 }
 
-                                output_chunk.push(digitized_bit.clone());
+                                bitstream_output_chunk.push(digitized_bit.clone());
 
                                 if is_crossing(last_sample_value, sample_value) {
                                     // If clock is not synced, go until a suitable change for clock is found
                                     if !is_clock_synced {
+                                        add_n_to_buffer(
+                                            &mut decoded_output_chunk,
+                                            0.0,
+                                            samples_since_last_clock,
+                                        );
+
                                         if samples_since_last_clock < buffer_time_between_clocks {
                                             // clock is faster than expected
                                             samples_since_last_clock = 0.0;
@@ -285,8 +294,18 @@ pub mod custom_radiorust_blocks {
                                         if samples_since_last_clock > buffer_time_between_clocks {
                                             if last_clock_value == (digitized_bit as f64) {
                                                 print!("0");
+                                                add_n_to_buffer(
+                                                    &mut decoded_output_chunk,
+                                                    0.0,
+                                                    samples_since_last_clock,
+                                                );
                                             } else {
                                                 print!("1");
+                                                add_n_to_buffer(
+                                                    &mut decoded_output_chunk,
+                                                    1.0,
+                                                    samples_since_last_clock,
+                                                );
                                             }
 
                                             last_clock_value = digitized_bit.clone() as f64;
@@ -334,7 +353,7 @@ pub mod custom_radiorust_blocks {
                             // Step 4: Save to WAV file for Testing
                             if wav_writer.clone().lock().unwrap().is_none() {
                                 let wav_spec = WavSpec {
-                                    channels: 2,
+                                    channels: 3,
                                     sample_rate: sample_rate as u32,
                                     bits_per_sample: 32,
                                     sample_format: hound::SampleFormat::Float,
@@ -355,7 +374,19 @@ pub mod custom_radiorust_blocks {
                                     .unwrap()
                                     .as_mut()
                                     .unwrap()
-                                    .write_sample(output_chunk[i])
+                                    .write_sample(bitstream_output_chunk[i])
+                                    .unwrap();
+                                let decoded_bit_result = decoded_output_chunk.get(i);
+                                let mut decoded_bit: f32 = 0.0;
+                                if decoded_bit_result.is_some() {
+                                    decoded_bit = *decoded_bit_result.unwrap();
+                                }
+                                wav_writer
+                                    .lock()
+                                    .unwrap()
+                                    .as_mut()
+                                    .unwrap()
+                                    .write_sample(decoded_bit)
                                     .unwrap();
                             }
 
@@ -375,5 +406,10 @@ pub mod custom_radiorust_blocks {
     fn is_crossing(last: f64, new: f64) -> bool {
         !((last.is_sign_positive() && new.is_sign_positive())
             || (last.is_sign_negative() && new.is_sign_negative()))
+    }
+
+    fn add_n_to_buffer(buffer: &mut ChunkBuf<f32>, value: f32, length: f64) {
+        let mut new_data = vec![value; length as usize];
+        buffer.append(&mut new_data);
     }
 }
