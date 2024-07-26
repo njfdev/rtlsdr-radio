@@ -269,31 +269,39 @@ pub mod custom_radiorust_blocks {
                                             samples_since_last_clock,
                                         );
 
-                                        if samples_since_last_clock < buffer_time_between_clocks {
-                                            // clock is faster than expected
-                                            samples_since_last_clock = 0.0;
-                                            println!("Clock is too fast!");
-                                        } else if samples_since_last_clock
-                                            > (desired_samples_length - buffer_time_between_clocks)
-                                                + desired_samples_length
+                                        if !(samples_since_last_clock < buffer_time_between_clocks)
+                                            && !(samples_since_last_clock
+                                                > (desired_samples_length * 2.0
+                                                    - buffer_time_between_clocks))
                                         {
-                                            // clock is slower than exepcted
-                                            samples_since_last_clock = 0.0;
-                                            println!("Clock is too slow!");
-                                        } else {
                                             // clock is within acceptable range
-                                            samples_since_last_clock = 0.0;
                                             is_clock_synced = true;
                                             println!("Clock is synced!");
                                         }
+                                        samples_since_last_clock = 0.0;
                                     } else {
                                         // if clock is synced and clock is expected, run clock logic
-                                        if samples_since_last_clock > buffer_time_between_clocks {
+                                        if samples_since_last_clock
+                                            > (buffer_time_between_clocks * 2.0
+                                                + desired_samples_length)
+                                        {
+                                            // if clock is way slower than expected, assume sync error and restart clock sync process
+                                            is_clock_synced = false;
+                                            add_n_to_buffer(
+                                                &mut decoded_output_chunk,
+                                                0.0,
+                                                samples_since_last_clock,
+                                            );
+                                            samples_since_last_clock = 0.0;
+                                            println!("\nLost clock sync!");
+                                        } else if samples_since_last_clock
+                                            > buffer_time_between_clocks
+                                        {
                                             if last_clock_value == (digitized_bit as f64) {
                                                 print!("0");
                                                 add_n_to_buffer(
                                                     &mut decoded_output_chunk,
-                                                    0.0,
+                                                    -1.0,
                                                     samples_since_last_clock,
                                                 );
                                             } else {
