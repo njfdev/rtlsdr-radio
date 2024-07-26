@@ -215,11 +215,9 @@ pub mod custom_radiorust_blocks {
             let mut wav_writer: Arc<Mutex<Option<WavWriter<BufWriter<fs::File>>>>> =
                 Arc::new(Mutex::new(None));
 
-            let mut samples_since_last_crossing = 0;
             let mut last_sample_value: f64 = 0.0;
-            let mut samples_between_crossings_history: VecDeque<usize> = VecDeque::new();
 
-            let mut acceptable_timing_error: f64 = 0.75; // should be between 0.5 and 1, preferably in the middle
+            let mut acceptable_timing_error: f64 = 0.75; // should be between 0.5 and 1, but closer to 1
             let mut is_clock_synced = false;
             let mut samples_since_last_clock: f64 = 0.0;
             let mut last_clock_value: f64 = 0.0;
@@ -248,7 +246,6 @@ pub mod custom_radiorust_blocks {
                                 desired_samples_length * acceptable_timing_error;
                             // calculate the average clock rate by watch time between crossing 0
                             for sample in input_chunk.iter() {
-                                samples_since_last_crossing = samples_since_last_crossing + 1;
                                 samples_since_last_clock = samples_since_last_clock + 1.0;
 
                                 let sample_value = sample.re.to_f64().unwrap();
@@ -312,43 +309,10 @@ pub mod custom_radiorust_blocks {
                                             samples_since_last_clock = 0.0;
                                         }
                                     }
-
-                                    if samples_between_crossings_history.len()
-                                        >= (sample_rate) as usize
-                                    {
-                                        samples_between_crossings_history.pop_back();
-                                    }
-
-                                    let mut fixed_samples_length =
-                                        (samples_since_last_crossing.clone() as u32)
-                                            .rem_euclid(desired_samples_length as u32);
-
-                                    if fixed_samples_length >= (desired_samples_length / 2.0) as u32
-                                    {
-                                        fixed_samples_length = fixed_samples_length
-                                            - (desired_samples_length / 2.0) as u32;
-                                    }
-
-                                    samples_between_crossings_history
-                                        .push_front(fixed_samples_length as usize);
-                                    samples_since_last_crossing = 0;
                                 }
 
                                 last_sample_value = sample_value;
                             }
-
-                            /*
-                            println!(
-                                "Avg Samples Between Crossing: {}, Moving Clock Average: {}hz",
-                                (samples_between_crossings_history.iter().sum::<usize>() as f64
-                                    / samples_between_crossings_history.len() as f64),
-                                (sample_rate
-                                    / (samples_between_crossings_history.iter().sum::<usize>()
-                                        as f64
-                                        / samples_between_crossings_history.len() as f64)
-                                    / 4.0)
-                            );
-                            */
 
                             // Step 4: Save to WAV file for Testing
                             if wav_writer.clone().lock().unwrap().is_none() {
