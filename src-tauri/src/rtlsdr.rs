@@ -153,9 +153,13 @@ pub mod rtlsdr {
                                 demodulator.feed_from(&filter1);
                                 filter2.feed_from(&demodulator);
 
+                                // upper sideband
+                                const RBDS_FREQ: f64 = 57_000.0;
+                                const RBDS_BANDWIDTH: f64 = 2_000.0;
+
                                 // Step 1. apply bandpass signal to 57Khz with bandwidth of 4KHz for RBDS decoding
                                 let rbds_bandpass_filter = blocks::Filter::new(|_, freq| {
-                                    if freq.abs() >= 57_000.0 && freq.abs() <= 59_000.0 {
+                                    if freq.abs() >= (RBDS_FREQ+1000.0-(RBDS_BANDWIDTH/2.0)) && freq.abs() <= (RBDS_FREQ+1000.0+(RBDS_BANDWIDTH/2.0)) {
                                         Complex::from(1.0)
                                     } else {
                                         Complex::from(0.0)
@@ -164,12 +168,12 @@ pub mod rtlsdr {
                                 rbds_bandpass_filter.feed_from(&demodulator);
 
                                 // Step 2. downmix the signal
-                                let rbds_downmixer = DownMixer::<f32>::new(57_000.0);
+                                let rbds_downmixer = DownMixer::<f32>::new(RBDS_FREQ as f32);
                                 rbds_downmixer.feed_from(&rbds_bandpass_filter);
 
                                 // Step 3. remove high-frequency data and very-low frequency data
                                 let rbds_lowpass_filter = blocks::Filter::new(|_, freq| {
-                                    if freq.abs() >= 10.0 && freq.abs() <= (57_000.0) {
+                                    if freq.abs() >= 10.0 && freq.abs() <= (RBDS_FREQ) {
                                         Complex::from(1.0)
                                     } else {
                                         Complex::from(0.0)
