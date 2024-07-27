@@ -237,6 +237,8 @@ pub mod custom_radiorust_blocks {
 
             let mut buf_pool = ChunkBufPool::<f32>::new();
 
+            let mut last_26_bits: VecDeque<u8> = VecDeque::with_capacity(26);
+
             spawn(async move {
                 loop {
                     let Ok(signal) = receiver.recv().await else {
@@ -247,7 +249,6 @@ pub mod custom_radiorust_blocks {
                             sample_rate,
                             chunk: input_chunk,
                         } => {
-                            println!("CRC: {}", compute_crc(0b0110100101111010));
                             let mut bitstream_output_chunk =
                                 buf_pool.get_with_capacity(input_chunk.len());
                             let mut decoded_output_chunk =
@@ -309,20 +310,44 @@ pub mod custom_radiorust_blocks {
                                         } else if samples_since_last_clock
                                             > buffer_time_between_clocks
                                         {
+                                            let decoded_bit;
                                             if last_clock_value == (digitized_bit as f64) {
-                                                print!("0");
+                                                decoded_bit = 0;
                                                 add_n_to_buffer(
                                                     &mut decoded_output_chunk,
                                                     -1.0,
                                                     samples_since_last_clock,
                                                 );
                                             } else {
-                                                print!("1");
+                                                decoded_bit = 1;
                                                 add_n_to_buffer(
                                                     &mut decoded_output_chunk,
                                                     1.0,
                                                     samples_since_last_clock,
                                                 );
+                                            }
+
+                                            last_26_bits.push_front(decoded_bit);
+
+                                            if last_26_bits.len() > 26 {
+                                                last_26_bits.pop_back();
+
+                                                let last_26_bits_u32 =
+                                                    bits_to_u32(last_26_bits.clone().into());
+
+                                                // calculate and check CRC
+                                                let data: u16 = (last_26_bits_u32 >> 10) as u16;
+                                                let data_check_crc: u16 =
+                                                    (last_26_bits_u32 & 0b11_1111_1111) as u16;
+
+                                                let computed_crc = compute_crc(data);
+
+                                                if data_check_crc == computed_crc {
+                                                    println!(
+                                                        "Actual: {}, Computed: {}",
+                                                        data_check_crc, computed_crc,
+                                                    );
+                                                }
                                             }
 
                                             last_clock_value = digitized_bit.clone() as f64;
@@ -402,5 +427,13 @@ pub mod custom_radiorust_blocks {
         let mut digest = crc.digest();
         digest.update(&data.to_be_bytes());
         digest.finalize()
+    }
+
+    fn bits_to_u32(bits: Vec<u8>) -> u32 {
+        let mut value: u32 = 0;
+        for bit in bits.iter().take(32) {
+            value = (value << 1) | (*bit as u32);
+        }
+        value
     }
 }
