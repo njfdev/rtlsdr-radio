@@ -18,6 +18,7 @@ pub mod custom_radiorust_blocks {
         F32x,
     };
     use hound::{WavSpec, WavWriter};
+    use nalgebra::{SMatrix, SVector, Vector1, VectorN};
     use radiorust::{
         blocks,
         flow::{new_receiver, new_sender, Consumer, Message, ReceiverConnector, SenderConnector},
@@ -207,6 +208,14 @@ pub mod custom_radiorust_blocks {
         check: 0x0079,
         residue: 0x0000,
     };
+    const RBDS_OFFSET_WORDS: [(&str, u16); 6] = [
+        ("A", 0b0011111100),
+        ("B", 0b0110011000),
+        ("C", 0b0101101000),
+        ("C'", 0b1101010000),
+        ("D", 0b0110110100),
+        ("E", 0b0000000000),
+    ];
     const RBDS_PTY_INDEX: [&str; 32] = [
         "Undefined",
         "News",
@@ -241,6 +250,35 @@ pub mod custom_radiorust_blocks {
         "Emergency Test",
         "Emergency",
     ];
+    type Vector26 = SVector<u32, 26>;
+    const RBDS_PARITY_CHECK_MATRIX: [u32; 26] = [
+        0b1000000000,
+        0b0100000000,
+        0b0010000000,
+        0b0001000000,
+        0b0000100000,
+        0b0000010000,
+        0b0000001000,
+        0b0000000100,
+        0b0000000010,
+        0b0000000001,
+        0b1011011100,
+        0b0101101110,
+        0b0010110111,
+        0b1010000111,
+        0b1110011111,
+        0b1100010011,
+        0b1101010101,
+        0b1101110110,
+        0b0110111011,
+        0b1000000001,
+        0b1111011100,
+        0b0111101110,
+        0b0011110111,
+        0b1010100111,
+        0b1110001111,
+        0b1100011011,
+    ];
 
     pub struct RbdsDecode<Flt> {
         receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
@@ -272,6 +310,11 @@ pub mod custom_radiorust_blocks {
             let mut buf_pool = ChunkBufPool::<f32>::new();
 
             let mut last_26_bits: VecDeque<u8> = VecDeque::with_capacity(26);
+
+            println!(
+                "Calculated Syndrome: {}",
+                calculate_syndrome(0b0000000000000000_0011111100)
+            );
 
             spawn(async move {
                 loop {
@@ -484,23 +527,14 @@ pub mod custom_radiorust_blocks {
         value
     }
 
-    fn calculate_syndrome(checkword: u16, offset_word: u16) -> u16 {
+    fn calculate_xor_syndrome(checkword: u16, offset_word: u16) -> u16 {
         checkword ^ offset_word
     }
-
-    const RBDS_OFFSET_WORDS: [(&str, u16); 6] = [
-        ("A", 0b0011111100),
-        ("B", 0b0110011000),
-        ("C", 0b0101101000),
-        ("C'", 0b1101010000),
-        ("D", 0b0110110100),
-        ("E", 0b0000000000),
-    ];
 
     fn determine_offset_word(checkword: u16) -> String {
         let syndromes: Vec<(&str, u16)> = RBDS_OFFSET_WORDS
             .iter()
-            .map(|(block_type, offset)| (*block_type, calculate_syndrome(checkword, *offset)))
+            .map(|(block_type, offset)| (*block_type, calculate_xor_syndrome(checkword, *offset)))
             .collect();
 
         // find the block type with the smallest number of errors
@@ -510,5 +544,12 @@ pub mod custom_radiorust_blocks {
             .unwrap();
 
         (*block_type).to_owned()
+    }
+
+    fn calculate_syndrome(recieved_data: u32) -> u16 {
+        let rbds_parity_vector = Vector26::from_column_slice(&RBDS_PARITY_CHECK_MATRIX);
+        let data_vector: Vector1<u32> = Vector1::new(recieved_data);
+
+        (data_vector * rbds_parity_vector.transpose())[(0, 0)] as u16
     }
 }
