@@ -342,14 +342,17 @@ pub mod custom_radiorust_blocks {
 
                                                 let computed_crc = compute_crc(data);
 
-                                                if data_check_crc == computed_crc {
+                                                if data_check_crc == computed_crc && data != 0x0 {
                                                     println!(
-                                                        "Actual: {}, Computed: {}",
-                                                        data_check_crc, computed_crc,
+                                                        "Actual: {}, Computed: {}, Offset Word: {}, Data: {:#b}",
+                                                        data_check_crc,
+                                                        computed_crc,
+                                                        determine_offset_word(data_check_crc),
+                                                        last_26_bits_u32
                                                     );
                                                 }
                                             }
-
+                                            // 01101
                                             last_clock_value = digitized_bit.clone() as f64;
                                             samples_since_last_clock = 0.0;
                                         }
@@ -435,5 +438,33 @@ pub mod custom_radiorust_blocks {
             value = (value << 1) | (*bit as u32);
         }
         value
+    }
+
+    fn calculate_syndrome(checkword: u16, offset_word: u16) -> u16 {
+        checkword ^ offset_word
+    }
+
+    const RBDS_OFFSET_WORDS: [(&str, u16); 6] = [
+        ("A", 0b0011111100),
+        ("B", 0b0110011000),
+        ("C", 0b0101101000),
+        ("C'", 0b1101010000),
+        ("D", 0b0110110100),
+        ("E", 0b0000000000),
+    ];
+
+    fn determine_offset_word(checkword: u16) -> String {
+        let syndromes: Vec<(&str, u16)> = RBDS_OFFSET_WORDS
+            .iter()
+            .map(|(block_type, offset)| (*block_type, calculate_syndrome(checkword, *offset)))
+            .collect();
+
+        // find the block type with the smallest number of errors
+        let (block_type, syndrome) = syndromes
+            .iter()
+            .min_by_key(|(_, syndrome)| syndrome.count_ones())
+            .unwrap();
+
+        (*block_type).to_owned()
     }
 }
