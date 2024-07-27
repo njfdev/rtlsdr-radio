@@ -26,7 +26,7 @@ pub mod custom_radiorust_blocks {
         prelude::{ChunkBuf, ChunkBufPool, Complex},
         signal::Signal,
     };
-    use rustfft::num_traits::{Signed, ToPrimitive};
+    use rustfft::num_traits::{Signed, ToBytes, ToPrimitive};
     use tauri::Window;
     use tokio::spawn;
 
@@ -195,7 +195,18 @@ pub mod custom_radiorust_blocks {
     // constants for RDBS Decoding
     const RBDS_CARRIER_FREQ: f64 = 57_000.0;
     const RBDS_BANDWIDTH: f64 = 4_000.0;
-    const RDBS_CLOCK_FREQ: f64 = RBDS_CARRIER_FREQ / 48.0; // as defined in the RDS spec
+    const RBDS_CLOCK_FREQ: f64 = RBDS_CARRIER_FREQ / 48.0; // as defined in the RDS spec
+    const RBDS_CRC_POLYNOMIAL: u16 = 0b10110111001; // As defined by RDS spec: x^10 + x^8 + x^7 + x^5 + x^4 + x^3 + 1
+    const RBDS_CRC_ALGO: crc::Algorithm<u16> = crc::Algorithm {
+        width: 10,
+        poly: RBDS_CRC_POLYNOMIAL,
+        init: 0x0000,
+        refin: false,
+        refout: false,
+        xorout: 0x0000,
+        check: 0x0079,
+        residue: 0x0000,
+    };
 
     pub struct RbdsDecode<Flt> {
         receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
@@ -236,6 +247,7 @@ pub mod custom_radiorust_blocks {
                             sample_rate,
                             chunk: input_chunk,
                         } => {
+                            println!("CRC: {}", compute_crc(0b0110100101111010));
                             let mut bitstream_output_chunk =
                                 buf_pool.get_with_capacity(input_chunk.len());
                             let mut decoded_output_chunk =
@@ -383,5 +395,12 @@ pub mod custom_radiorust_blocks {
     fn add_n_to_buffer(buffer: &mut ChunkBuf<f32>, value: f32, length: f64) {
         let mut new_data = vec![value; length as usize];
         buffer.append(&mut new_data);
+    }
+
+    fn compute_crc(data: u16) -> u16 {
+        let crc = crc::Crc::<u16>::new(&RBDS_CRC_ALGO);
+        let mut digest = crc.digest();
+        digest.update(&data.to_be_bytes());
+        digest.finalize()
     }
 }
