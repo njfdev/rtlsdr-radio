@@ -207,6 +207,40 @@ pub mod custom_radiorust_blocks {
         check: 0x0079,
         residue: 0x0000,
     };
+    const RBDS_PTY_INDEX: [&str; 32] = [
+        "Undefined",
+        "News",
+        "Information",
+        "Sports",
+        "Talk",
+        "Rock",
+        "Classic Rock",
+        "Adult Hits",
+        "Soft Rock",
+        "Top 40",
+        "Country",
+        "Oldies",
+        "Soft Music",
+        "Nostalgia",
+        "Jazz",
+        "Classical",
+        "Rhythm and Blues",
+        "Soft rhythm and Blues",
+        "Language",
+        "Religious Music",
+        "Religious Talk",
+        "Personality",
+        "Public",
+        "College",
+        "Spanish Talk",
+        "Spanish Music",
+        "Hip Hop",
+        "Undefined",
+        "Undefined",
+        "Weather",
+        "Emergency Test",
+        "Emergency",
+    ];
 
     pub struct RbdsDecode<Flt> {
         receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
@@ -343,13 +377,23 @@ pub mod custom_radiorust_blocks {
                                                 let computed_crc = compute_crc(data);
 
                                                 if data_check_crc == computed_crc && data != 0x0 {
+                                                    let offset_word =
+                                                        determine_offset_word(data_check_crc);
                                                     println!(
                                                         "Actual: {}, Computed: {}, Offset Word: {}, Data: {:#b}",
                                                         data_check_crc,
-                                                        computed_crc,
-                                                        determine_offset_word(data_check_crc),
+                                                        computed_crc,offset_word,
                                                         last_26_bits_u32
                                                     );
+
+                                                    if offset_word == "B".to_owned() {
+                                                        let pty: usize =
+                                                            ((data >> 5) & 0b11111) as usize;
+                                                        println!(
+                                                            "Program Type: {}",
+                                                            RBDS_PTY_INDEX[pty]
+                                                        );
+                                                    }
                                                 }
                                             }
                                             // 01101
