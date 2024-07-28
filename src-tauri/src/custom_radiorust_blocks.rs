@@ -303,7 +303,7 @@ pub mod custom_radiorust_blocks {
 
             let mut last_sample_value: f64 = 0.0;
 
-            let mut acceptable_timing_error: f64 = 0.75; // should be between 0.5 and 1, but closer to 1
+            let mut acceptable_timing_error: f64 = 0.85; // should be between 0.5 and 1, but closer to 1
             let mut is_clock_synced = false;
             let mut samples_since_last_clock: f64 = 0.0;
             let mut last_clock_value: f64 = 0.0;
@@ -313,6 +313,8 @@ pub mod custom_radiorust_blocks {
             let mut buf_pool = ChunkBufPool::<f32>::new();
 
             let mut last_26_bits: VecDeque<u8> = VecDeque::with_capacity(26);
+
+            let mut last_block_offset_word: String = "".to_owned();
 
             println!(
                 "Calculated Syndrome: {:#010b}",
@@ -434,16 +436,21 @@ pub mod custom_radiorust_blocks {
 
                                                     if computed_crc == received_crc
                                                         && data != 0x0
-                                                        && offset_word == "A"
+                                                        && is_block_next(
+                                                            &offset_word,
+                                                            &last_block_offset_word,
+                                                        )
                                                     {
+                                                        last_block_offset_word =
+                                                            offset_word.clone();
                                                         println!(
-                                                        "Actual: {}, Computed: {}, Offset Word: {}, Data: {:#b}, Syndrome: {}",
-                                                        received_crc,
-                                                        computed_crc,
-                                                        offset_word,
-                                                        last_26_bits_u32,
-                                                        calculate_syndrome(last_26_bits_u32)
-                                                    );
+                                                            "Actual: {}, Computed: {}, Offset Word: {}, Data: {:#b}, Syndrome: {}",
+                                                            received_crc,
+                                                            computed_crc,
+                                                            offset_word,
+                                                            last_26_bits_u32,
+                                                            calculate_syndrome(last_26_bits_u32)
+                                                        );
 
                                                         if offset_word == "B".to_owned() {
                                                             let pty: usize =
@@ -474,8 +481,9 @@ pub mod custom_radiorust_blocks {
                                     bits_per_sample: 32,
                                     sample_format: hound::SampleFormat::Float,
                                 };
-                                *(wav_writer.lock().unwrap()) =
-                                    Some(WavWriter::create("rbds_output.wav", wav_spec).unwrap());
+                                *(wav_writer.lock().unwrap()) = Some(
+                                    WavWriter::create("../rbds_output.wav", wav_spec).unwrap(),
+                                );
                             }
                             for (i, sample) in input_chunk.iter().enumerate() {
                                 wav_writer
@@ -534,6 +542,18 @@ pub mod custom_radiorust_blocks {
         let mut digest = crc.digest();
         digest.update(&data.to_be_bytes());
         digest.finalize()
+    }
+
+    fn is_block_next(cur_offset_word: &str, last_block: &str) -> bool {
+        if (cur_offset_word == "A")
+            || (last_block == "A" && cur_offset_word == "B")
+            || (last_block == "B" && cur_offset_word.starts_with("C"))
+            || (last_block.starts_with("C") && cur_offset_word == "D")
+        {
+            return true;
+        }
+
+        false
     }
 
     fn remove_offset_word(recieved_checkword: u16, offset_word: u16) -> u16 {
