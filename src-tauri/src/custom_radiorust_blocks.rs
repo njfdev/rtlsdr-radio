@@ -317,6 +317,7 @@ pub mod custom_radiorust_blocks {
             let mut last_26_bits: VecDeque<u8> = VecDeque::with_capacity(26);
 
             let mut last_block_offset_word: String = "".to_owned();
+            let mut bits_since_last_block: u64 = 0;
 
             let mut samples_since_crossing: u32 = 0;
             let mut last_digitized_bit: f64 = 0.0;
@@ -418,6 +419,7 @@ pub mod custom_radiorust_blocks {
                                         } else if samples_since_last_clock
                                             > buffer_time_between_clocks
                                         {
+                                            bits_since_last_block = bits_since_last_block + 1;
                                             let decoded_bit;
                                             if last_clock_value == (digitized_bit as f64) {
                                                 decoded_bit = 0;
@@ -454,6 +456,7 @@ pub mod custom_radiorust_blocks {
                                                 if offset_word_result.is_ok() {
                                                     let (offset_word, offset_bits) =
                                                         offset_word_result.unwrap();
+                                                    last_block_offset_word = offset_word.clone();
                                                     let received_crc = remove_offset_word(
                                                         data_check_crc,
                                                         offset_bits,
@@ -465,11 +468,9 @@ pub mod custom_radiorust_blocks {
                                                         && is_block_next(
                                                             &offset_word,
                                                             &last_block_offset_word,
+                                                            &bits_since_last_block,
                                                         )
                                                     {
-                                                        last_block_offset_word =
-                                                            offset_word.clone();
-                                                        /*
                                                         println!(
                                                             "Actual: {}, Computed: {}, Offset Word: {}, Data: {:#b}, Syndrome: {}",
                                                             received_crc,
@@ -477,7 +478,7 @@ pub mod custom_radiorust_blocks {
                                                             offset_word,
                                                             last_26_bits_u32,
                                                             calculate_syndrome(last_26_bits_u32)
-                                                        ); */
+                                                        );
 
                                                         if offset_word == "B".to_owned() {
                                                             let pty: usize =
@@ -488,6 +489,8 @@ pub mod custom_radiorust_blocks {
                                                             );
                                                         }
                                                     }
+
+                                                    bits_since_last_block = 0;
                                                 }
                                             }
                                             // 01101
@@ -578,11 +581,12 @@ pub mod custom_radiorust_blocks {
         digest.finalize()
     }
 
-    fn is_block_next(cur_offset_word: &str, last_block: &str) -> bool {
+    fn is_block_next(cur_offset_word: &str, last_block: &str, bits_since_last_block: &u64) -> bool {
         if (cur_offset_word == "A")
-            || (last_block == "A" && cur_offset_word == "B")
-            || (last_block == "B" && cur_offset_word.starts_with("C"))
-            || (last_block.starts_with("C") && cur_offset_word == "D")
+            || (((last_block == "A" && cur_offset_word == "B")
+                || (last_block == "B" && cur_offset_word.starts_with("C"))
+                || (last_block.starts_with("C") && cur_offset_word == "D"))
+                && bits_since_last_block.clone() == 26)
         {
             return true;
         }
