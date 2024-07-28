@@ -250,34 +250,36 @@ pub mod custom_radiorust_blocks {
         "Emergency Test",
         "Emergency",
     ];
-    type Vector26 = SVector<u32, 26>;
-    const RBDS_PARITY_CHECK_MATRIX: [u32; 26] = [
-        0b1000000000,
-        0b0100000000,
-        0b0010000000,
-        0b0001000000,
-        0b0000100000,
-        0b0000010000,
-        0b0000001000,
-        0b0000000100,
-        0b0000000010,
-        0b0000000001,
-        0b1011011100,
-        0b0101101110,
-        0b0010110111,
-        0b1010000111,
-        0b1110011111,
-        0b1100010011,
-        0b1101010101,
-        0b1101110110,
-        0b0110111011,
-        0b1000000001,
-        0b1111011100,
-        0b0111101110,
-        0b0011110111,
-        0b1010100111,
-        0b1110001111,
-        0b1100011011,
+    type Matrix26x10 = SMatrix<u8, 26, 10>;
+    type Vector26 = SVector<u8, 26>;
+    // 26x10 matrix row slice
+    const RBDS_PARITY_CHECK_MATRIX: [u8; 260] = [
+        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, //
+        0, 1, 0, 0, 0, 0, 0, 0, 0, 0, //
+        0, 0, 1, 0, 0, 0, 0, 0, 0, 0, //
+        0, 0, 0, 1, 0, 0, 0, 0, 0, 0, //
+        0, 0, 0, 0, 1, 0, 0, 0, 0, 0, //
+        0, 0, 0, 0, 0, 1, 0, 0, 0, 0, //
+        0, 0, 0, 0, 0, 0, 1, 0, 0, 0, //
+        0, 0, 0, 0, 0, 0, 0, 1, 0, 0, //
+        0, 0, 0, 0, 0, 0, 0, 0, 1, 0, //
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 1, //
+        1, 0, 1, 1, 0, 1, 1, 1, 0, 0, //
+        0, 1, 0, 1, 1, 0, 1, 1, 1, 0, //
+        0, 0, 1, 0, 1, 1, 0, 1, 1, 1, //
+        1, 0, 1, 0, 0, 0, 0, 1, 1, 1, //
+        1, 1, 1, 0, 0, 1, 1, 1, 1, 1, //
+        1, 1, 0, 0, 0, 1, 0, 0, 1, 1, //
+        1, 1, 0, 1, 0, 1, 0, 1, 0, 1, //
+        1, 1, 0, 1, 1, 1, 0, 1, 1, 0, //
+        0, 1, 1, 0, 1, 1, 1, 0, 1, 1, //
+        1, 0, 0, 0, 0, 0, 0, 0, 0, 1, //
+        1, 1, 1, 1, 0, 1, 1, 1, 0, 0, //
+        0, 1, 1, 1, 1, 0, 1, 1, 1, 0, //
+        0, 0, 1, 1, 1, 1, 0, 1, 1, 1, //
+        1, 0, 1, 0, 1, 0, 0, 1, 1, 1, //
+        1, 1, 1, 0, 0, 0, 1, 1, 1, 1, //
+        1, 1, 0, 0, 0, 1, 1, 0, 1, 1, //
     ];
 
     pub struct RbdsDecode<Flt> {
@@ -312,7 +314,7 @@ pub mod custom_radiorust_blocks {
             let mut last_26_bits: VecDeque<u8> = VecDeque::with_capacity(26);
 
             println!(
-                "Calculated Syndrome: {}",
+                "Calculated Syndrome: {:#010b}",
                 calculate_syndrome(0b0000000000000000_0011111100)
             );
 
@@ -546,10 +548,26 @@ pub mod custom_radiorust_blocks {
         (*block_type).to_owned()
     }
 
-    fn calculate_syndrome(recieved_data: u32) -> u16 {
-        let rbds_parity_vector = Vector26::from_column_slice(&RBDS_PARITY_CHECK_MATRIX);
-        let data_vector: Vector1<u32> = Vector1::new(recieved_data);
+    fn u32_to_bits(n: u32, length: usize) -> Vec<u8> {
+        let mut bits = Vec::with_capacity(length);
+        for i in (0..length).rev() {
+            bits.push(((n >> i) & 1) as u8);
+        }
+        bits
+    }
 
-        (data_vector * rbds_parity_vector.transpose())[(0, 0)] as u16
+    fn calculate_syndrome(recieved_data: u32) -> u16 {
+        let rbds_parity_vector = Matrix26x10::from_row_slice(&RBDS_PARITY_CHECK_MATRIX);
+        let data_vector = Vector26::from_row_slice(u32_to_bits(recieved_data, 26).as_mut_slice());
+
+        let matrix_mul_result = (data_vector.transpose() * rbds_parity_vector);
+
+        let mut syndrome: u16 = 0b0;
+
+        for (i, num) in matrix_mul_result.into_iter().rev().enumerate() {
+            syndrome = syndrome + ((*num as u16 % 2) << i);
+        }
+
+        syndrome
     }
 }
