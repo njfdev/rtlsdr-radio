@@ -245,8 +245,8 @@ pub mod custom_radiorust_blocks {
         "Spanish Talk",
         "Spanish Music",
         "Hip Hop",
-        "Undefined",
-        "Undefined",
+        "Unassigned",
+        "Unassigned",
         "Weather",
         "Emergency Test",
         "Emergency",
@@ -305,7 +305,7 @@ pub mod custom_radiorust_blocks {
 
             let mut samples_moving_average: f64 = 0.0;
 
-            let mut acceptable_timing_error: f64 = 0.65; // should be between 0.5 and 1, but closer to 1
+            let mut acceptable_timing_error: f64 = 0.75; // should be between 0.5 and 1, but closer to 1
             let mut is_clock_synced = false;
             let mut samples_since_last_clock: f64 = 0.0;
             let mut last_clock_value: f64 = 0.0;
@@ -317,6 +317,9 @@ pub mod custom_radiorust_blocks {
             let mut last_26_bits: VecDeque<u8> = VecDeque::with_capacity(26);
 
             let mut last_block_offset_word: String = "".to_owned();
+
+            let mut samples_since_crossing: u32 = 0;
+            let mut last_digitized_bit: f64 = 0.0;
 
             println!(
                 "Calculated Syndrome: {:#010b}",
@@ -341,12 +344,16 @@ pub mod custom_radiorust_blocks {
                                 buf_pool.get_with_capacity(input_chunk.len());
 
                             let desired_samples_length = sample_rate / desired_clock_freq;
+                            // smoothing of input based on last ~0.1 milliseconds
                             let samples_smoothing_length = desired_samples_length / 8.0;
+                            // filter out high frequency crossings (they should occur no faster than 1/8 of the clock frequency)
+                            let crossing_smoothing_length = desired_samples_length / 8.0;
                             let mut buffer_time_between_clocks =
                                 desired_samples_length * acceptable_timing_error;
                             // calculate the average clock rate by watch time between crossing 0
                             for sample in input_chunk.iter() {
                                 samples_since_last_clock = samples_since_last_clock + 1.0;
+                                samples_since_crossing = samples_since_crossing + 1;
 
                                 let sample_value_raw_value = sample.re.to_f64().unwrap();
 
@@ -361,13 +368,18 @@ pub mod custom_radiorust_blocks {
 
                                 let mut digitized_bit = 0.0;
 
-                                if sample_value.is_sign_positive() {
-                                    digitized_bit = 1.0;
-                                } else if sample_value.is_sign_negative() {
-                                    digitized_bit = -1.0;
+                                if (samples_since_crossing as f64) < crossing_smoothing_length {
+                                    digitized_bit = last_digitized_bit.clone();
+                                } else {
+                                    if sample_value.is_sign_positive() {
+                                        digitized_bit = 1.0;
+                                    } else if sample_value.is_sign_negative() {
+                                        digitized_bit = -1.0;
+                                    }
+                                    last_digitized_bit = digitized_bit.clone();
                                 }
 
-                                bitstream_output_chunk.push(digitized_bit.clone());
+                                bitstream_output_chunk.push(digitized_bit.clone() as f32);
 
                                 if is_crossing(last_sample_value, sample_value) {
                                     // If clock is not synced, go until a suitable change for clock is found
