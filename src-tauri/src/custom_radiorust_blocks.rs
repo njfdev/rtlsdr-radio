@@ -208,13 +208,14 @@ pub mod custom_radiorust_blocks {
         check: 0x0079,
         residue: 0x0000,
     };
-    const RBDS_OFFSET_WORDS: [(&str, u16); 6] = [
-        ("A", 0b0011111100),
-        ("B", 0b0110011000),
-        ("C", 0b0101101000),
-        ("C'", 0b1101010000),
-        ("D", 0b0110110100),
-        ("E", 0b0000000000),
+    const RBDS_OFFSET_WORDS: [(&str, u16, u16); 6] = [
+        // Block type, offset word bits, expected syndrome bits
+        ("A", 0b0011111100, 0b1111011000),
+        ("B", 0b0110011000, 0b1111010100),
+        ("C", 0b0101101000, 0b1001011100),
+        ("C'", 0b1101010000, 0b1111001100),
+        ("D", 0b0110110100, 0b1001011000),
+        ("E", 0b0000000000, 0b0000000000),
     ];
     const RBDS_PTY_INDEX: [&str; 32] = [
         "Undefined",
@@ -315,7 +316,7 @@ pub mod custom_radiorust_blocks {
 
             println!(
                 "Calculated Syndrome: {:#010b}",
-                calculate_syndrome(0b0000000000000000_0011111100)
+                calculate_syndrome(0b0000000000000000_0000000000)
             );
 
             spawn(async move {
@@ -419,15 +420,25 @@ pub mod custom_radiorust_blocks {
                                                 let data_check_crc: u16 =
                                                     (last_26_bits_u32 & 0b11_1111_1111) as u16;
 
+                                                let (offset_word, offset_bits) =
+                                                    determine_offset_word(last_26_bits_u32);
                                                 let computed_crc = compute_crc(data);
 
-                                                if data_check_crc == computed_crc && data != 0x0 {
-                                                    let offset_word =
-                                                        determine_offset_word(data_check_crc);
+                                                let received_crc = preprocess_checkword(
+                                                    data_check_crc,
+                                                    offset_bits,
+                                                );
+                                                println!(
+                                                    "Checkword: {}, Preprocessed Checkword: {}",
+                                                    data_check_crc, received_crc
+                                                );
+
+                                                if computed_crc == received_crc && data != 0x0 {
                                                     println!(
                                                         "Actual: {}, Computed: {}, Offset Word: {}, Data: {:#b}",
-                                                        data_check_crc,
-                                                        computed_crc,offset_word,
+                                                        received_crc,
+                                                        computed_crc,
+                                                        offset_word,
                                                         last_26_bits_u32
                                                     );
 
@@ -521,6 +532,20 @@ pub mod custom_radiorust_blocks {
         digest.finalize()
     }
 
+    fn preprocess_checkword(recieved_checkword: u16, offset_word: u16) -> u16 {
+        let recieved_checkword_bits = u32_to_bits(recieved_checkword as u32, 10);
+
+        let mut processed_checkword: u16 = 0;
+
+        // remove the offset word from the checkword
+        for (i, recieved_bit) in recieved_checkword_bits.iter().rev().enumerate() {
+            processed_checkword =
+                (((*recieved_bit as i8 - ((offset_word << i) & 0b1) as i8) % 2) as u16) << i;
+        }
+
+        processed_checkword
+    }
+
     fn bits_to_u32(bits: Vec<u8>) -> u32 {
         let mut value: u32 = 0;
         for bit in bits.iter().take(32) {
@@ -529,23 +554,18 @@ pub mod custom_radiorust_blocks {
         value
     }
 
-    fn calculate_xor_syndrome(checkword: u16, offset_word: u16) -> u16 {
-        checkword ^ offset_word
-    }
-
-    fn determine_offset_word(checkword: u16) -> String {
-        let syndromes: Vec<(&str, u16)> = RBDS_OFFSET_WORDS
-            .iter()
-            .map(|(block_type, offset)| (*block_type, calculate_xor_syndrome(checkword, *offset)))
-            .collect();
+    fn determine_offset_word(data: u32) -> (String, u16) {
+        let syndrome = calculate_syndrome(data);
 
         // find the block type with the smallest number of errors
-        let (block_type, syndrome) = syndromes
+        let (block_type, checkword_value, syndrome) = RBDS_OFFSET_WORDS
             .iter()
-            .min_by_key(|(_, syndrome)| syndrome.count_ones())
+            .min_by_key(|(block_type, check_word_value, expected_syndrome)| {
+                (syndrome ^ expected_syndrome).count_ones()
+            })
             .unwrap();
 
-        (*block_type).to_owned()
+        ((*block_type).to_owned(), *checkword_value)
     }
 
     fn u32_to_bits(n: u32, length: usize) -> Vec<u8> {
