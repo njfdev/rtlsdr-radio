@@ -303,7 +303,9 @@ pub mod custom_radiorust_blocks {
 
             let mut last_sample_value: f64 = 0.0;
 
-            let mut acceptable_timing_error: f64 = 0.85; // should be between 0.5 and 1, but closer to 1
+            let mut samples_moving_average: f64 = 0.0;
+
+            let mut acceptable_timing_error: f64 = 0.65; // should be between 0.5 and 1, but closer to 1
             let mut is_clock_synced = false;
             let mut samples_since_last_clock: f64 = 0.0;
             let mut last_clock_value: f64 = 0.0;
@@ -331,19 +333,31 @@ pub mod custom_radiorust_blocks {
                             sample_rate,
                             chunk: input_chunk,
                         } => {
+                            let mut smoothed_input_chunk =
+                                buf_pool.get_with_capacity(input_chunk.len());
                             let mut bitstream_output_chunk =
                                 buf_pool.get_with_capacity(input_chunk.len());
                             let mut decoded_output_chunk =
                                 buf_pool.get_with_capacity(input_chunk.len());
 
                             let desired_samples_length = sample_rate / desired_clock_freq;
+                            let samples_smoothing_length = desired_samples_length / 8.0;
                             let mut buffer_time_between_clocks =
                                 desired_samples_length * acceptable_timing_error;
                             // calculate the average clock rate by watch time between crossing 0
                             for sample in input_chunk.iter() {
                                 samples_since_last_clock = samples_since_last_clock + 1.0;
 
-                                let sample_value = sample.re.to_f64().unwrap();
+                                let sample_value_raw_value = sample.re.to_f64().unwrap();
+
+                                samples_moving_average = (samples_moving_average
+                                    * ((samples_smoothing_length - 1.0)
+                                        / samples_smoothing_length))
+                                    + (sample_value_raw_value * (1.0 / samples_smoothing_length));
+
+                                let sample_value = samples_moving_average;
+
+                                smoothed_input_chunk.push(sample_value.clone() as f32);
 
                                 let mut digitized_bit = 0.0;
 
@@ -443,6 +457,7 @@ pub mod custom_radiorust_blocks {
                                                     {
                                                         last_block_offset_word =
                                                             offset_word.clone();
+                                                        /*
                                                         println!(
                                                             "Actual: {}, Computed: {}, Offset Word: {}, Data: {:#b}, Syndrome: {}",
                                                             received_crc,
@@ -450,7 +465,7 @@ pub mod custom_radiorust_blocks {
                                                             offset_word,
                                                             last_26_bits_u32,
                                                             calculate_syndrome(last_26_bits_u32)
-                                                        );
+                                                        ); */
 
                                                         if offset_word == "B".to_owned() {
                                                             let pty: usize =
@@ -476,7 +491,7 @@ pub mod custom_radiorust_blocks {
                             // Step 4: Save to WAV file for Testing
                             if wav_writer.clone().lock().unwrap().is_none() {
                                 let wav_spec = WavSpec {
-                                    channels: 3,
+                                    channels: 4,
                                     sample_rate: sample_rate as u32,
                                     bits_per_sample: 32,
                                     sample_format: hound::SampleFormat::Float,
@@ -492,6 +507,13 @@ pub mod custom_radiorust_blocks {
                                     .as_mut()
                                     .unwrap()
                                     .write_sample(sample.re.to_f32().unwrap())
+                                    .unwrap();
+                                wav_writer
+                                    .lock()
+                                    .unwrap()
+                                    .as_mut()
+                                    .unwrap()
+                                    .write_sample(smoothed_input_chunk[i])
                                     .unwrap();
                                 wav_writer
                                     .lock()
