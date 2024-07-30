@@ -80,7 +80,7 @@ export default function RtlSdrControls({
     if (currentStation) {
       setIsSaved(isStationSaved(currentStation));
     }
-  });
+  }, [currentStation]);
 
   useEffect(() => {
     if (isProcessingRequest) return;
@@ -111,7 +111,7 @@ export default function RtlSdrControls({
     if (!requestedStation && status != RtlSdrStatus.Stopped) {
       stop_stream();
     }
-  });
+  }, [requestedStation, status]);
 
   const start_stream = async () => {
     setIsInUse(true);
@@ -128,6 +128,7 @@ export default function RtlSdrControls({
   };
   const stop_stream = async () => {
     setStatus(RtlSdrStatus.Pausing);
+    setRbdsData({});
     await invoke<string>("stop_stream", {});
     await setIsInUse(false);
     setCurrentStation(undefined);
@@ -154,7 +155,7 @@ export default function RtlSdrControls({
 
   appWindow.listen("rtlsdr_rbds", async (event: { payload: string }) => {
     let parsed_data = JSON.parse(event.payload);
-    console.log(parsed_data);
+    setRbdsData((old) => ({ ...old, ...parsed_data }));
   });
 
   let firstRun = true;
@@ -289,6 +290,9 @@ export default function RtlSdrControls({
         >
           {isSaved ? "Remove " : "Save "} Station
         </Button>
+      )}
+      {streamType == StreamType.FM && status == RtlSdrStatus.Running && (
+        <span>Program Type: {rbdsData.program_type || "loading..."}</span>
       )}
     </form>
   );

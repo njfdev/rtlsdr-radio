@@ -50,5 +50,5 @@ export interface StreamSettings {
 }
 
 export interface RbdsData {
-  programType?: string;
+  program_type?: string;
 }
