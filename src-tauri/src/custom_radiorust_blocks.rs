@@ -322,6 +322,9 @@ pub mod custom_radiorust_blocks {
             let mut samples_since_crossing: u32 = 0;
             let mut last_digitized_bit: f64 = 0.0;
 
+            // stores the current group of blocks in the format of (block_data, block_type)
+            let mut current_block_group: Vec<(u32, String)> = vec![];
+
             println!(
                 "Calculated Syndrome: {:#010b}",
                 calculate_syndrome(0b0000000000000000_0000000000)
@@ -464,29 +467,27 @@ pub mod custom_radiorust_blocks {
 
                                                     if computed_crc == received_crc
                                                         && data != 0x0
+                                                        && (current_block_group.len() == 0
+                                                            || offset_word != "A".to_owned())
                                                         && is_block_next(
                                                             &offset_word,
                                                             &last_block_offset_word,
                                                             &bits_since_last_block,
                                                         )
                                                     {
-                                                        println!(
-                                                            "Actual: {}, Computed: {}, Offset Word: {}, Data: {:#b}, Syndrome: {}",
-                                                            received_crc,
-                                                            computed_crc,
-                                                            offset_word,
+                                                        current_block_group.push((
                                                             last_26_bits_u32,
-                                                            calculate_syndrome(last_26_bits_u32)
-                                                        );
+                                                            offset_word.clone(),
+                                                        ));
 
-                                                        if offset_word == "B".to_owned() {
-                                                            let pty: usize =
-                                                                ((data >> 5) & 0b11111) as usize;
-                                                            println!(
-                                                                "Program Type: {}",
-                                                                RBDS_PTY_INDEX[pty]
+                                                        if current_block_group.len() == 4 {
+                                                            process_rbds_group(
+                                                                current_block_group.clone(),
                                                             );
+                                                            current_block_group.clear();
                                                         }
+                                                    } else {
+                                                        current_block_group.clear();
                                                     }
 
                                                     last_block_offset_word = offset_word.clone();
@@ -649,5 +650,26 @@ pub mod custom_radiorust_blocks {
         }
 
         syndrome
+    }
+
+    fn process_rbds_group(group_data: Vec<(u32, String)>) {
+        for (raw_data, block_type) in group_data.iter() {
+            let data = (raw_data >> 10) as u16;
+            let checkword = (raw_data & 0b11_1111_1111) as u16;
+
+            match block_type.as_str() {
+                "A" => {}
+                "B" => {
+                    let pty: usize = ((data >> 5) & 0b11111) as usize;
+                    println!("Program Type: {}", RBDS_PTY_INDEX[pty]);
+                }
+                "C" => {}
+                "D" => {}
+                _ => {
+                    println!("Unexpected Block");
+                    return;
+                }
+            }
+        }
     }
 }
