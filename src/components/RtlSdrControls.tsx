@@ -108,7 +108,10 @@ export default function RtlSdrControls({
   });
 
   useEffect(() => {
-    if (!requestedStation && status != RtlSdrStatus.Stopped) {
+    if (
+      (!requestedStation && status != RtlSdrStatus.Stopped) ||
+      (requestedStation && requestedStation?.type != currentStationType)
+    ) {
       stop_stream();
     }
   }, [requestedStation, status]);
