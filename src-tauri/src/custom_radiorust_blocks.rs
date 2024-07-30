@@ -456,7 +456,6 @@ pub mod custom_radiorust_blocks {
                                                 if offset_word_result.is_ok() {
                                                     let (offset_word, offset_bits) =
                                                         offset_word_result.unwrap();
-                                                    last_block_offset_word = offset_word.clone();
                                                     let received_crc = remove_offset_word(
                                                         data_check_crc,
                                                         offset_bits,
@@ -489,6 +488,8 @@ pub mod custom_radiorust_blocks {
                                                             );
                                                         }
                                                     }
+
+                                                    last_block_offset_word = offset_word.clone();
 
                                                     bits_since_last_block = 0;
                                                 }
@@ -600,7 +601,7 @@ pub mod custom_radiorust_blocks {
 
     fn bits_to_u32(bits: Vec<u8>) -> u32 {
         let mut value: u32 = 0;
-        for bit in bits.iter().take(32) {
+        for bit in bits.iter().rev().take(32) {
             value = (value << 1) | (*bit as u32);
         }
         value
