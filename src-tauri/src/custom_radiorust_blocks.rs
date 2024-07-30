@@ -1,14 +1,17 @@
 pub mod custom_radiorust_blocks {
+    use std::{collections::VecDeque, f64::consts::PI};
+
+    use biquad::{self, Biquad, Coefficients, DirectForm1, ToHertz, Type, Q_BUTTERWORTH_F64};
+
+    #[cfg(debug_assertions)]
+    use hound::{WavSpec, WavWriter};
+    #[cfg(debug_assertions)]
     use std::{
-        collections::VecDeque,
-        f64::consts::PI,
         fs,
         io::BufWriter,
         sync::{Arc, Mutex},
     };
 
-    use biquad::{self, Biquad, Coefficients, DirectForm1, ToHertz, Type, Q_BUTTERWORTH_F64};
-    use hound::{WavSpec, WavWriter};
     use nalgebra::{SMatrix, SVector};
     use radiorust::{
         flow::{new_receiver, new_sender, ReceiverConnector, SenderConnector},
@@ -284,6 +287,7 @@ pub mod custom_radiorust_blocks {
             let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
 
             // setup Wav file writer
+            #[cfg(debug_assertions)]
             let wav_writer: Arc<Mutex<Option<WavWriter<BufWriter<fs::File>>>>> =
                 Arc::new(Mutex::new(None));
 
