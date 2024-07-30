@@ -650,11 +650,17 @@ pub mod custom_radiorust_blocks {
     fn process_rbds_group(group_data: Vec<(u32, String)>, window: Window) {
         for (raw_data, block_type) in group_data.iter() {
             let data = (raw_data >> 10) as u16;
-            let _checkword = (raw_data & 0b11_1111_1111) as u16;
 
             match block_type.as_str() {
                 "A" => {}
                 "B" => {
+                    // defines the type of the group
+                    let gtype: u8 = ((data >> 12) & 0b1111) as u8;
+                    // if true, block C repeats PIC, otherwise, block C is group specific data
+                    let b0: bool = if (data >> 11) & 0b1 == 1 { true } else { false };
+                    // periodic traffic reports?
+                    let tp: bool = if (data >> 10) & 0b1 == 1 { true } else { false };
+                    // program type
                     let pty: usize = ((data >> 5) & 0b11111) as usize;
                     send_rbds_data(
                         "program_type",
