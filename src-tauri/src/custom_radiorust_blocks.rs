@@ -1,5 +1,9 @@
 pub mod custom_radiorust_blocks {
-    use std::{collections::VecDeque, f64::consts::PI};
+    use std::{
+        collections::VecDeque,
+        f64::consts::PI,
+        ops::{Range, RangeFrom},
+    };
 
     use biquad::{self, Biquad, Coefficients, DirectForm1, ToHertz, Type, Q_BUTTERWORTH_F64};
 
@@ -315,10 +319,7 @@ pub mod custom_radiorust_blocks {
             // stores the current group of blocks in the format of (block_data, block_type)
             let mut current_block_group: Vec<(u32, String)> = vec![];
 
-            println!(
-                "Calculated Syndrome: {:#010b}",
-                calculate_syndrome(0b0000000000000000_0000000000)
-            );
+            let mut rbds_state = RbdsState::new();
 
             spawn(async move {
                 loop {
@@ -473,6 +474,7 @@ pub mod custom_radiorust_blocks {
                                                         if current_block_group.len() == 4 {
                                                             process_rbds_group(
                                                                 current_block_group.clone(),
+                                                                &mut rbds_state,
                                                                 window.clone(),
                                                             );
                                                             current_block_group.clear();
@@ -647,34 +649,98 @@ pub mod custom_radiorust_blocks {
             .expect("failed to emit event");
     }
 
-    fn process_rbds_group(group_data: Vec<(u32, String)>, window: Window) {
+    struct RbdsState {
+        service_name: String,
+    }
+
+    impl RbdsState {
+        pub fn new() -> Self {
+            Self {
+                service_name: String::from(" ".repeat(8)),
+            }
+        }
+    }
+
+    fn process_rbds_group(
+        group_data: Vec<(u32, String)>,
+        rbds_state: &mut RbdsState,
+        window: Window,
+    ) {
+        // group info
+        let mut pi: u16 = 0; // program identification code
+        let mut gtype: u8 = 0; // group type
+        let mut b0: bool = false; // if true, block C repeats PIC, otherwise, block C is group specific data
+        let mut tp: bool = false; // periodic traffic reports?
+        let mut pty: usize = 0; // program type
+        let mut g_data: u8 = 0; // group specific data (bits 4-0 of block B)
+
+        // block data
+        let mut block3_data: Option<u16> = None;
+        let mut block4_data: u16 = 0;
+
         for (raw_data, block_type) in group_data.iter() {
             let data = (raw_data >> 10) as u16;
 
             match block_type.as_str() {
-                "A" => {}
-                "B" => {
-                    // defines the type of the group
-                    let gtype: u8 = ((data >> 12) & 0b1111) as u8;
-                    // if true, block C repeats PIC, otherwise, block C is group specific data
-                    let b0: bool = if (data >> 11) & 0b1 == 1 { true } else { false };
-                    // periodic traffic reports?
-                    let tp: bool = if (data >> 10) & 0b1 == 1 { true } else { false };
-                    // program type
-                    let pty: usize = ((data >> 5) & 0b11111) as usize;
-                    send_rbds_data(
-                        "program_type",
-                        RBDS_PTY_INDEX[pty].to_string(),
-                        window.clone(),
-                    );
+                "A" => {
+                    pi = data;
                 }
-                "C" => {}
-                "D" => {}
+                "B" => {
+                    gtype = ((data >> 12) & 0b1111) as u8;
+                    b0 = if (data >> 11) & 0b1 == 1 { true } else { false };
+                    tp = if (data >> 10) & 0b1 == 1 { true } else { false };
+                    pty = ((data >> 5) & 0b11111) as usize;
+                    g_data = (data & 0b11111) as u8;
+                }
+                "C" => {
+                    if !b0 {
+                        pi = data
+                    } else {
+                        block3_data = Some(data);
+                    }
+                }
+                "D" => {
+                    block4_data = data;
+                }
                 _ => {
                     println!("Unexpected Block");
                     return;
                 }
             }
         }
+
+        // process blocks based on group type
+        match gtype {
+            0b0000 => {
+                if !b0 {
+                    let mut service_name_segment: String = String::from("");
+                    service_name_segment.push(((block4_data >> 8) & 0xff) as u8 as char);
+                    service_name_segment.push((block4_data & 0xff) as u8 as char);
+
+                    println!("G_Data (4-2): {:#03b}", ((g_data >> 2) & 0b111) as u8);
+                    let char_starting_index = (g_data & 0b11) * 2;
+                    println!(
+                        "Index: {}, Data: {}",
+                        char_starting_index, service_name_segment
+                    );
+                    rbds_state.service_name.replace_range(
+                        Range {
+                            start: char_starting_index as usize,
+                            end: (char_starting_index as usize + 2),
+                        },
+                        &service_name_segment,
+                    );
+                    println!("Program Service Name: {}", rbds_state.service_name);
+                }
+            }
+            _ => {}
+        }
+
+        // send rbds data to UI
+        send_rbds_data(
+            "program_type",
+            RBDS_PTY_INDEX[pty].to_string(),
+            window.clone(),
+        );
     }
 }
