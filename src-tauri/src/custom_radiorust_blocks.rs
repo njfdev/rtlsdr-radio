@@ -285,7 +285,6 @@ pub mod custom_radiorust_blocks {
 
     pub struct RbdsDecode<Flt> {
         receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
-        window: Window,
     }
 
     impl_block_trait! { <Flt> Consumer<Signal<Complex<Flt>>> for RbdsDecode<Flt> }
@@ -483,6 +482,7 @@ pub mod custom_radiorust_blocks {
                                                         if current_block_group.len() == 4 {
                                                             process_rbds_group(
                                                                 current_block_group.clone(),
+                                                                window.clone(),
                                                             );
                                                             current_block_group.clear();
                                                         }
@@ -559,10 +559,7 @@ pub mod custom_radiorust_blocks {
                     }
                 }
             });
-            Self {
-                receiver_connector,
-                window,
-            }
+            Self { receiver_connector }
         }
     }
 
@@ -652,7 +649,14 @@ pub mod custom_radiorust_blocks {
         syndrome
     }
 
-    fn process_rbds_group(group_data: Vec<(u32, String)>) {
+    fn send_rbds_data(param_name: &str, data: String, window: Window) {
+        let message = format!("{{ \"{}\": \"{}\" }}", param_name, data);
+        window
+            .emit("rtlsdr_rbds", message.as_str())
+            .expect("failed to emit event");
+    }
+
+    fn process_rbds_group(group_data: Vec<(u32, String)>, window: Window) {
         for (raw_data, block_type) in group_data.iter() {
             let data = (raw_data >> 10) as u16;
             let checkword = (raw_data & 0b11_1111_1111) as u16;
@@ -661,7 +665,11 @@ pub mod custom_radiorust_blocks {
                 "A" => {}
                 "B" => {
                     let pty: usize = ((data >> 5) & 0b11111) as usize;
-                    println!("Program Type: {}", RBDS_PTY_INDEX[pty]);
+                    send_rbds_data(
+                        "program_type",
+                        RBDS_PTY_INDEX[pty].to_string(),
+                        window.clone(),
+                    );
                 }
                 "C" => {}
                 "D" => {}

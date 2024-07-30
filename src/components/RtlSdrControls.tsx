@@ -11,6 +11,7 @@ import {
   saveStation,
 } from "@/lib/stationsStorage";
 import {
+  RbdsData,
   srStorageName,
   Station,
   StationDetails,
@@ -61,6 +62,7 @@ export default function RtlSdrControls({
   });
   const [isProcessingRequest, setIsProcessingRequest] = useState(false);
   const [error, setError] = useState("");
+  const [rbdsData, setRbdsData] = useState<RbdsData>({});
 
   const [isSaved, setIsSaved] = useState(
     isStationSaved({
@@ -148,6 +150,11 @@ export default function RtlSdrControls({
     await setCurrentStation(undefined);
     await setRequestedStation(undefined);
     setIsInUse(false);
+  });
+
+  appWindow.listen("rtlsdr_rbds", async (event: { payload: string }) => {
+    let parsed_data = JSON.parse(event.payload);
+    console.log(parsed_data);
   });
 
   let firstRun = true;

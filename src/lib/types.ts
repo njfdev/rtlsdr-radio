@@ -48,3 +48,7 @@ export interface StreamSettings {
   sample_rate: number;
   stream_type: StreamType;
 }
+
+export interface RbdsData {
+  programType?: string;
+}
