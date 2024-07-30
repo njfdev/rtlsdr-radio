@@ -505,52 +505,55 @@ pub mod custom_radiorust_blocks {
                                 last_sample_value = sample_value;
                             }
 
-                            // Step 4: Save to WAV file for Testing
-                            if wav_writer.clone().lock().unwrap().is_none() {
-                                let wav_spec = WavSpec {
-                                    channels: 4,
-                                    sample_rate: sample_rate as u32,
-                                    bits_per_sample: 32,
-                                    sample_format: hound::SampleFormat::Float,
-                                };
-                                *(wav_writer.lock().unwrap()) = Some(
-                                    WavWriter::create("../rbds_output.wav", wav_spec).unwrap(),
-                                );
-                            }
-                            for (i, sample) in input_chunk.iter().enumerate() {
-                                wav_writer
-                                    .lock()
-                                    .unwrap()
-                                    .as_mut()
-                                    .unwrap()
-                                    .write_sample(sample.re.to_f32().unwrap())
-                                    .unwrap();
-                                wav_writer
-                                    .lock()
-                                    .unwrap()
-                                    .as_mut()
-                                    .unwrap()
-                                    .write_sample(smoothed_input_chunk[i])
-                                    .unwrap();
-                                wav_writer
-                                    .lock()
-                                    .unwrap()
-                                    .as_mut()
-                                    .unwrap()
-                                    .write_sample(bitstream_output_chunk[i])
-                                    .unwrap();
-                                let decoded_bit_result = decoded_output_chunk.get(i);
-                                let mut decoded_bit: f32 = 0.0;
-                                if decoded_bit_result.is_some() {
-                                    decoded_bit = *decoded_bit_result.unwrap();
+                            // Step 4: Save to WAV file for Testing (if not in production)
+                            #[cfg(debug_assertions)]
+                            {
+                                if wav_writer.clone().lock().unwrap().is_none() {
+                                    let wav_spec = WavSpec {
+                                        channels: 4,
+                                        sample_rate: sample_rate as u32,
+                                        bits_per_sample: 32,
+                                        sample_format: hound::SampleFormat::Float,
+                                    };
+                                    *(wav_writer.lock().unwrap()) = Some(
+                                        WavWriter::create("../rbds_output.wav", wav_spec).unwrap(),
+                                    );
                                 }
-                                wav_writer
-                                    .lock()
-                                    .unwrap()
-                                    .as_mut()
-                                    .unwrap()
-                                    .write_sample(decoded_bit)
-                                    .unwrap();
+                                for (i, sample) in input_chunk.iter().enumerate() {
+                                    wav_writer
+                                        .lock()
+                                        .unwrap()
+                                        .as_mut()
+                                        .unwrap()
+                                        .write_sample(sample.re.to_f32().unwrap())
+                                        .unwrap();
+                                    wav_writer
+                                        .lock()
+                                        .unwrap()
+                                        .as_mut()
+                                        .unwrap()
+                                        .write_sample(smoothed_input_chunk[i])
+                                        .unwrap();
+                                    wav_writer
+                                        .lock()
+                                        .unwrap()
+                                        .as_mut()
+                                        .unwrap()
+                                        .write_sample(bitstream_output_chunk[i])
+                                        .unwrap();
+                                    let decoded_bit_result = decoded_output_chunk.get(i);
+                                    let mut decoded_bit: f32 = 0.0;
+                                    if decoded_bit_result.is_some() {
+                                        decoded_bit = *decoded_bit_result.unwrap();
+                                    }
+                                    wav_writer
+                                        .lock()
+                                        .unwrap()
+                                        .as_mut()
+                                        .unwrap()
+                                        .write_sample(decoded_bit)
+                                        .unwrap();
+                                }
                             }
 
                             // unlike other blocks, this just "eats" the signal and does not pass it on
