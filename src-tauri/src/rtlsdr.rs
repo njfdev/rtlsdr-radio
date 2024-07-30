@@ -1,6 +1,5 @@
 pub mod rtlsdr {
     use std::{
-        fmt::format,
         sync::{
             atomic::{AtomicBool, Ordering},
             Arc, Mutex,
@@ -8,12 +7,10 @@ pub mod rtlsdr {
         time::Duration,
     };
 
-    use blocks::modulation::FmDemod;
     use radiorust::{
         blocks::io::{audio::cpal::AudioPlayer, rf},
         prelude::*,
     };
-    use rustfft::num_complex::ComplexFloat;
     use soapysdr::Direction;
     use tauri::{async_runtime, Window};
     use tokio::{self, time};

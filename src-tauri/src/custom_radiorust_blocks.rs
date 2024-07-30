@@ -2,32 +2,21 @@ pub mod custom_radiorust_blocks {
     use std::{
         collections::VecDeque,
         f64::consts::PI,
-        fmt::Debug,
         fs,
         io::BufWriter,
         sync::{Arc, Mutex},
     };
 
-    use biquad::{
-        self, Biquad, Coefficients, DirectForm1, DirectForm2Transposed, ToHertz, Type,
-        Q_BUTTERWORTH_F32, Q_BUTTERWORTH_F64,
-    };
-    use fundsp::{
-        hacker::{self, AudioNode, BiquadCoefs, BufferMut, BufferRef},
-        typenum::int::Z0,
-        F32x,
-    };
+    use biquad::{self, Biquad, Coefficients, DirectForm1, ToHertz, Type, Q_BUTTERWORTH_F64};
     use hound::{WavSpec, WavWriter};
-    use nalgebra::{SMatrix, SVector, Vector1, VectorN};
+    use nalgebra::{SMatrix, SVector};
     use radiorust::{
-        blocks,
-        flow::{new_receiver, new_sender, Consumer, Message, ReceiverConnector, SenderConnector},
+        flow::{new_receiver, new_sender, ReceiverConnector, SenderConnector},
         impl_block_trait,
         numbers::Float,
         prelude::{ChunkBuf, ChunkBufPool, Complex},
         signal::Signal,
     };
-    use rustfft::num_traits::{Signed, ToBytes, ToPrimitive};
     use tauri::Window;
     use tokio::spawn;
 
@@ -125,7 +114,6 @@ pub mod custom_radiorust_blocks {
     pub struct DownMixer<Flt> {
         receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
         sender_connector: SenderConnector<Signal<Complex<Flt>>>,
-        freq: Flt,
     }
 
     impl_block_trait! { <Flt> Consumer<Signal<Complex<Flt>>> for DownMixer<Flt> }
@@ -188,15 +176,14 @@ pub mod custom_radiorust_blocks {
             Self {
                 receiver_connector,
                 sender_connector,
-                freq,
             }
         }
     }
 
     // constants for RDBS Decoding
-    const RBDS_CARRIER_FREQ: f64 = 57_000.0;
-    const RBDS_BANDWIDTH: f64 = 4_000.0;
-    const RBDS_CLOCK_FREQ: f64 = RBDS_CARRIER_FREQ / 48.0; // as defined in the RDS spec
+    //const RBDS_CARRIER_FREQ: f64 = 57_000.0;
+    //const RBDS_BANDWIDTH: f64 = 4_000.0;
+    //const RBDS_CLOCK_FREQ: f64 = RBDS_CARRIER_FREQ / 48.0; // as defined in the RDS spec
     const RBDS_CRC_POLYNOMIAL: u16 = 0b10110111001; // As defined by RDS spec: x^10 + x^8 + x^7 + x^5 + x^4 + x^3 + 1
     const RBDS_CRC_ALGO: crc::Algorithm<u16> = crc::Algorithm {
         width: 10,
@@ -297,14 +284,14 @@ pub mod custom_radiorust_blocks {
             let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
 
             // setup Wav file writer
-            let mut wav_writer: Arc<Mutex<Option<WavWriter<BufWriter<fs::File>>>>> =
+            let wav_writer: Arc<Mutex<Option<WavWriter<BufWriter<fs::File>>>>> =
                 Arc::new(Mutex::new(None));
 
             let mut last_sample_value: f64 = 0.0;
 
             let mut samples_moving_average: f64 = 0.0;
 
-            let mut acceptable_timing_error: f64 = 0.75; // should be between 0.5 and 1, but closer to 1
+            let acceptable_timing_error: f64 = 0.75; // should be between 0.5 and 1, but closer to 1
             let mut is_clock_synced = false;
             let mut samples_since_last_clock: f64 = 0.0;
             let mut last_clock_value: f64 = 0.0;
@@ -351,7 +338,7 @@ pub mod custom_radiorust_blocks {
                             let samples_smoothing_length = desired_samples_length / 8.0;
                             // filter out high frequency crossings (they should occur no faster than 1/8 of the clock frequency)
                             let crossing_smoothing_length = desired_samples_length / 8.0;
-                            let mut buffer_time_between_clocks =
+                            let buffer_time_between_clocks =
                                 desired_samples_length * acceptable_timing_error;
                             // calculate the average clock rate by watch time between crossing 0
                             for sample in input_chunk.iter() {
@@ -558,7 +545,7 @@ pub mod custom_radiorust_blocks {
 
                             // unlike other blocks, this just "eats" the signal and does not pass it on
                         }
-                        Signal::Event(event) => {}
+                        Signal::Event(_event) => {}
                     }
                 }
             });
@@ -609,22 +596,19 @@ pub mod custom_radiorust_blocks {
     }
 
     fn determine_offset_word(bits: u32) -> Result<(String, u16), ()> {
-        let data = (bits >> 10) as u16;
-        let checkword = (bits & 0b11_1111_1111) as u16;
-
         let syndrome = calculate_syndrome(bits);
 
         // find the block type with the smallest number of errors
         let possible_offset_words: Vec<&(&str, u16, u16)> = RBDS_OFFSET_WORDS
             .iter()
-            .filter(|(block_type, offset_bits, expected_syndrome)| syndrome == *expected_syndrome)
+            .filter(|(_block_type, _offset_bits, expected_syndrome)| syndrome == *expected_syndrome)
             .collect();
 
         if possible_offset_words.len() == 0 {
             return Err(());
         }
 
-        let (block_type, offset_bits, syndrome) = possible_offset_words[0];
+        let (block_type, offset_bits, _syndrome) = possible_offset_words[0];
 
         Ok(((block_type.to_owned()).to_owned(), *offset_bits))
     }
@@ -641,7 +625,7 @@ pub mod custom_radiorust_blocks {
         let rbds_parity_vector = Matrix26x10::from_row_slice(&RBDS_PARITY_CHECK_MATRIX);
         let data_vector = Vector26::from_row_slice(u32_to_bits(recieved_data, 26).as_mut_slice());
 
-        let matrix_mul_result = (data_vector.transpose() * rbds_parity_vector);
+        let matrix_mul_result = data_vector.transpose() * rbds_parity_vector;
 
         let mut syndrome: u16 = 0b0;
 
@@ -662,7 +646,7 @@ pub mod custom_radiorust_blocks {
     fn process_rbds_group(group_data: Vec<(u32, String)>, window: Window) {
         for (raw_data, block_type) in group_data.iter() {
             let data = (raw_data >> 10) as u16;
-            let checkword = (raw_data & 0b11_1111_1111) as u16;
+            let _checkword = (raw_data & 0b11_1111_1111) as u16;
 
             match block_type.as_str() {
                 "A" => {}
