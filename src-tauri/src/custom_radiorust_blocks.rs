@@ -651,12 +651,16 @@ pub mod custom_radiorust_blocks {
 
     struct RbdsState {
         service_name: String,
+        radio_text: String,
+        radio_text_ab_flag: bool, // if switches from previous value, then clear radio_text
     }
 
     impl RbdsState {
         pub fn new() -> Self {
             Self {
                 service_name: String::from(" ".repeat(8)),
+                radio_text: String::from(" ".repeat(64)),
+                radio_text_ab_flag: false,
             }
         }
     }
@@ -693,7 +697,7 @@ pub mod custom_radiorust_blocks {
                     g_data = (data & 0b11111) as u8;
                 }
                 "C" => {
-                    if !b0 {
+                    if b0 {
                         pi = data
                     } else {
                         block3_data = Some(data);
@@ -711,27 +715,59 @@ pub mod custom_radiorust_blocks {
 
         // process blocks based on group type
         match gtype {
+            // Program Service Name
             0b0000 => {
-                if !b0 {
-                    let mut service_name_segment: String = String::from("");
-                    service_name_segment.push(((block4_data >> 8) & 0xff) as u8 as char);
-                    service_name_segment.push((block4_data & 0xff) as u8 as char);
+                let mut service_name_segment: String = String::from("");
+                service_name_segment.push(((block4_data >> 8) & 0xff) as u8 as char);
+                service_name_segment.push((block4_data & 0xff) as u8 as char);
 
-                    println!("G_Data (4-2): {:#03b}", ((g_data >> 2) & 0b111) as u8);
-                    let char_starting_index = (g_data & 0b11) * 2;
-                    println!(
-                        "Index: {}, Data: {}",
-                        char_starting_index, service_name_segment
-                    );
-                    rbds_state.service_name.replace_range(
-                        Range {
-                            start: char_starting_index as usize,
-                            end: (char_starting_index as usize + 2),
-                        },
-                        &service_name_segment,
-                    );
-                    println!("Program Service Name: {}", rbds_state.service_name);
+                let char_starting_index = (g_data & 0b11) * 2;
+                /*
+                println!("G_Data (4-2): {:#03b}", ((g_data >> 2) & 0b111) as u8);
+                println!(
+                    "Index: {}, Data: {}",
+                    char_starting_index, service_name_segment
+                );
+                */
+                rbds_state.service_name.replace_range(
+                    Range {
+                        start: char_starting_index as usize,
+                        end: (char_starting_index as usize + 2),
+                    },
+                    &service_name_segment,
+                );
+                println!("Program Service Name: {}", rbds_state.service_name);
+            }
+            // RadioText
+            0b0010 => {
+                let mut radio_text_segment = String::from("");
+
+                if !b0 {
+                    radio_text_segment.push(((block3_data.unwrap() >> 8) & 0xff) as u8 as char);
+                    radio_text_segment.push((block3_data.unwrap() & 0xff) as u8 as char);
                 }
+                radio_text_segment.push(((block4_data >> 8) & 0xff) as u8 as char);
+                radio_text_segment.push((block4_data & 0xff) as u8 as char);
+
+                // if ab_flag changes, clear radio text
+                let ab_flag = if ((g_data >> 4) & 1) == 1 {
+                    true
+                } else {
+                    false
+                };
+                if ab_flag != rbds_state.radio_text_ab_flag {
+                    rbds_state.radio_text.clear();
+                    rbds_state.radio_text = String::from(" ".repeat(64));
+                    rbds_state.radio_text_ab_flag = ab_flag;
+                }
+
+                let char_starting_index = (g_data & 0b1111) as usize * radio_text_segment.len();
+                let char_ending_index = char_starting_index + radio_text_segment.len();
+
+                rbds_state
+                    .radio_text
+                    .replace_range(char_starting_index..char_ending_index, &radio_text_segment);
+                println!("Radio Text: \n{}\n", rbds_state.radio_text);
             }
             _ => {}
         }
