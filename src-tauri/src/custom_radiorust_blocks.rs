@@ -312,6 +312,8 @@ pub mod custom_radiorust_blocks {
 
             let mut last_26_bits: VecDeque<u8> = VecDeque::with_capacity(26);
 
+            // use for synchronizing groups
+            let mut are_blocks_synced = false;
             let mut last_block_offset_word: String = "".to_owned();
             let mut bits_since_last_block: u64 = 0;
 
@@ -458,7 +460,7 @@ pub mod custom_radiorust_blocks {
                                                     );
                                                     let computed_crc = compute_crc(data);
 
-                                                    if computed_crc == received_crc
+                                                    if (computed_crc == received_crc
                                                         && data != 0x0
                                                         && (current_block_group.len() == 0
                                                             || offset_word != "A".to_owned())
@@ -466,12 +468,17 @@ pub mod custom_radiorust_blocks {
                                                             &offset_word,
                                                             &last_block_offset_word,
                                                             &bits_since_last_block,
-                                                        )
+                                                        ))
                                                     {
                                                         current_block_group.push((
                                                             last_26_bits_u32,
                                                             offset_word.clone(),
                                                         ));
+
+                                                        // if 2 valid blocks in a row, then block synced has been achieved (as defined by RSD spec)
+                                                        if current_block_group.len() >= 2 {
+                                                            are_blocks_synced = true;
+                                                        }
 
                                                         if current_block_group.len() == 4 {
                                                             process_rbds_group(
@@ -482,8 +489,14 @@ pub mod custom_radiorust_blocks {
                                                             current_block_group.clear();
                                                         }
                                                     } else {
+                                                        are_blocks_synced = false;
                                                         current_block_group.clear();
                                                     }
+
+                                                    println!(
+                                                        "Blocks synced? {}",
+                                                        are_blocks_synced
+                                                    );
 
                                                     last_block_offset_word = offset_word.clone();
 
