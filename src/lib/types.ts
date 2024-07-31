@@ -51,4 +51,5 @@ export interface StreamSettings {
 
 export interface RbdsData {
   program_type?: string;
+  radio_text?: string;
 }

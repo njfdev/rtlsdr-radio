@@ -767,7 +767,9 @@ pub mod custom_radiorust_blocks {
                 rbds_state
                     .radio_text
                     .replace_range(char_starting_index..char_ending_index, &radio_text_segment);
-                println!("Radio Text: \n{}\n", rbds_state.radio_text);
+
+                // send rbds data to UI
+                send_rbds_data("radio_text", rbds_state.radio_text.clone(), window.clone());
             }
             _ => {}
         }
