@@ -297,6 +297,10 @@ export default function RtlSdrControls({
       {streamType == StreamType.FM && status == RtlSdrStatus.Running && (
         <>
           <span>Program Type: {rbdsData.program_type || "loading..."}</span>
+          <span>
+            Program Service Name:{" "}
+            {rbdsData.program_service_name || "loading..."}
+          </span>
           <span className="whitespace-pre">
             Radio Text: {rbdsData.radio_text || "loading..."}
           </span>
