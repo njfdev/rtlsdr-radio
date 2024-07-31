@@ -5,6 +5,8 @@ pub mod custom_radiorust_blocks {
         ops::{Range, RangeFrom},
     };
 
+    use serde_json::json;
+
     use biquad::{self, Biquad, Coefficients, DirectForm1, ToHertz, Type, Q_BUTTERWORTH_F64};
 
     #[cfg(debug_assertions)]
@@ -643,9 +645,12 @@ pub mod custom_radiorust_blocks {
     }
 
     fn send_rbds_data(param_name: &str, data: String, window: Window) {
-        let message = format!("{{ \"{}\": \"{}\" }}", param_name, data);
+        let json_object: String = json!({
+            param_name: data
+        })
+        .to_string();
         window
-            .emit("rtlsdr_rbds", message.as_str())
+            .emit("rtlsdr_rbds", json_object.as_str())
             .expect("failed to emit event");
     }
 
