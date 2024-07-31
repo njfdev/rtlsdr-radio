@@ -279,6 +279,29 @@ pub mod custom_radiorust_blocks {
         1, 1, 0, 0, 0, 1, 1, 0, 1, 1, //
     ];
 
+    struct RbdsDecodeState {
+        last_28_bits: VecDeque<u8>,
+        are_blocks_synced: bool,
+        last_block_offset_word: String,
+        bits_since_last_block: u64,
+        // stores the current group of blocks in the format of (block_data, block_type)
+        current_block_group: Vec<(u32, String)>,
+        rbds_state: RbdsState,
+    }
+
+    impl RbdsDecodeState {
+        pub fn new() -> RbdsDecodeState {
+            Self {
+                last_28_bits: VecDeque::with_capacity(28),
+                are_blocks_synced: false,
+                last_block_offset_word: String::from(""),
+                bits_since_last_block: 0,
+                current_block_group: vec![],
+                rbds_state: RbdsState::new(),
+            }
+        }
+    }
+
     pub struct RbdsDecode<Flt> {
         receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
     }
@@ -310,20 +333,10 @@ pub mod custom_radiorust_blocks {
 
             let mut buf_pool = ChunkBufPool::<f32>::new();
 
-            let mut last_26_bits: VecDeque<u8> = VecDeque::with_capacity(26);
-
-            // use for synchronizing groups
-            let mut are_blocks_synced = false;
-            let mut last_block_offset_word: String = "".to_owned();
-            let mut bits_since_last_block: u64 = 0;
+            let mut rbds_decode_state = RbdsDecodeState::new();
 
             let mut samples_since_crossing: u32 = 0;
             let mut last_digitized_bit: f64 = 0.0;
-
-            // stores the current group of blocks in the format of (block_data, block_type)
-            let mut current_block_group: Vec<(u32, String)> = vec![];
-
-            let mut rbds_state = RbdsState::new();
 
             spawn(async move {
                 loop {
@@ -335,12 +348,16 @@ pub mod custom_radiorust_blocks {
                             sample_rate,
                             chunk: input_chunk,
                         } => {
+                            // use for saving to wav file
                             let mut smoothed_input_chunk =
                                 buf_pool.get_with_capacity(input_chunk.len());
                             let mut bitstream_output_chunk =
                                 buf_pool.get_with_capacity(input_chunk.len());
                             let mut decoded_output_chunk =
                                 buf_pool.get_with_capacity(input_chunk.len());
+
+                            // decoded bits from manchester encoded signal
+                            let mut decoded_bits: Vec<u8> = vec![];
 
                             let desired_samples_length = sample_rate / desired_clock_freq;
                             // smoothing of input based on last ~0.1 milliseconds
@@ -414,10 +431,18 @@ pub mod custom_radiorust_blocks {
                                             );
                                             samples_since_last_clock = 0.0;
                                             println!("\nLost clock sync!");
+
+                                            // make sure to process rbds data already received
+                                            rbds_process_bits(
+                                                &mut decoded_bits,
+                                                &mut rbds_decode_state,
+                                                window.clone(),
+                                                true,
+                                            );
+                                            decoded_bits.clear();
                                         } else if samples_since_last_clock
                                             > buffer_time_between_clocks
                                         {
-                                            bits_since_last_block = bits_since_last_block + 1;
                                             let decoded_bit;
                                             if last_clock_value == (digitized_bit as f64) {
                                                 decoded_bit = 0;
@@ -435,75 +460,8 @@ pub mod custom_radiorust_blocks {
                                                 );
                                             }
 
-                                            last_26_bits.push_front(decoded_bit);
+                                            decoded_bits.push(decoded_bit);
 
-                                            if last_26_bits.len() > 26 {
-                                                last_26_bits.pop_back();
-
-                                                let last_26_bits_u32 =
-                                                    bits_to_u32(last_26_bits.clone().into());
-
-                                                // calculate and check CRC
-                                                let data: u16 = (last_26_bits_u32 >> 10) as u16;
-                                                let data_check_crc: u16 =
-                                                    (last_26_bits_u32 & 0b11_1111_1111) as u16;
-
-                                                let offset_word_result =
-                                                    determine_offset_word(last_26_bits_u32);
-
-                                                if offset_word_result.is_ok() {
-                                                    let (offset_word, offset_bits) =
-                                                        offset_word_result.unwrap();
-                                                    let received_crc = remove_offset_word(
-                                                        data_check_crc,
-                                                        offset_bits,
-                                                    );
-                                                    let computed_crc = compute_crc(data);
-
-                                                    if (computed_crc == received_crc
-                                                        && data != 0x0
-                                                        && (current_block_group.len() == 0
-                                                            || offset_word != "A".to_owned())
-                                                        && is_block_next(
-                                                            &offset_word,
-                                                            &last_block_offset_word,
-                                                            &bits_since_last_block,
-                                                        ))
-                                                    {
-                                                        current_block_group.push((
-                                                            last_26_bits_u32,
-                                                            offset_word.clone(),
-                                                        ));
-
-                                                        // if 2 valid blocks in a row, then block synced has been achieved (as defined by RSD spec)
-                                                        if current_block_group.len() >= 2 {
-                                                            are_blocks_synced = true;
-                                                        }
-
-                                                        if current_block_group.len() == 4 {
-                                                            process_rbds_group(
-                                                                current_block_group.clone(),
-                                                                &mut rbds_state,
-                                                                window.clone(),
-                                                            );
-                                                            current_block_group.clear();
-                                                        }
-                                                    } else {
-                                                        are_blocks_synced = false;
-                                                        current_block_group.clear();
-                                                    }
-
-                                                    println!(
-                                                        "Blocks synced? {}",
-                                                        are_blocks_synced
-                                                    );
-
-                                                    last_block_offset_word = offset_word.clone();
-
-                                                    bits_since_last_block = 0;
-                                                }
-                                            }
-                                            // 01101
                                             last_clock_value = digitized_bit.clone() as f64;
                                             samples_since_last_clock = 0.0;
                                         }
@@ -512,6 +470,14 @@ pub mod custom_radiorust_blocks {
 
                                 last_sample_value = sample_value;
                             }
+
+                            // process all bits recieved
+                            rbds_process_bits(
+                                &mut decoded_bits,
+                                &mut rbds_decode_state,
+                                window.clone(),
+                                false,
+                            );
 
                             // Step 4: Save to WAV file for Testing (if not in production)
                             #[cfg(debug_assertions)]
@@ -754,7 +720,13 @@ pub mod custom_radiorust_blocks {
                     },
                     &service_name_segment,
                 );
-                println!("Program Service Name: {}", rbds_state.service_name);
+
+                // send rbds data to UI
+                send_rbds_data(
+                    "program_service_name",
+                    rbds_state.service_name.clone(),
+                    window.clone(),
+                );
             }
             // RadioText
             0b0010 => {
@@ -798,5 +770,71 @@ pub mod custom_radiorust_blocks {
             RBDS_PTY_INDEX[pty].to_string(),
             window.clone(),
         );
+    }
+
+    fn rbds_process_bits(
+        bit_stream: &mut Vec<u8>,
+        rbds_decode_state: &mut RbdsDecodeState,
+        window: Window,
+        bit_stream_ending: bool,
+    ) {
+        for bit in bit_stream {
+            rbds_decode_state.last_28_bits.push_front(*bit);
+            rbds_decode_state.bits_since_last_block = rbds_decode_state.bits_since_last_block + 1;
+
+            if rbds_decode_state.last_28_bits.len() > 26 {
+                rbds_decode_state.last_28_bits.pop_back();
+
+                let last_26_bits_u32 = bits_to_u32(rbds_decode_state.last_28_bits.clone().into());
+
+                // calculate and check CRC
+                let data: u16 = (last_26_bits_u32 >> 10) as u16;
+                let data_check_crc: u16 = (last_26_bits_u32 & 0b11_1111_1111) as u16;
+
+                let offset_word_result = determine_offset_word(last_26_bits_u32);
+
+                if offset_word_result.is_ok() {
+                    let (offset_word, offset_bits) = offset_word_result.unwrap();
+                    let received_crc = remove_offset_word(data_check_crc, offset_bits);
+                    let computed_crc = compute_crc(data);
+
+                    if (computed_crc == received_crc
+                        && data != 0x0
+                        && (rbds_decode_state.current_block_group.len() == 0
+                            || offset_word != "A".to_owned())
+                        && is_block_next(
+                            &offset_word,
+                            &rbds_decode_state.last_block_offset_word,
+                            &rbds_decode_state.bits_since_last_block,
+                        ))
+                    {
+                        rbds_decode_state
+                            .current_block_group
+                            .push((last_26_bits_u32, offset_word.clone()));
+
+                        // if 2 valid blocks in a row, then block synced has been achieved (as defined by RSD spec)
+                        if rbds_decode_state.current_block_group.len() >= 2 {
+                            rbds_decode_state.are_blocks_synced = true;
+                        }
+
+                        if rbds_decode_state.current_block_group.len() == 4 {
+                            process_rbds_group(
+                                rbds_decode_state.current_block_group.clone(),
+                                &mut rbds_decode_state.rbds_state,
+                                window.clone(),
+                            );
+                            rbds_decode_state.current_block_group.clear();
+                        }
+                    } else {
+                        rbds_decode_state.are_blocks_synced = false;
+                        rbds_decode_state.current_block_group.clear();
+                    }
+
+                    rbds_decode_state.last_block_offset_word = offset_word.clone();
+
+                    rbds_decode_state.bits_since_last_block = 0;
+                }
+            }
+        }
     }
 }
