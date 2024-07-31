@@ -576,7 +576,7 @@ pub mod custom_radiorust_blocks {
 
     fn bits_to_u32(bits: Vec<u8>) -> u32 {
         let mut value: u32 = 0;
-        for bit in bits.iter().rev().take(32) {
+        for bit in bits.iter().take(32) {
             value = (value << 1) | (*bit as u32);
         }
         value
@@ -779,13 +779,16 @@ pub mod custom_radiorust_blocks {
         bit_stream_ending: bool,
     ) {
         for bit in bit_stream {
-            rbds_decode_state.last_28_bits.push_front(*bit);
+            rbds_decode_state.last_28_bits.push_back(*bit);
             rbds_decode_state.bits_since_last_block = rbds_decode_state.bits_since_last_block + 1;
 
-            if rbds_decode_state.last_28_bits.len() > 26 {
-                rbds_decode_state.last_28_bits.pop_back();
+            if rbds_decode_state.bits_since_last_block > 28 {
+                rbds_decode_state.are_blocks_synced = false;
+            }
 
-                let last_26_bits_u32 = bits_to_u32(rbds_decode_state.last_28_bits.clone().into());
+            if rbds_decode_state.last_28_bits.len() >= 26 {
+                let last_26_bits_u32 = (bits_to_u32(rbds_decode_state.last_28_bits.clone().into()))
+                    & 0b11_1111_1111_1111_1111_1111_1111;
 
                 // calculate and check CRC
                 let data: u16 = (last_26_bits_u32 >> 10) as u16;
@@ -825,6 +828,10 @@ pub mod custom_radiorust_blocks {
                             );
                             rbds_decode_state.current_block_group.clear();
                         }
+
+                        if rbds_decode_state.are_blocks_synced {
+                            rbds_decode_state.last_28_bits.clear();
+                        }
                     } else {
                         rbds_decode_state.are_blocks_synced = false;
                         rbds_decode_state.current_block_group.clear();
@@ -834,6 +841,10 @@ pub mod custom_radiorust_blocks {
 
                     rbds_decode_state.bits_since_last_block = 0;
                 }
+            }
+
+            if rbds_decode_state.last_28_bits.len() > 28 {
+                rbds_decode_state.last_28_bits.pop_front();
             }
         }
     }
