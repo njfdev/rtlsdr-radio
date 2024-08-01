@@ -300,6 +300,7 @@ export default function RtlSdrControls({
           <span>
             Program Service Name:{" "}
             {rbdsData.program_service_name || "loading..."}
+            {rbdsData.pty_name ? ` ${rbdsData.pty_name}` : ""}
           </span>
           <span className="whitespace-pre-wrap">
             Radio Text: {rbdsData.radio_text || "loading..."}

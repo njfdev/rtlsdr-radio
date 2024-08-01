@@ -695,6 +695,8 @@ pub mod custom_radiorust_blocks {
         service_name: String,
         radio_text: String,
         radio_text_ab_flag: bool, // if switches from previous value, then clear radio_text
+        pty_name: String,
+        pty_name_ab_flag: bool, // if switches from previous value, then clear pty_name
     }
 
     impl RbdsState {
@@ -703,6 +705,8 @@ pub mod custom_radiorust_blocks {
                 service_name: String::from(" ".repeat(8)),
                 radio_text: String::from(" ".repeat(64)),
                 radio_text_ab_flag: false,
+                pty_name: String::from(" ".repeat(8)),
+                pty_name_ab_flag: false,
             }
         }
     }
@@ -793,6 +797,7 @@ pub mod custom_radiorust_blocks {
                     .is_char_boundary(char_starting_index)
                     || !rbds_state.service_name.is_char_boundary(char_ending_index)
                 {
+                    rbds_state.service_name.clear();
                     rbds_state.service_name = String::from(" ".repeat(8));
                 }
 
@@ -851,6 +856,46 @@ pub mod custom_radiorust_blocks {
 
                 // send rbds data to UI
                 send_rbds_data("radio_text", rbds_state.radio_text.clone(), window.clone());
+            }
+            // Program Type Name (10A) and Open Data (10B)
+            0b1010 => {
+                if !b0 {
+                    let mut ptyn_segment = String::from("");
+
+                    ptyn_segment.push(((block3_data.unwrap() >> 8) & 0xff) as u8 as char);
+                    ptyn_segment.push((block3_data.unwrap() & 0xff) as u8 as char);
+                    ptyn_segment.push(((block4_data >> 8) & 0xff) as u8 as char);
+                    ptyn_segment.push((block4_data & 0xff) as u8 as char);
+
+                    // if ab_flag changes, clear pty_name
+                    let ab_flag = if ((g_data >> 4) & 1) == 1 {
+                        true
+                    } else {
+                        false
+                    };
+                    if ab_flag != rbds_state.pty_name_ab_flag {
+                        rbds_state.pty_name = String::from(" ".repeat(8));
+                        rbds_state.pty_name_ab_flag = ab_flag;
+                    }
+
+                    let char_starting_index = (g_data & 0b1) as usize * 4;
+                    let char_ending_index = char_starting_index + 4;
+
+                    // if indexes are not at char boundaries, assume error and reset string
+                    if !rbds_state.pty_name.is_char_boundary(char_starting_index)
+                        || !rbds_state.pty_name.is_char_boundary(char_ending_index)
+                    {
+                        rbds_state.pty_name.clear();
+                        rbds_state.pty_name = String::from(" ".repeat(8));
+                    }
+
+                    rbds_state
+                        .pty_name
+                        .replace_range(char_starting_index..char_ending_index, &ptyn_segment);
+
+                    // send rbds data to UI
+                    send_rbds_data("pty_name", rbds_state.pty_name.clone(), window.clone());
+                }
             }
             _ => {}
         }

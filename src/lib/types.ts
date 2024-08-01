@@ -51,6 +51,7 @@ export interface StreamSettings {
 
 export interface RbdsData {
   program_type?: string;
+  pty_name?: string;
   program_service_name?: string;
   radio_text?: string;
   ms_flag?: boolean;
