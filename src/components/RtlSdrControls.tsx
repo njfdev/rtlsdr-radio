@@ -348,6 +348,25 @@ export default function RtlSdrControls({
                 : "Loading..."}
             </span>
           </div>
+          <span>
+            Traffic Info:{" "}
+            {(() => {
+              if (rbdsData.ta != undefined && rbdsData.tp != undefined) {
+                switch (true) {
+                  case rbdsData.tp == false && rbdsData.ta == false:
+                    return "This radio station does not carry traffic announcements.";
+                  case rbdsData.tp == false && rbdsData.ta == true:
+                    return "This radio station does not carry traffic announcements, but it carries EON information about a station that does.";
+                  case rbdsData.tp == false && rbdsData.ta == false:
+                    return "This radio station carries traffic announcements, but none are ongoing presently.";
+                  case rbdsData.tp == false && rbdsData.ta == false:
+                    return "There is an ongoing traffic announcement.";
+                }
+              }
+
+              return "Loading...";
+            })()}
+          </span>
         </>
       )}
     </form>

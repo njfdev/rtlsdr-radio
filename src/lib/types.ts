@@ -59,4 +59,6 @@ export interface RbdsData {
   di_is_binaural?: boolean;
   di_is_compressed?: boolean;
   di_is_pty_dynamic?: boolean;
+  ta?: boolean;
+  tp?: boolean;
 }

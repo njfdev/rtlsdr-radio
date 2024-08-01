@@ -784,6 +784,14 @@ pub mod custom_radiorust_blocks {
                     send_rbds_data(&di_bit_name, decoder_control_bit, window.clone());
                 }
 
+                // set the traffic announcement bit
+                let ta = if ((g_data >> 4) & 1) == 1 {
+                    true
+                } else {
+                    false
+                };
+                send_rbds_data("ta", ta, window.clone());
+
                 // get and set the service_name characters
                 let mut service_name_segment: String = String::from("");
                 service_name_segment.push(((block4_data >> 8) & 0xff) as u8 as char);
@@ -932,6 +940,7 @@ pub mod custom_radiorust_blocks {
             RBDS_PTY_INDEX[pty].to_string(),
             window.clone(),
         );
+        send_rbds_data("tp", tp, window.clone());
     }
 
     fn rbds_process_bits(
