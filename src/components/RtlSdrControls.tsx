@@ -304,6 +304,14 @@ export default function RtlSdrControls({
           <span className="whitespace-pre-wrap">
             Radio Text: {rbdsData.radio_text || "loading..."}
           </span>
+          <span className="whitespace-pre-wrap">
+            Audio Type: {rbdsData.ms_flag}
+            {rbdsData.ms_flag != undefined
+              ? rbdsData.ms_flag
+                ? "Music"
+                : "Speech"
+              : "loading..."}
+          </span>
         </>
       )}
     </form>

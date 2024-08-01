@@ -723,7 +723,7 @@ pub mod custom_radiorust_blocks {
         syndrome
     }
 
-    fn send_rbds_data(param_name: &str, data: String, window: Window) {
+    fn send_rbds_data<T: serde::Serialize>(param_name: &str, data: T, window: Window) {
         let json_object: String = json!({
             param_name: data
         })
@@ -821,12 +821,20 @@ pub mod custom_radiorust_blocks {
                     &service_name_segment,
                 );
 
+                // get the music/speech flag (true = Music, false = speech)
+                let ms_flag = if ((g_data >> 3) & 1) == 1 {
+                    true
+                } else {
+                    false
+                };
+
                 // send rbds data to UI
                 send_rbds_data(
                     "program_service_name",
                     rbds_state.service_name.clone(),
                     window.clone(),
                 );
+                send_rbds_data("ms_flag", ms_flag, window.clone());
             }
             // RadioText
             0b0010 => {

@@ -53,4 +53,5 @@ export interface RbdsData {
   program_type?: string;
   program_service_name?: string;
   radio_text?: string;
+  ms_flag?: boolean;
 }
