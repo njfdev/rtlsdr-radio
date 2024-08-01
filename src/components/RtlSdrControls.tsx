@@ -74,6 +74,8 @@ export default function RtlSdrControls({
   const [isProcessingRequest, setIsProcessingRequest] = useState(false);
   const [error, setError] = useState("");
   const [rbdsData, setRbdsData] = useState<RbdsData>({});
+  const [has10SecondsElapsed, set10SecondsElapsed] = useState(false);
+  let counterId: NodeJS.Timeout | undefined;
 
   const [isSaved, setIsSaved] = useState(
     isStationSaved({
@@ -139,9 +141,17 @@ export default function RtlSdrControls({
       frequency: streamSettings.freq,
       channel: undefined,
     });
+
+    // If no RBDS data after 10 seconds, alert user
+    counterId = setTimeout(() => set10SecondsElapsed(true), 10 * 1000);
   };
   const stop_stream = async () => {
     setStatus(RtlSdrStatus.Pausing);
+    if (counterId) {
+      clearTimeout(counterId);
+      counterId = undefined;
+    }
+    set10SecondsElapsed(false);
     await invoke<string>("stop_stream", {});
     await setIsInUse(false);
     setCurrentStation(undefined);
@@ -359,6 +369,15 @@ export default function RtlSdrControls({
                         )}
                       </CardDescription>
                     </CardHeader>
+                    {has10SecondsElapsed &&
+                      Object.values(rbdsData).every((x) => x === undefined) && (
+                        <CardContent className="flex flex-col items-center align-middle justify-center">
+                          <CardDescription className="text-center">
+                            Cannot receive RBDS signal! It is either too weak or
+                            the station does not support RBDS.
+                          </CardDescription>
+                        </CardContent>
+                      )}
                   </Card>
                 </TabsContent>
                 <TabsContent value="advancedInfo">
