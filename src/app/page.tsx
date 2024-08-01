@@ -84,9 +84,9 @@ export default function Home() {
             setCurrentStation(undefined);
             setOpenTab(value as typeof openTab);
           }}
-          className="flex flex-col justify-start items-center align-middle mt-8"
+          className="flex flex-col justify-start items-center align-middle mt-8 *:pb-8"
         >
-          <TabsList>
+          <TabsList className="!pb-1">
             <TabsTrigger value={StationType.HDRadio.toString()}>
               HD Radio
             </TabsTrigger>

@@ -186,9 +186,9 @@ export default function RtlSdrControls({
   }, []);
 
   return (
-    <div>
+    <div className="flex xl:flex-row flex-col gap-8 xl:w-[48rem] w-[24rem]">
       <form
-        className="grid gap-3 max-w-[24rem] w-[24rem]"
+        className="grid gap-3 max-w-[24rem] w-[24rem] h-max"
         onSubmit={(e) => {
           e.preventDefault();
           if (status == RtlSdrStatus.Stopped) {
@@ -311,7 +311,7 @@ export default function RtlSdrControls({
         <>
           <Tabs
             defaultValue="radioInfo"
-            className={`w-full transition-all max-w-[24rem] ${
+            className={`transition-all max-w-[24rem] w-[24rem] ${
               status == RtlSdrStatus.Stopped ? "opacity-75" : ""
             }`}
             style={{ gridColumn: 0, gridRow: 0 }}
