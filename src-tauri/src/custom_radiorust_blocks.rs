@@ -691,6 +691,7 @@ pub mod custom_radiorust_blocks {
             .expect("failed to emit event");
     }
 
+    #[derive(Clone)]
     struct RbdsState {
         service_name: String,
         radio_text: String,
@@ -1020,9 +1021,11 @@ pub mod custom_radiorust_blocks {
             }
         }
 
-        // if bit stream is ending (in case of clock losing sync), then reset RBDS State
+        // if bit stream is ending (in case of clock losing sync), then reset decode state (but keep RBDS state)
         if bit_stream_ending {
+            let saved_rbds_state = rbds_decode_state.rbds_state.clone();
             *rbds_decode_state = RbdsDecodeState::new();
+            rbds_decode_state.rbds_state = saved_rbds_state;
         }
     }
 }
