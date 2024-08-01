@@ -366,72 +366,110 @@ export default function RtlSdrControls({
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
-                      <span>
+                      <span className="flex items-center gap-1">
                         <b>Program Service Name:</b>{" "}
                         <span className="font-mono">
-                          {rbdsData.program_service_name || "loading..."}
-                          {rbdsData.pty_name ? ` ${rbdsData.pty_name}` : ""}
+                          {rbdsData.program_service_name != undefined ? (
+                            <>
+                              {rbdsData.program_service_name}
+                              {rbdsData.pty_name
+                                ? ` - ${rbdsData.pty_name}`
+                                : ""}
+                            </>
+                          ) : (
+                            <div>
+                              <Skeleton className="h-5 w-24" />
+                            </div>
+                          )}
                         </span>
                       </span>
                       <span className="font-bold">
                         Decoder Identification Info
                       </span>
                       <div className="indent-4 flex flex-col -mt-2">
-                        <span>
+                        <span className="flex items-center gap-1">
                           <b>Channels:</b>{" "}
-                          {rbdsData.di_is_stereo != undefined
-                            ? rbdsData.di_is_stereo
-                              ? "Stereo"
-                              : "Mono"
-                            : "Loading..."}
+                          {rbdsData.di_is_stereo != undefined ? (
+                            rbdsData.di_is_stereo ? (
+                              "Stereo"
+                            ) : (
+                              "Mono"
+                            )
+                          ) : (
+                            <Skeleton className="h-4 w-[4.25rem]" />
+                          )}
                         </span>
-                        <span>
+                        <span className="flex items-center gap-1">
                           <b>Binaural Audio:</b>{" "}
-                          {rbdsData.di_is_binaural != undefined
-                            ? rbdsData.di_is_binaural
-                              ? "Yes"
-                              : "No"
-                            : "Loading..."}
+                          {rbdsData.di_is_binaural != undefined ? (
+                            rbdsData.di_is_binaural ? (
+                              "Yes"
+                            ) : (
+                              "No"
+                            )
+                          ) : (
+                            <Skeleton className="h-4 w-8" />
+                          )}
                         </span>
-                        <span>
+                        <span className="flex items-center gap-1">
                           <b>Compression:</b>{" "}
-                          {rbdsData.di_is_compressed != undefined
-                            ? rbdsData.di_is_compressed
-                              ? "Yes"
-                              : "No"
-                            : "Loading..."}
+                          {rbdsData.di_is_compressed != undefined ? (
+                            rbdsData.di_is_compressed ? (
+                              "Yes"
+                            ) : (
+                              "No"
+                            )
+                          ) : (
+                            <Skeleton className="h-4 w-8" />
+                          )}
                         </span>
-                        <span>
+                        <span className="flex items-center gap-1">
                           <b>PTY Type:</b>{" "}
-                          {rbdsData.di_is_pty_dynamic != undefined
-                            ? rbdsData.di_is_pty_dynamic
-                              ? "Dynamic"
-                              : "Static"
-                            : "Loading..."}
+                          {rbdsData.di_is_pty_dynamic != undefined ? (
+                            rbdsData.di_is_pty_dynamic ? (
+                              "Dynamic"
+                            ) : (
+                              "Static"
+                            )
+                          ) : (
+                            <Skeleton className="h-4 w-[4.25rem]" />
+                          )}
                         </span>
                       </div>
-                      <span>
-                        <b>Traffic Info:</b>{" "}
-                        {(() => {
-                          if (
-                            rbdsData.ta != undefined &&
-                            rbdsData.tp != undefined
-                          ) {
-                            switch (true) {
-                              case rbdsData.tp == false && rbdsData.ta == false:
-                                return "This radio station does not carry traffic announcements.";
-                              case rbdsData.tp == false && rbdsData.ta == true:
-                                return "This radio station does not carry traffic announcements, but it carries EON information about a station that does.";
-                              case rbdsData.tp == false && rbdsData.ta == false:
-                                return "This radio station carries traffic announcements, but none are ongoing presently.";
-                              case rbdsData.tp == false && rbdsData.ta == false:
-                                return "There is an ongoing traffic announcement.";
+                      <div className="flex gap-1 items-center">
+                        <span className="items-center gap-1">
+                          <b>Traffic Info:</b>{" "}
+                          {(() => {
+                            if (
+                              rbdsData.ta != undefined &&
+                              rbdsData.tp != undefined
+                            ) {
+                              switch (true) {
+                                case rbdsData.tp == false &&
+                                  rbdsData.ta == false:
+                                  return "This radio station does not carry traffic announcements.";
+                                case rbdsData.tp == false &&
+                                  rbdsData.ta == true:
+                                  return "This radio station does not carry traffic announcements, but it carries EON information about a station that does.";
+                                case rbdsData.tp == false &&
+                                  rbdsData.ta == false:
+                                  return "This radio station carries traffic announcements, but none are ongoing presently.";
+                                case rbdsData.tp == false &&
+                                  rbdsData.ta == false:
+                                  return "There is an ongoing traffic announcement.";
+                              }
                             }
-                          }
-
-                          return "Loading...";
-                        })()}
-                      </span>
+                          })()}
+                        </span>
+                        {(rbdsData.tp == undefined ||
+                          rbdsData.ta == undefined) && (
+                          <Skeleton className="h-4 grow" />
+                        )}
+                      </div>
+                      {(rbdsData.tp == undefined ||
+                        rbdsData.ta == undefined) && (
+                        <Skeleton className="h-4 w-64 -mt-0.5" />
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
