@@ -343,17 +343,14 @@ export default function RtlSdrControls({
                           <Skeleton className="h-6 max-w-52" />
                         )}
                       </CardTitle>
+                      <CardDescription>
+                        {rbdsData.program_type ? (
+                          rbdsData.program_type
+                        ) : (
+                          <Skeleton className="h-4 max-w-20" />
+                        )}
+                      </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      {rbdsData.program_type && (
-                        <Badge variant="outline">{rbdsData.program_type}</Badge>
-                      )}
-                      {rbdsData.ms_flag != undefined && (
-                        <Badge variant="outline">
-                          {rbdsData.ms_flag ? "Music" : "Speech"}
-                        </Badge>
-                      )}
-                    </CardContent>
                   </Card>
                 </TabsContent>
                 <TabsContent value="advancedInfo">
@@ -382,6 +379,18 @@ export default function RtlSdrControls({
                             </div>
                           )}
                         </span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <b>Radio Type:</b>{" "}
+                        {rbdsData.di_is_stereo != undefined ? (
+                          rbdsData.ms_flag ? (
+                            "Music"
+                          ) : (
+                            "Speech"
+                          )
+                        ) : (
+                          <Skeleton className="h-4 w-[3.5rem]" />
+                        )}
                       </span>
                       <span className="font-bold">
                         Decoder Identification Info
