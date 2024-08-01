@@ -857,6 +857,23 @@ pub mod custom_radiorust_blocks {
                 // send rbds data to UI
                 send_rbds_data("radio_text", rbds_state.radio_text.clone(), window.clone());
             }
+            // Open Data Application Identification (3A) and Open Data (3B)
+            0b0011 => {
+                if !b0 {
+                    let application_id = block4_data;
+
+                    // match the application id to do proper decoding
+                    match application_id {
+                        // RadioText+
+                        0x4BD7 => {
+                            println!("This Station Supports RadioText+");
+                        }
+                        _ => {
+                            println!("Unhandled Open Data Application: {:04x}", application_id);
+                        }
+                    }
+                }
+            }
             // Program Type Name (10A) and Open Data (10B)
             0b1010 => {
                 if !b0 {
