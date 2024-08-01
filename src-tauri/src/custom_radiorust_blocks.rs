@@ -784,11 +784,22 @@ pub mod custom_radiorust_blocks {
                 service_name_segment.push(((block4_data >> 8) & 0xff) as u8 as char);
                 service_name_segment.push((block4_data & 0xff) as u8 as char);
 
-                let char_starting_index = decoder_control_bit_index * 2;
+                let char_starting_index = decoder_control_bit_index as usize * 2;
+                let char_ending_index = char_starting_index + 2;
+
+                // if indexes are not at char boundaries, assume error and reset string
+                if !rbds_state
+                    .service_name
+                    .is_char_boundary(char_starting_index)
+                    || !rbds_state.service_name.is_char_boundary(char_ending_index)
+                {
+                    rbds_state.service_name = String::from(" ".repeat(8));
+                }
+
                 rbds_state.service_name.replace_range(
                     Range {
-                        start: char_starting_index as usize,
-                        end: (char_starting_index as usize + 2),
+                        start: char_starting_index,
+                        end: char_ending_index,
                     },
                     &service_name_segment,
                 );
