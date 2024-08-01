@@ -142,10 +142,10 @@ export default function RtlSdrControls({
   };
   const stop_stream = async () => {
     setStatus(RtlSdrStatus.Pausing);
-    setRbdsData({});
     await invoke<string>("stop_stream", {});
     await setIsInUse(false);
     setCurrentStation(undefined);
+    await setRbdsData({});
   };
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
