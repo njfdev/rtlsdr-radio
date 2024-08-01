@@ -188,7 +188,7 @@ export default function RtlSdrControls({
   return (
     <div className="flex xl:flex-row flex-col gap-8 xl:w-[48rem] w-[24rem]">
       <form
-        className="grid gap-3 max-w-[24rem] w-[24rem] h-max"
+        className="grid gap-3 max-w-[24rem] w-[24rem] h-max mx-auto"
         onSubmit={(e) => {
           e.preventDefault();
           if (status == RtlSdrStatus.Stopped) {
@@ -287,9 +287,17 @@ export default function RtlSdrControls({
             className="w-full"
             variant={isSaved ? "secondary" : "default"}
             onClick={async () => {
+              let stationTitle = `${streamType.valueOf()} ${
+                streamSettings.freq
+              }`;
+
+              if (rbdsData.program_type) {
+                stationTitle += ` - ${rbdsData.program_type}`;
+              }
+
               let stationData: StationDetails = {
                 type: currentStationType,
-                title: `${streamType.valueOf()} Radio: ${streamSettings.freq}`,
+                title: stationTitle,
                 frequency: streamSettings.freq,
                 isFavorite: false,
               };
