@@ -557,6 +557,111 @@ pub mod custom_radiorust_blocks {
         digest.finalize()
     }
 
+    fn generate_n_burst_mask(length: u8, burst_width: u8) -> Vec<u32> {
+        let mut burst_error_mask: Vec<u32> = vec![];
+
+        for i in (0)..(length - burst_width + 1) {
+            let mask_width: u32 = ((1 << burst_width) - 1) as u32;
+            let mask: u32 = mask_width << i as u32;
+            burst_error_mask.push(mask);
+        }
+
+        burst_error_mask
+    }
+
+    fn attempt_error_correction(raw_data: u32) -> Result<u32, ()> {
+        let data = (raw_data >> 10) as u16;
+        let received_crc = (raw_data & 0b11_1111_1111) as u16;
+
+        let expected_crc = compute_crc(data);
+
+        if expected_crc == received_crc {
+            return Ok(raw_data);
+        }
+
+        // try fixing single bit errors
+        let single_bit_masks = generate_n_burst_mask(26, 1);
+        for mask in single_bit_masks {
+            // flip bit specified in mask
+            let new_raw_data = raw_data ^ mask;
+            let new_data = (new_raw_data >> 10) as u16;
+            let new_crc = (new_raw_data & 0b11_1111_1111) as u16;
+
+            let new_expected_crc = compute_crc(new_data);
+            // if it matches, return the error corrected data
+            if new_expected_crc == new_crc {
+                println!("Correct Single Bit Error!");
+                return Ok(new_raw_data);
+            }
+        }
+
+        // try fixing double bit burst errors
+        let double_bit_masks = generate_n_burst_mask(26, 2);
+        for mask in double_bit_masks {
+            // flip bit specified in mask
+            let new_raw_data = raw_data ^ mask;
+            let new_data = (new_raw_data >> 10) as u16;
+            let new_crc = (new_raw_data & 0b11_1111_1111) as u16;
+
+            let new_expected_crc = compute_crc(new_data);
+            // if it matches, return the error corrected data
+            if new_expected_crc == new_crc {
+                println!("Correct Double Bit Burst Error!");
+                return Ok(new_raw_data);
+            }
+        }
+
+        // try fixing triple bit burst errors
+        let triple_bit_masks = generate_n_burst_mask(26, 3);
+        for mask in triple_bit_masks {
+            // flip bit specified in mask
+            let new_raw_data = raw_data ^ mask;
+            let new_data = (new_raw_data >> 10) as u16;
+            let new_crc = (new_raw_data & 0b11_1111_1111) as u16;
+
+            let new_expected_crc = compute_crc(new_data);
+            // if it matches, return the error corrected data
+            if new_expected_crc == new_crc {
+                println!("Correct Triple Bit Burst Error!");
+                return Ok(new_raw_data);
+            }
+        }
+
+        // try fixing quadruple bit burst errors
+        let quadruple_bit_masks = generate_n_burst_mask(26, 4);
+        for mask in quadruple_bit_masks {
+            // flip bit specified in mask
+            let new_raw_data = raw_data ^ mask;
+            let new_data = (new_raw_data >> 10) as u16;
+            let new_crc = (new_raw_data & 0b11_1111_1111) as u16;
+
+            let new_expected_crc = compute_crc(new_data);
+            // if it matches, return the error corrected data
+            if new_expected_crc == new_crc {
+                println!("Correct Quadruple Bit Burst Error!");
+                return Ok(new_raw_data);
+            }
+        }
+
+        // try fixing quintuple bit burst errors
+        let quintuple_bit_masks = generate_n_burst_mask(26, 5);
+        for mask in quintuple_bit_masks {
+            // flip bit specified in mask
+            let new_raw_data = raw_data ^ mask;
+            let new_data = (new_raw_data >> 10) as u16;
+            let new_crc = (new_raw_data & 0b11_1111_1111) as u16;
+
+            let new_expected_crc = compute_crc(new_data);
+            // if it matches, return the error corrected data
+            if new_expected_crc == new_crc {
+                println!("Correct Quintuple Bit Burst Error!");
+                return Ok(new_raw_data);
+            }
+        }
+
+        Err(())
+    }
+
     fn is_block_next(cur_offset_word: &str, last_block: &str, bits_since_last_block: &u64) -> bool {
         if (cur_offset_word == "A")
             || (((last_block == "A" && cur_offset_word == "B")
@@ -787,14 +892,24 @@ pub mod custom_radiorust_blocks {
             }
 
             if rbds_decode_state.last_28_bits.len() >= 26 {
-                let last_26_bits_u32 = (bits_to_u32(rbds_decode_state.last_28_bits.clone().into()))
-                    & 0b11_1111_1111_1111_1111_1111_1111;
+                let mut last_26_bits_u32 =
+                    (bits_to_u32(rbds_decode_state.last_28_bits.clone().into()))
+                        & 0b11_1111_1111_1111_1111_1111_1111;
+
+                let mut offset_word_result = determine_offset_word(last_26_bits_u32);
+
+                // if offset_word_result is err and block sync is achieved, attempt error correction
+                if offset_word_result.is_err() && rbds_decode_state.are_blocks_synced {
+                    let new_data_result = attempt_error_correction(last_26_bits_u32);
+                    if new_data_result.is_ok() {
+                        last_26_bits_u32 = new_data_result.unwrap();
+                        offset_word_result = determine_offset_word(last_26_bits_u32);
+                    }
+                }
 
                 // calculate and check CRC
                 let data: u16 = (last_26_bits_u32 >> 10) as u16;
                 let data_check_crc: u16 = (last_26_bits_u32 & 0b11_1111_1111) as u16;
-
-                let offset_word_result = determine_offset_word(last_26_bits_u32);
 
                 if offset_word_result.is_ok() {
                     let (offset_word, offset_bits) = offset_word_result.unwrap();
