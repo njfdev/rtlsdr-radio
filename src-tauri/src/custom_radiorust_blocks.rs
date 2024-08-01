@@ -590,7 +590,6 @@ pub mod custom_radiorust_blocks {
             let new_expected_crc = compute_crc(new_data);
             // if it matches, return the error corrected data
             if new_expected_crc == new_crc {
-                println!("Correct Single Bit Error!");
                 return Ok(new_raw_data);
             }
         }
@@ -606,7 +605,6 @@ pub mod custom_radiorust_blocks {
             let new_expected_crc = compute_crc(new_data);
             // if it matches, return the error corrected data
             if new_expected_crc == new_crc {
-                println!("Correct Double Bit Burst Error!");
                 return Ok(new_raw_data);
             }
         }
@@ -622,7 +620,6 @@ pub mod custom_radiorust_blocks {
             let new_expected_crc = compute_crc(new_data);
             // if it matches, return the error corrected data
             if new_expected_crc == new_crc {
-                println!("Correct Triple Bit Burst Error!");
                 return Ok(new_raw_data);
             }
         }
@@ -638,7 +635,6 @@ pub mod custom_radiorust_blocks {
             let new_expected_crc = compute_crc(new_data);
             // if it matches, return the error corrected data
             if new_expected_crc == new_crc {
-                println!("Correct Quadruple Bit Burst Error!");
                 return Ok(new_raw_data);
             }
         }
@@ -654,7 +650,6 @@ pub mod custom_radiorust_blocks {
             let new_expected_crc = compute_crc(new_data);
             // if it matches, return the error corrected data
             if new_expected_crc == new_crc {
-                println!("Correct Quintuple Bit Burst Error!");
                 return Ok(new_raw_data);
             }
         }
@@ -961,6 +956,11 @@ pub mod custom_radiorust_blocks {
             if rbds_decode_state.last_28_bits.len() > 28 {
                 rbds_decode_state.last_28_bits.pop_front();
             }
+        }
+
+        // if bit stream is ending (in case of clock losing sync), then reset RBDS State
+        if bit_stream_ending {
+            *rbds_decode_state = RbdsDecodeState::new();
         }
     }
 }
