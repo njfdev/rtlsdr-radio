@@ -759,18 +759,32 @@ pub mod custom_radiorust_blocks {
         match gtype {
             // Program Service Name
             0b0000 => {
+                // set the decoder control bit
+                let decoder_control_bit_index = g_data & 0b11;
+                let decoder_control_bit = if ((g_data >> 2) & 1) == 1 {
+                    true
+                } else {
+                    false
+                };
+                let mut di_bit_name = "";
+
+                match decoder_control_bit_index {
+                    0 => di_bit_name = "di_is_stereo",
+                    1 => di_bit_name = "di_is_binaural",
+                    2 => di_bit_name = "di_is_compressed",
+                    3 => di_bit_name = "di_is_pty_dynamic",
+                    _ => {}
+                }
+                if di_bit_name.len() > 0 {
+                    send_rbds_data(&di_bit_name, decoder_control_bit, window.clone());
+                }
+
+                // get and set the service_name characters
                 let mut service_name_segment: String = String::from("");
                 service_name_segment.push(((block4_data >> 8) & 0xff) as u8 as char);
                 service_name_segment.push((block4_data & 0xff) as u8 as char);
 
-                let char_starting_index = (g_data & 0b11) * 2;
-                /*
-                println!("G_Data (4-2): {:#03b}", ((g_data >> 2) & 0b111) as u8);
-                println!(
-                    "Index: {}, Data: {}",
-                    char_starting_index, service_name_segment
-                );
-                */
+                let char_starting_index = decoder_control_bit_index * 2;
                 rbds_state.service_name.replace_range(
                     Range {
                         start: char_starting_index as usize,

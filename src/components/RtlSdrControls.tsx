@@ -312,6 +312,41 @@ export default function RtlSdrControls({
                 : "Speech"
               : "loading..."}
           </span>
+          <span>Decoder Identification Info</span>
+          <div className="indent-4 flex flex-col gap-1">
+            <span>
+              Channels:{" "}
+              {rbdsData.di_is_stereo != undefined
+                ? rbdsData.di_is_stereo
+                  ? "Stereo"
+                  : "Mono"
+                : "Loading..."}
+            </span>
+            <span>
+              Binaural Audio:{" "}
+              {rbdsData.di_is_binaural != undefined
+                ? rbdsData.di_is_binaural
+                  ? "Yes"
+                  : "No"
+                : "Loading..."}
+            </span>
+            <span>
+              Compression:{" "}
+              {rbdsData.di_is_compressed != undefined
+                ? rbdsData.di_is_compressed
+                  ? "Yes"
+                  : "No"
+                : "Loading..."}
+            </span>
+            <span>
+              PTY Type:{" "}
+              {rbdsData.di_is_pty_dynamic != undefined
+                ? rbdsData.di_is_pty_dynamic
+                  ? "Dynamic"
+                  : "Static"
+                : "Loading..."}
+            </span>
+          </div>
         </>
       )}
     </form>
