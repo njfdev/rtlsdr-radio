@@ -851,6 +851,14 @@ pub mod custom_radiorust_blocks {
                 let char_starting_index = (g_data & 0b1111) as usize * radio_text_segment.len();
                 let char_ending_index = char_starting_index + radio_text_segment.len();
 
+                // if indexes are not at char boundaries, assume error and reset string
+                if !rbds_state.radio_text.is_char_boundary(char_starting_index)
+                    || !rbds_state.radio_text.is_char_boundary(char_ending_index)
+                {
+                    rbds_state.radio_text.clear();
+                    rbds_state.radio_text = String::from(" ".repeat(64));
+                }
+
                 rbds_state
                     .radio_text
                     .replace_range(char_starting_index..char_ending_index, &radio_text_segment);
