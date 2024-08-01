@@ -569,88 +569,46 @@ pub mod custom_radiorust_blocks {
         burst_error_mask
     }
 
-    fn attempt_error_correction(raw_data: u32) -> Result<u32, ()> {
+    fn attempt_error_correction(
+        raw_data: u32,
+        block_index: usize,
+    ) -> Result<(u32, String, u16), ()> {
         let data = (raw_data >> 10) as u16;
         let received_crc = (raw_data & 0b11_1111_1111) as u16;
 
         let expected_crc = compute_crc(data);
 
-        if expected_crc == received_crc {
-            return Ok(raw_data);
-        }
+        let block_index_starting_chars = ["A", "B", "C", "D"];
+        // get valid block_offsets for block_index
+        let valid_block_offsets: Vec<&(&str, u16, u16)> = RBDS_OFFSET_WORDS
+            .iter()
+            .filter(|(block_type, _, _)| {
+                block_type.starts_with(block_index_starting_chars[block_index])
+            })
+            .collect();
 
-        // try fixing single bit errors
-        let single_bit_masks = generate_n_burst_mask(26, 1);
-        for mask in single_bit_masks {
-            // flip bit specified in mask
-            let new_raw_data = raw_data ^ mask;
-            let new_data = (new_raw_data >> 10) as u16;
-            let new_crc = (new_raw_data & 0b11_1111_1111) as u16;
+        // try burst errors from 1-5
+        for i in 1..=5 {
+            let bit_mask = generate_n_burst_mask(26, i);
+            for mask in bit_mask {
+                for (offset_type, offset_bits, _offset_syndrome) in valid_block_offsets.clone() {
+                    // flip bit specified in mask
+                    let new_raw_data = (raw_data ^ mask);
+                    // remove possible offset word
+                    let corrected_data = new_raw_data ^ (*offset_bits as u32);
+                    let new_data = (corrected_data >> 10) as u16;
+                    let new_crc = (corrected_data & 0b11_1111_1111) as u16;
 
-            let new_expected_crc = compute_crc(new_data);
-            // if it matches, return the error corrected data
-            if new_expected_crc == new_crc {
-                return Ok(new_raw_data);
-            }
-        }
-
-        // try fixing double bit burst errors
-        let double_bit_masks = generate_n_burst_mask(26, 2);
-        for mask in double_bit_masks {
-            // flip bit specified in mask
-            let new_raw_data = raw_data ^ mask;
-            let new_data = (new_raw_data >> 10) as u16;
-            let new_crc = (new_raw_data & 0b11_1111_1111) as u16;
-
-            let new_expected_crc = compute_crc(new_data);
-            // if it matches, return the error corrected data
-            if new_expected_crc == new_crc {
-                return Ok(new_raw_data);
-            }
-        }
-
-        // try fixing triple bit burst errors
-        let triple_bit_masks = generate_n_burst_mask(26, 3);
-        for mask in triple_bit_masks {
-            // flip bit specified in mask
-            let new_raw_data = raw_data ^ mask;
-            let new_data = (new_raw_data >> 10) as u16;
-            let new_crc = (new_raw_data & 0b11_1111_1111) as u16;
-
-            let new_expected_crc = compute_crc(new_data);
-            // if it matches, return the error corrected data
-            if new_expected_crc == new_crc {
-                return Ok(new_raw_data);
-            }
-        }
-
-        // try fixing quadruple bit burst errors
-        let quadruple_bit_masks = generate_n_burst_mask(26, 4);
-        for mask in quadruple_bit_masks {
-            // flip bit specified in mask
-            let new_raw_data = raw_data ^ mask;
-            let new_data = (new_raw_data >> 10) as u16;
-            let new_crc = (new_raw_data & 0b11_1111_1111) as u16;
-
-            let new_expected_crc = compute_crc(new_data);
-            // if it matches, return the error corrected data
-            if new_expected_crc == new_crc {
-                return Ok(new_raw_data);
-            }
-        }
-
-        // try fixing quintuple bit burst errors
-        let quintuple_bit_masks = generate_n_burst_mask(26, 5);
-        for mask in quintuple_bit_masks {
-            // flip bit specified in mask
-            let new_raw_data = raw_data ^ mask;
-            let new_data = (new_raw_data >> 10) as u16;
-            let new_crc = (new_raw_data & 0b11_1111_1111) as u16;
-
-            let new_expected_crc = compute_crc(new_data);
-            // if it matches, return the error corrected data
-            if new_expected_crc == new_crc {
-                return Ok(new_raw_data);
+                    let new_expected_crc = compute_crc(new_data);
+                    // if it matches, return the error corrected data
+                    if new_expected_crc == new_crc {
+                        return Ok((
+                            new_raw_data,
+                            (*offset_type).to_owned(),
+                            (*offset_bits).clone(),
+                        ));
+                    }
+                }
             }
         }
 
@@ -900,13 +858,19 @@ pub mod custom_radiorust_blocks {
                         & 0b11_1111_1111_1111_1111_1111_1111;
 
                 let mut offset_word_result = determine_offset_word(last_26_bits_u32);
+                let mut is_error_corrected = false;
 
                 // if offset_word_result is err and block sync is achieved, attempt error correction
                 if offset_word_result.is_err() && rbds_decode_state.are_blocks_synced {
-                    let new_data_result = attempt_error_correction(last_26_bits_u32);
+                    let new_data_result = attempt_error_correction(
+                        last_26_bits_u32,
+                        rbds_decode_state.current_block_group.len(),
+                    );
                     if new_data_result.is_ok() {
-                        last_26_bits_u32 = new_data_result.unwrap();
-                        offset_word_result = determine_offset_word(last_26_bits_u32);
+                        let (new_data, new_offset_type, new_offset_bits) = new_data_result.unwrap();
+                        last_26_bits_u32 = new_data;
+                        offset_word_result = Ok((new_offset_type, new_offset_bits));
+                        is_error_corrected = true;
                     }
                 }
 
@@ -929,6 +893,9 @@ pub mod custom_radiorust_blocks {
                             &rbds_decode_state.bits_since_last_block,
                         ))
                     {
+                        if is_error_corrected {
+                            println!("Error Corrected Block was Accepted!");
+                        }
                         rbds_decode_state
                             .current_block_group
                             .push((last_26_bits_u32, offset_word.clone()));
