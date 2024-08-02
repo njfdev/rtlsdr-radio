@@ -5,11 +5,12 @@ import RtlSdrControls from "@/components/RtlSdrControls";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Station, StationDetails, StationType, StreamType } from "@/lib/types";
-import { appWindow } from "@tauri-apps/api/window";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useEffect, useState } from "react";
 import SaveStationsMenu from "@/components/SavedStationsMenu";
 import { areStationsEqual } from "@/lib/stationsStorage";
 import Link from "next/link";
+const appWindow = getCurrentWebviewWindow()
 
 const isNrsc5Available =
   process.env.NEXT_PUBLIC_EXCLUDE_SIDECAR == "true" ? false : true;

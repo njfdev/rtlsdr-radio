@@ -2,7 +2,7 @@
 
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api";
-import { appWindow } from "@tauri-apps/api/window";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ import {
   StationSavingState,
   StationType,
 } from "@/lib/types";
+const appWindow = getCurrentWebviewWindow()
 
 enum Nrsc5Status {
   Stopped = "stopped",

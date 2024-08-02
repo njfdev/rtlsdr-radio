@@ -19,6 +19,7 @@ struct AppState {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub async fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .manage(AppState {
             nrsc5_state: Nrsc5State::new(),
             rtl_sdr_state: Arc::new(Mutex::new(RtlSdrState::new())),

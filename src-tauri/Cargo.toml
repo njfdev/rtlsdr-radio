@@ -12,12 +12,12 @@ rust-version = "1.60"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "1.5.3", features = [] }
+tauri-build = { version = "2.0.0-beta", features = [] }
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.7.0", features = [ "shell-open", "shell-sidecar", "process-command-api"] }
+tauri = { version = "2.0.0-beta", features = [] }
 cpal = "0.15.2"
 radiorust = { version = "0.5.0", features = ["soapysdr", "cpal"] }
 soapysdr = "0.3.2"
@@ -28,6 +28,7 @@ rustfft = "6.2.0"
 fundsp = "0.18.2"
 crc = "3.0.1"
 nalgebra = "0.33.0"
+tauri-plugin-shell = "2.0.0-alpha.2"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
@@ -37,4 +38,4 @@ custom-protocol = [ "tauri/custom-protocol" ]
 
 [lib]
 name = "app_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
+crate-type = ["staticlib", "cdylib", "rlib", "lib"]
