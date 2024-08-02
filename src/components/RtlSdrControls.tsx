@@ -20,7 +20,7 @@ import {
   StreamType,
   volumeStorageName,
 } from "@/lib/types";
-import { invoke } from "@tauri-apps/api";
+import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Loader2 } from "lucide-react";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
@@ -35,7 +35,7 @@ import {
 } from "./ui/card";
 import { Skeleton } from "./ui/skeleton";
 import { Badge } from "./ui/badge";
-const appWindow = getCurrentWebviewWindow()
+const appWindow = getCurrentWebviewWindow();
 
 enum RtlSdrStatus {
   Stopped = "stopped",

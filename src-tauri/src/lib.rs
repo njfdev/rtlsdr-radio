@@ -8,7 +8,7 @@ mod rtlsdr;
 use nrsc5::nrsc5::Nrsc5State;
 use rtlsdr::rtlsdr::{RtlSdrState, StreamSettings};
 use std::sync::{Arc, Mutex};
-use tauri::{async_runtime::block_on, State, Window};
+use tauri::{async_runtime::block_on, AppHandle, State, Window};
 
 struct AppState {
     nrsc5_state: Nrsc5State,
@@ -35,20 +35,20 @@ pub async fn run() {
 }
 
 #[tauri::command]
-fn start_nrsc5(window: Window, state: State<AppState>, fm_freq: String, channel: String) {
+fn start_nrsc5(app: AppHandle, state: State<AppState>, fm_freq: String, channel: String) {
     if state.nrsc5_state.is_playing() {
         return;
     };
-    state.nrsc5_state.start_thread(window, fm_freq, channel);
+    state.nrsc5_state.start_thread(app, fm_freq, channel);
 }
 
 #[tauri::command]
-fn stop_nrsc5(window: Window, state: State<AppState>) {
-    state.nrsc5_state.stop_thread(window);
+fn stop_nrsc5(app: AppHandle, state: State<AppState>) {
+    state.nrsc5_state.stop_thread(app);
 }
 
 #[tauri::command]
-fn start_stream(window: Window, state: State<AppState>, stream_settings: StreamSettings) {
+fn start_stream(app: AppHandle, state: State<AppState>, stream_settings: StreamSettings) {
     if state.rtl_sdr_state.lock().unwrap().is_playing() {
         return;
     };
@@ -56,15 +56,15 @@ fn start_stream(window: Window, state: State<AppState>, stream_settings: StreamS
         .rtl_sdr_state
         .lock()
         .unwrap()
-        .start_stream(window, stream_settings);
+        .start_stream(app, stream_settings);
 }
 
 #[tauri::command]
-async fn stop_stream(window: Window, state: State<'_, AppState>) -> Result<String, ()> {
+async fn stop_stream(app: AppHandle, state: State<'_, AppState>) -> Result<String, ()> {
     let rtlsdr_state_clone = state.rtl_sdr_state.clone();
 
     tokio::task::spawn_blocking(move || {
-        block_on(rtlsdr_state_clone.lock().unwrap().stop_stream(window));
+        block_on(rtlsdr_state_clone.lock().unwrap().stop_stream(app));
     })
     .await
     .unwrap();

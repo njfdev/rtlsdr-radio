@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import SaveStationsMenu from "@/components/SavedStationsMenu";
 import { areStationsEqual } from "@/lib/stationsStorage";
 import Link from "next/link";
-const appWindow = getCurrentWebviewWindow()
+const appWindow = getCurrentWebviewWindow();
 
 const isNrsc5Available =
   process.env.NEXT_PUBLIC_EXCLUDE_SIDECAR == "true" ? false : true;

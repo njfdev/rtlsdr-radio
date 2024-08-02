@@ -26,7 +26,7 @@ pub mod custom_radiorust_blocks {
         prelude::{ChunkBuf, ChunkBufPool, Complex},
         signal::Signal,
     };
-    use tauri::Window;
+    use tauri::{AppHandle, Emitter, Window};
     use tokio::spawn;
 
     pub struct AmDemod<Flt> {
@@ -312,7 +312,7 @@ pub mod custom_radiorust_blocks {
     where
         Flt: Float + Into<f64> + Into<f32>,
     {
-        pub fn new(window: Window) -> Self {
+        pub fn new(app: AppHandle) -> Self {
             let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
 
             // setup Wav file writer
@@ -436,7 +436,7 @@ pub mod custom_radiorust_blocks {
                                             rbds_process_bits(
                                                 &mut decoded_bits,
                                                 &mut rbds_decode_state,
-                                                window.clone(),
+                                                app.clone(),
                                                 true,
                                             );
                                             decoded_bits.clear();
@@ -475,7 +475,7 @@ pub mod custom_radiorust_blocks {
                             rbds_process_bits(
                                 &mut decoded_bits,
                                 &mut rbds_decode_state,
-                                window.clone(),
+                                app.clone(),
                                 false,
                             );
 
@@ -681,13 +681,12 @@ pub mod custom_radiorust_blocks {
         syndrome
     }
 
-    fn send_rbds_data<T: serde::Serialize>(param_name: &str, data: T, window: Window) {
+    fn send_rbds_data<T: serde::Serialize>(param_name: &str, data: T, app: AppHandle) {
         let json_object: String = json!({
             param_name: data
         })
         .to_string();
-        window
-            .emit("rtlsdr_rbds", json_object.as_str())
+        app.emit("rtlsdr_rbds", json_object.as_str())
             .expect("failed to emit event");
     }
 
@@ -715,7 +714,7 @@ pub mod custom_radiorust_blocks {
     fn process_rbds_group(
         group_data: Vec<(u32, String)>,
         rbds_state: &mut RbdsState,
-        window: Window,
+        app: AppHandle,
     ) {
         // group info
         let mut pi: u16 = 0; // program identification code
@@ -781,7 +780,7 @@ pub mod custom_radiorust_blocks {
                     _ => {}
                 }
                 if di_bit_name.len() > 0 {
-                    send_rbds_data(&di_bit_name, decoder_control_bit, window.clone());
+                    send_rbds_data(&di_bit_name, decoder_control_bit, app.clone());
                 }
 
                 // set the traffic announcement bit
@@ -790,7 +789,7 @@ pub mod custom_radiorust_blocks {
                 } else {
                     false
                 };
-                send_rbds_data("ta", ta, window.clone());
+                send_rbds_data("ta", ta, app.clone());
 
                 // get and set the service_name characters
                 let mut service_name_segment: String = String::from("");
@@ -829,9 +828,9 @@ pub mod custom_radiorust_blocks {
                 send_rbds_data(
                     "program_service_name",
                     rbds_state.service_name.clone(),
-                    window.clone(),
+                    app.clone(),
                 );
-                send_rbds_data("ms_flag", ms_flag, window.clone());
+                send_rbds_data("ms_flag", ms_flag, app.clone());
             }
             // RadioText
             0b0010 => {
@@ -872,7 +871,7 @@ pub mod custom_radiorust_blocks {
                     .replace_range(char_starting_index..char_ending_index, &radio_text_segment);
 
                 // send rbds data to UI
-                send_rbds_data("radio_text", rbds_state.radio_text.clone(), window.clone());
+                send_rbds_data("radio_text", rbds_state.radio_text.clone(), app.clone());
             }
             // Open Data Application Identification (3A) and Open Data (3B)
             0b0011 => {
@@ -928,25 +927,21 @@ pub mod custom_radiorust_blocks {
                         .replace_range(char_starting_index..char_ending_index, &ptyn_segment);
 
                     // send rbds data to UI
-                    send_rbds_data("pty_name", rbds_state.pty_name.clone(), window.clone());
+                    send_rbds_data("pty_name", rbds_state.pty_name.clone(), app.clone());
                 }
             }
             _ => {}
         }
 
         // send rbds data to UI
-        send_rbds_data(
-            "program_type",
-            RBDS_PTY_INDEX[pty].to_string(),
-            window.clone(),
-        );
-        send_rbds_data("tp", tp, window.clone());
+        send_rbds_data("program_type", RBDS_PTY_INDEX[pty].to_string(), app.clone());
+        send_rbds_data("tp", tp, app.clone());
     }
 
     fn rbds_process_bits(
         bit_stream: &mut Vec<u8>,
         rbds_decode_state: &mut RbdsDecodeState,
-        window: Window,
+        app: AppHandle,
         bit_stream_ending: bool,
     ) {
         for bit in bit_stream {
@@ -1014,7 +1009,7 @@ pub mod custom_radiorust_blocks {
                             process_rbds_group(
                                 rbds_decode_state.current_block_group.clone(),
                                 &mut rbds_decode_state.rbds_state,
-                                window.clone(),
+                                app.clone(),
                             );
                             rbds_decode_state.current_block_group.clear();
                         }
