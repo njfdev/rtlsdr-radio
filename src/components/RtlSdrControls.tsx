@@ -353,14 +353,25 @@ export default function RtlSdrControls({
                 <TabsContent value="radioInfo">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="whitespace-pre-wrap">
-                        {rbdsData.radio_text &&
-                        rbdsData.radio_text.trimEnd() ? (
-                          <>{rbdsData.radio_text.trimEnd()}</>
-                        ) : (
-                          <Skeleton className="h-6 max-w-52" />
-                        )}
-                      </CardTitle>
+                      {rbdsData.radio_text ? (
+                        <CardTitle
+                          className="whitespace-pre-wrap"
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              rbdsData.radio_text &&
+                              rbdsData.radio_text.trimEnd()
+                                ? rbdsData.radio_text
+                                    .trimEnd()
+                                    .replace(
+                                      /( {2,})/g,
+                                      '<span class="font-mono">$1</span>'
+                                    )
+                                : "",
+                          }}
+                        ></CardTitle>
+                      ) : (
+                        <Skeleton className="h-6 max-w-52" />
+                      )}
                       <CardDescription>
                         {rbdsData.program_type ? (
                           rbdsData.program_type
