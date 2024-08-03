@@ -31,7 +31,10 @@
       "providerShortName": null,
       "signingIdentity": null
     },
-    "resources": [],
+    "resources": {
+      "../build/SoapySDR/build/lib/libSoapySDR.*": "resources/libs/",
+      "../build/SoapySDR/build/lib/SoapySDR.pc": "resources/SoapySDR.pc"
+    },
     "shortDescription": "",
     "linux": {
       "deb": {

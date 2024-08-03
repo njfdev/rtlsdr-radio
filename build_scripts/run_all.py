@@ -3,6 +3,7 @@ import sys
 import os
 from pathlib import Path
 
+# handle building nrsc5
 if (not os.getenv("NEXT_PUBLIC_EXCLUDE_SIDECAR") == "true"):
     if "win32" in sys.platform:
         cwd = os.getcwd().replace("\\", "/")
@@ -30,3 +31,10 @@ else:
     file = Path("./build/bin/nrsc5-" + rust_target_string)
     file.parent.mkdir(parents=True, exist_ok=True)
     file.write_bytes(b"")
+
+
+# handle building required libs
+if "win32" in sys.platform:
+    print("Building dependencies for Windows is not yet supported!")
+else:
+    subprocess.run(["sh", "./build_scripts/build_app_deps.sh"], check=True)
