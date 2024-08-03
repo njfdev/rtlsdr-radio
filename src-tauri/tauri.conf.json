@@ -32,7 +32,8 @@
       "signingIdentity": null
     },
     "resources": {
-      "../build/lib/*": "resources/lib/"
+      "../build/lib/*": "resources/lib/",
+      "../build/lib/modules0.8/*": "resources/lib/modules0.8"
     },
     "shortDescription": "",
     "linux": {
