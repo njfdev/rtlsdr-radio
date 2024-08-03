@@ -6,7 +6,7 @@ RTL-SDR Radio is your one-stop shop for listening to the radio frequencies in th
 
 ## Installation
 
-> Note: I have been having issues with building through GitHub Actions, so the GitHub Releases have HD Radio functionality disabled (FM Radio still works though!). I recommend [compiling from source](#compiling-from-source) if you want to listen to HD Radio.
+> Note: A recent upgrade to Tauri V2 has caused HD Radio to stop working. This is being investigated.
 
 Installation should be as simple as going to the [GitHub Releases](https://github.com/njfdev/rtlsdr-radio/releases) and downloading the most recent application from the "Assets" dropdown for your specific OS.
 
