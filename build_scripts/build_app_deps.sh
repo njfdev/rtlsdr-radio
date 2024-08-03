@@ -11,23 +11,18 @@ mkdir include
 BUILD_DIR="$PWD"
 
 # build SoapySDR libs
-if [ -d "./SoapySDR" ]; then
-  # if already built
-  cd SoapySDR
-  git pull origin master
-  cd build
-  make -j4
-else
-  # if building for first time
-  git clone https://github.com/pothosware/SoapySDR.git
-  cd SoapySDR
-  mkdir build
-  cd build
-  cmake ..
-  make -j`nproc`
-fi
+git clone https://github.com/pothosware/SoapySDR.git
+cd SoapySDR
+git reset --hard ab6260680c37a80ed4a23719bebc854248290c8b
+mkdir build
+cd build
+cmake ..
+make -j`nproc`
+# install libs
 mkdir $BUILD_DIR/include/SoapySDR
-cp lib/*SoapySDR* $BUILD_DIR/lib/
+mkdir $BUILD_DIR/lib/pkgconfig
+cp lib/libSoapySDR* $BUILD_DIR/lib/
+cp lib/SoapySDR.pc $BUILD_DIR/lib/pkgconfig/SoapySDR.pc
 cp ../include/SoapySDR/* $BUILD_DIR/include/SoapySDR/
 
 # build SoapySDR RTL-SDR Hardware Support libs
@@ -38,7 +33,7 @@ mkdir build
 cd build
 cmake ..
 make
-mkdir $BUILD_DIR/lib/modules0.8
-cp librtlsdrSupport.so $BUILD_DIR/lib/modules0.8/librtlsdrSupport.so
+mkdir -p $BUILD_DIR/lib/SoapySDR/modules0.8
+cp librtlsdrSupport.so $BUILD_DIR/lib/SoapySDR/modules0.8/librtlsdrSupport.so
 
 cd "$ORIG_DIR"

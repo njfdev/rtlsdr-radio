@@ -7,8 +7,11 @@ mod rtlsdr;
 
 use nrsc5::nrsc5::Nrsc5State;
 use rtlsdr::rtlsdr::{RtlSdrState, StreamSettings};
-use std::sync::{Arc, Mutex};
-use tauri::{async_runtime::block_on, AppHandle, State, Window};
+use std::{
+    env,
+    sync::{Arc, Mutex},
+};
+use tauri::{async_runtime::block_on, utils::platform::current_exe, AppHandle, State, Window};
 
 struct AppState {
     nrsc5_state: Nrsc5State,
@@ -18,6 +21,13 @@ struct AppState {
 #[tokio::main]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub async fn run() {
+    // set env for SoapySDR modules
+    //env::set_var(key, value);
+    let current_exe_path = current_exe().unwrap();
+    let current_exe_parent_dir = current_exe_path.parent().unwrap();
+    let mut modules_path = current_exe_parent_dir.join("resources/lib/SoapySDR/modules0.8/");
+    env::set_var("SOAPY_SDR_PLUGIN_PATH", modules_path.as_mut_os_str());
+
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_shell::init())

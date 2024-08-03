@@ -33,7 +33,8 @@
     },
     "resources": {
       "../build/lib/*": "resources/lib/",
-      "../build/lib/modules0.8/*": "resources/lib/modules0.8"
+      "../build/lib/SoapySDR/modules0.8/*": "resources/lib/SoapySDR/modules0.8",
+      "../build/lib/pkgconfig/*": "resources/lib/pkgconfig"
     },
     "shortDescription": "",
     "linux": {
