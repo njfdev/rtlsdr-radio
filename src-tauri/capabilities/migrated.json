@@ -25,6 +25,7 @@
       ]
     },
     "shell:allow-open",
-    "shell:default"
+    "shell:default",
+    "updater:default"
   ]
 }
