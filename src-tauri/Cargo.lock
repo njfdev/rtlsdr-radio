@@ -122,6 +122,7 @@ dependencies = [
  "crc",
  "fundsp",
  "hound",
+ "libloading 0.8.5",
  "nalgebra",
  "radiorust",
  "rustfft",
@@ -503,7 +504,7 @@ checksum = "0b023947811758c97c59bf9d1c188fd619ad4718dcaa767947df1cadb14f39f4"
 dependencies = [
  "glob",
  "libc",
- "libloading 0.8.4",
+ "libloading 0.8.5",
 ]
 
 [[package]]
@@ -2005,9 +2006,9 @@ dependencies = [
 
 [[package]]
 name = "libloading"
-version = "0.8.4"
+version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e310b3a6b5907f99202fcdb4960ff45b93735d7c7d96b760fcff8db2dc0e103d"
+checksum = "4979f22fdb869068da03c9f7528f8297c6fd2606bc3a4affe42e6a823fdb8da4"
 dependencies = [
  "cfg-if",
  "windows-targets 0.52.6",
