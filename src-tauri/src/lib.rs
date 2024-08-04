@@ -4,6 +4,7 @@
 mod custom_radiorust_blocks;
 mod nrsc5;
 mod rtlsdr;
+mod utils;
 
 use libloading::Library;
 use nrsc5::nrsc5::Nrsc5State;
@@ -13,6 +14,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 use tauri::{async_runtime::block_on, utils::platform::current_exe, AppHandle, State, Window};
+use utils::utils::setup_dependencies;
 
 struct AppState {
     nrsc5_state: Nrsc5State,
@@ -22,33 +24,11 @@ struct AppState {
 #[tokio::main]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub async fn run() {
-    // set env for SoapySDR modules
-    //env::set_var(key, value);
-    let current_exe_path = current_exe().unwrap();
-    let current_exe_parent_dir = current_exe_path.parent().unwrap();
-    let mut modules_path = current_exe_parent_dir.join("resources/lib/SoapySDR/modules0.8/");
-    env::set_var("SOAPY_SDR_PLUGIN_PATH", modules_path.as_mut_os_str());
-
-    // Determine the correct file extension for the shared library based on the OS
-    let os_ext = if cfg!(target_os = "windows") {
-        ".dll"
-    } else if cfg!(target_os = "macos") {
-        ".dylib"
-    } else {
-        ".so"
-    };
-
-    // load libusb shared library
-    unsafe {
-        let lib = Library::new(format!(
-            "{}/resources/lib/libusb-1.0.0{}",
-            current_exe_parent_dir.as_os_str().to_str().unwrap(),
-            os_ext
-        ))
-        .expect("Failed to load shared library");
-    }
-
     tauri::Builder::default()
+        .setup(|app| {
+            setup_dependencies(app);
+            Ok(())
+        })
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .manage(AppState {
