@@ -37,4 +37,4 @@ else:
 if "win32" in sys.platform:
     print("Building dependencies for Windows is not yet supported!")
 else:
-    subprocess.run(["sh", "./build_scripts/build_app_deps.sh"], check=True)
+    subprocess.run(["bash", "./build_scripts/build_app_deps.sh"], check=True)
