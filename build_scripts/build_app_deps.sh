@@ -40,13 +40,25 @@ cp lib/libSoapySDR* $BUILD_DIR/lib/
 cp lib/SoapySDR.pc $BUILD_DIR/lib/pkgconfig/SoapySDR.pc
 cp ../include/SoapySDR/* $BUILD_DIR/include/SoapySDR/
 
+# build libusb
+cd "$BUILD_DIR"
+git clone https://github.com/libusb/libusb.git
+cd libusb
+git reset --hard d52e355daa09f17ce64819122cb067b8a2ee0d4b
+./autogen.sh
+./configure
+make
+cp ./libusb/.libs/libusb*$LIB_EXT $BUILD_DIR/lib
+cp ./libusb-1.0.pc $BUILD_DIR/lib/pkgconfig/libusb-1.0.pc
+sed -i '' "1s|.*|prefix=$BUILD_DIR|" $BUILD_DIR/lib/pkgconfig/libusb-1.0.pc
+
 # build librtlsdr
 cd "$BUILD_DIR"
 git clone https://github.com/osmocom/rtl-sdr.git
 cd rtl-sdr
 mkdir build
 cd build
-cmake ../
+cmake -DCMAKE_PREFIX_PATH=$BUILD_DIR/lib ../
 make
 cp src/librtlsdr* $BUILD_DIR/lib
 cp ../include/{rtl-sdr.h,rtl-sdr_export.h} $BUILD_DIR/include
