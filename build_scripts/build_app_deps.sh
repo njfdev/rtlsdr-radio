@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Detect the operating system
 OS=$(uname)
 
