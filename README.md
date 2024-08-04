@@ -47,7 +47,7 @@ git clone https://github.com/njfdev/rtlsdr-radio.git
 cd rtlsdr-radio
 sudo npm install --global yarn
 yarn install
-cargo install tauri-cli
+cargo install tauri-cli --version "^2.0.0-rc"
 cargo tauri build
 ```
 
