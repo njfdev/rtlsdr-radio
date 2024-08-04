@@ -1,3 +1,18 @@
+# Detect the operating system
+OS=$(uname)
+
+# Set the shared library extension based on the operating system
+if [[ "$OS" == "Linux" ]]; then
+    LIB_EXT=".so"
+elif [[ "$OS" == "Darwin" ]]; then
+    LIB_EXT=".dylib"
+elif [[ "$OS" == "CYGWIN"* || "$OS" == "MINGW"* || "$OS" == "MSYS"* ]]; then
+    LIB_EXT=".dll"
+else
+    echo "Unsupported OS: $OS"
+    exit 1
+fi
+
 ORIG_DIR="$PWD"
 
 # go to build folder
@@ -25,13 +40,24 @@ cp lib/libSoapySDR* $BUILD_DIR/lib/
 cp lib/SoapySDR.pc $BUILD_DIR/lib/pkgconfig/SoapySDR.pc
 cp ../include/SoapySDR/* $BUILD_DIR/include/SoapySDR/
 
+# build librtlsdr
+cd "$BUILD_DIR"
+git clone https://github.com/osmocom/rtl-sdr.git
+cd rtl-sdr
+mkdir build
+cd build
+cmake ../
+make
+cp src/librtlsdr* $BUILD_DIR/lib
+cp ../include/{rtl-sdr.h,rtl-sdr_export.h} $BUILD_DIR/include
+
 # build SoapySDR RTL-SDR Hardware Support libs
 cd "$BUILD_DIR"
 git clone https://github.com/pothosware/SoapyRTLSDR.git
 cd SoapyRTLSDR
 mkdir build
 cd build
-cmake ..
+cmake -DRTLSDR_INCLUDE_DIR=$BUILD_DIR/include -DRTLSDR_LIBRARY=$BUILD_DIR/lib/librtlsdr$LIB_EXT ..
 make
 mkdir -p $BUILD_DIR/lib/SoapySDR/modules0.8
 cp librtlsdrSupport.so $BUILD_DIR/lib/SoapySDR/modules0.8/librtlsdrSupport.so
