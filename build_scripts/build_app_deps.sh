@@ -21,9 +21,10 @@ ORIG_DIR="$PWD"
 mkdir build
 cd build
 
-# make lib and include folder
+# make lib, include, and share folder
 mkdir lib
 mkdir include
+mkdir share
 
 BUILD_DIR="$PWD"
 
@@ -38,9 +39,13 @@ make -j`nproc`
 # install libs
 mkdir $BUILD_DIR/include/SoapySDR
 mkdir $BUILD_DIR/lib/pkgconfig
+mkdir -p $BUILD_DIR/share/cmake/SoapySDR
 cp lib/libSoapySDR* $BUILD_DIR/lib/
 cp lib/SoapySDR.pc $BUILD_DIR/lib/pkgconfig/SoapySDR.pc
 cp ../include/SoapySDR/* $BUILD_DIR/include/SoapySDR/
+cp ../cmake/Modules/SoapySDR*.cmake $BUILD_DIR/share/cmake/SoapySDR/
+cp ./SoapySDR*.cmake $BUILD_DIR/share/cmake/SoapySDR/
+cp ./lib/CMakeFiles/Export/*/SoapySDRExport*.cmake $BUILD_DIR/share/cmake/SoapySDR/
 
 # build libusb if libs don't already exist
 if [ ! -f "$BUILD_DIR/lib/libusb-1.0$LIB_EXT" ]; then
@@ -84,7 +89,7 @@ git clone https://github.com/pothosware/SoapyRTLSDR.git
 cd SoapyRTLSDR
 mkdir build
 cd build
-cmake -DRTLSDR_INCLUDE_DIR=$BUILD_DIR/include -DRTLSDR_LIBRARY=$BUILD_DIR/lib/librtlsdr$LIB_EXT ..
+cmake -DRTLSDR_INCLUDE_DIR=$BUILD_DIR/include -DRTLSDR_LIBRARY=$BUILD_DIR/lib/librtlsdr$LIB_EXT -DSoapySDR_DIR=$BUILD_DIR/share/cmake/SoapySDR ..
 make
 mkdir -p $BUILD_DIR/lib/SoapySDR/modules0.8
 cp librtlsdrSupport.so $BUILD_DIR/lib/SoapySDR/modules0.8/librtlsdrSupport.so

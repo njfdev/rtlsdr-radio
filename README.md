@@ -37,7 +37,7 @@ brew install cmake autoconf automake libtool git librtlsdr libao fftw soapyrtlsd
 
 # Debian/Ubuntu Based Linux OSes
 sudo apt-get update
-sudo apt-get install -y libwebkit2gtk-4.0-dev librsvg2-dev patchelf git build-essential cmake autoconf automake libtool libao-dev libfftw3-dev librtlsdr-dev nodejs npm libsoapysdr-dev soapysdr-module-rtlsdr libusb-dev libusb-1.0-0-dev
+sudo apt-get install -y libwebkit2gtk-4.1-dev librsvg2-dev patchelf git build-essential cmake autoconf automake libtool libao-dev libfftw3-dev librtlsdr-dev nodejs npm libsoapysdr-dev soapysdr-module-rtlsdr libusb-dev libusb-1.0-0-dev curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev libasound2-dev libclang-dev
 ```
 
 Then, clone the git repository and build with `tauri`:
