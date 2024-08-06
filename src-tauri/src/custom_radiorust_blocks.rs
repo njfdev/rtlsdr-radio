@@ -1,5 +1,11 @@
 pub mod custom_radiorust_blocks {
-    use std::{collections::VecDeque, f64::consts::PI};
+    use std::{
+        collections::VecDeque,
+        f64::consts::PI,
+        ops::{Range, RangeFrom},
+    };
+
+    use serde_json::json;
 
     use biquad::{self, Biquad, Coefficients, DirectForm1, ToHertz, Type, Q_BUTTERWORTH_F64};
 
@@ -20,7 +26,7 @@ pub mod custom_radiorust_blocks {
         prelude::{ChunkBuf, ChunkBufPool, Complex},
         signal::Signal,
     };
-    use tauri::Window;
+    use tauri::{AppHandle, Emitter, Window};
     use tokio::spawn;
 
     pub struct AmDemod<Flt> {
@@ -273,6 +279,29 @@ pub mod custom_radiorust_blocks {
         1, 1, 0, 0, 0, 1, 1, 0, 1, 1, //
     ];
 
+    struct RbdsDecodeState {
+        last_28_bits: VecDeque<u8>,
+        are_blocks_synced: bool,
+        last_block_offset_word: String,
+        bits_since_last_block: u64,
+        // stores the current group of blocks in the format of (block_data, block_type)
+        current_block_group: Vec<(u32, String)>,
+        rbds_state: RbdsState,
+    }
+
+    impl RbdsDecodeState {
+        pub fn new() -> RbdsDecodeState {
+            Self {
+                last_28_bits: VecDeque::with_capacity(28),
+                are_blocks_synced: false,
+                last_block_offset_word: String::from(""),
+                bits_since_last_block: 0,
+                current_block_group: vec![],
+                rbds_state: RbdsState::new(),
+            }
+        }
+    }
+
     pub struct RbdsDecode<Flt> {
         receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
     }
@@ -283,7 +312,7 @@ pub mod custom_radiorust_blocks {
     where
         Flt: Float + Into<f64> + Into<f32>,
     {
-        pub fn new(window: Window) -> Self {
+        pub fn new(app: AppHandle) -> Self {
             let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
 
             // setup Wav file writer
@@ -304,21 +333,10 @@ pub mod custom_radiorust_blocks {
 
             let mut buf_pool = ChunkBufPool::<f32>::new();
 
-            let mut last_26_bits: VecDeque<u8> = VecDeque::with_capacity(26);
-
-            let mut last_block_offset_word: String = "".to_owned();
-            let mut bits_since_last_block: u64 = 0;
+            let mut rbds_decode_state = RbdsDecodeState::new();
 
             let mut samples_since_crossing: u32 = 0;
             let mut last_digitized_bit: f64 = 0.0;
-
-            // stores the current group of blocks in the format of (block_data, block_type)
-            let mut current_block_group: Vec<(u32, String)> = vec![];
-
-            println!(
-                "Calculated Syndrome: {:#010b}",
-                calculate_syndrome(0b0000000000000000_0000000000)
-            );
 
             spawn(async move {
                 loop {
@@ -330,12 +348,16 @@ pub mod custom_radiorust_blocks {
                             sample_rate,
                             chunk: input_chunk,
                         } => {
+                            // use for saving to wav file
                             let mut smoothed_input_chunk =
                                 buf_pool.get_with_capacity(input_chunk.len());
                             let mut bitstream_output_chunk =
                                 buf_pool.get_with_capacity(input_chunk.len());
                             let mut decoded_output_chunk =
                                 buf_pool.get_with_capacity(input_chunk.len());
+
+                            // decoded bits from manchester encoded signal
+                            let mut decoded_bits: Vec<u8> = vec![];
 
                             let desired_samples_length = sample_rate / desired_clock_freq;
                             // smoothing of input based on last ~0.1 milliseconds
@@ -409,10 +431,18 @@ pub mod custom_radiorust_blocks {
                                             );
                                             samples_since_last_clock = 0.0;
                                             println!("\nLost clock sync!");
+
+                                            // make sure to process rbds data already received
+                                            rbds_process_bits(
+                                                &mut decoded_bits,
+                                                &mut rbds_decode_state,
+                                                app.clone(),
+                                                true,
+                                            );
+                                            decoded_bits.clear();
                                         } else if samples_since_last_clock
                                             > buffer_time_between_clocks
                                         {
-                                            bits_since_last_block = bits_since_last_block + 1;
                                             let decoded_bit;
                                             if last_clock_value == (digitized_bit as f64) {
                                                 decoded_bit = 0;
@@ -430,63 +460,8 @@ pub mod custom_radiorust_blocks {
                                                 );
                                             }
 
-                                            last_26_bits.push_front(decoded_bit);
+                                            decoded_bits.push(decoded_bit);
 
-                                            if last_26_bits.len() > 26 {
-                                                last_26_bits.pop_back();
-
-                                                let last_26_bits_u32 =
-                                                    bits_to_u32(last_26_bits.clone().into());
-
-                                                // calculate and check CRC
-                                                let data: u16 = (last_26_bits_u32 >> 10) as u16;
-                                                let data_check_crc: u16 =
-                                                    (last_26_bits_u32 & 0b11_1111_1111) as u16;
-
-                                                let offset_word_result =
-                                                    determine_offset_word(last_26_bits_u32);
-
-                                                if offset_word_result.is_ok() {
-                                                    let (offset_word, offset_bits) =
-                                                        offset_word_result.unwrap();
-                                                    let received_crc = remove_offset_word(
-                                                        data_check_crc,
-                                                        offset_bits,
-                                                    );
-                                                    let computed_crc = compute_crc(data);
-
-                                                    if computed_crc == received_crc
-                                                        && data != 0x0
-                                                        && (current_block_group.len() == 0
-                                                            || offset_word != "A".to_owned())
-                                                        && is_block_next(
-                                                            &offset_word,
-                                                            &last_block_offset_word,
-                                                            &bits_since_last_block,
-                                                        )
-                                                    {
-                                                        current_block_group.push((
-                                                            last_26_bits_u32,
-                                                            offset_word.clone(),
-                                                        ));
-
-                                                        if current_block_group.len() == 4 {
-                                                            process_rbds_group(
-                                                                current_block_group.clone(),
-                                                                window.clone(),
-                                                            );
-                                                            current_block_group.clear();
-                                                        }
-                                                    } else {
-                                                        current_block_group.clear();
-                                                    }
-
-                                                    last_block_offset_word = offset_word.clone();
-
-                                                    bits_since_last_block = 0;
-                                                }
-                                            }
-                                            // 01101
                                             last_clock_value = digitized_bit.clone() as f64;
                                             samples_since_last_clock = 0.0;
                                         }
@@ -495,6 +470,14 @@ pub mod custom_radiorust_blocks {
 
                                 last_sample_value = sample_value;
                             }
+
+                            // process all bits recieved
+                            rbds_process_bits(
+                                &mut decoded_bits,
+                                &mut rbds_decode_state,
+                                app.clone(),
+                                false,
+                            );
 
                             // Step 4: Save to WAV file for Testing (if not in production)
                             #[cfg(debug_assertions)]
@@ -574,6 +557,64 @@ pub mod custom_radiorust_blocks {
         digest.finalize()
     }
 
+    fn generate_n_burst_mask(length: u8, burst_width: u8) -> Vec<u32> {
+        let mut burst_error_mask: Vec<u32> = vec![];
+
+        for i in (0)..(length - burst_width + 1) {
+            let mask_width: u32 = ((1 << burst_width) - 1) as u32;
+            let mask: u32 = mask_width << i as u32;
+            burst_error_mask.push(mask);
+        }
+
+        burst_error_mask
+    }
+
+    fn attempt_error_correction(
+        raw_data: u32,
+        block_index: usize,
+    ) -> Result<(u32, String, u16), ()> {
+        let data = (raw_data >> 10) as u16;
+        let received_crc = (raw_data & 0b11_1111_1111) as u16;
+
+        let expected_crc = compute_crc(data);
+
+        let block_index_starting_chars = ["A", "B", "C", "D"];
+        // get valid block_offsets for block_index
+        let valid_block_offsets: Vec<&(&str, u16, u16)> = RBDS_OFFSET_WORDS
+            .iter()
+            .filter(|(block_type, _, _)| {
+                block_type.starts_with(block_index_starting_chars[block_index])
+            })
+            .collect();
+
+        // try burst errors from 1-5
+        for i in 1..=5 {
+            let bit_mask = generate_n_burst_mask(26, i);
+            for mask in bit_mask {
+                for (offset_type, offset_bits, _offset_syndrome) in valid_block_offsets.clone() {
+                    // flip bit specified in mask
+                    let new_raw_data = (raw_data ^ mask);
+                    // remove possible offset word
+                    let corrected_data = new_raw_data ^ (*offset_bits as u32);
+                    let new_data = (corrected_data >> 10) as u16;
+                    let new_crc = (corrected_data & 0b11_1111_1111) as u16;
+
+                    let new_expected_crc = compute_crc(new_data);
+                    // if it matches, return the error corrected data
+                    if new_expected_crc == new_crc {
+                        return Ok((
+                            new_raw_data,
+                            (*offset_type).to_owned(),
+                            (*offset_bits).clone(),
+                        ));
+                    }
+                }
+            }
+        }
+
+        Err(())
+    }
+
     fn is_block_next(cur_offset_word: &str, last_block: &str, bits_since_last_block: &u64) -> bool {
         if (cur_offset_word == "A")
             || (((last_block == "A" && cur_offset_word == "B")
@@ -593,7 +634,7 @@ pub mod custom_radiorust_blocks {
 
     fn bits_to_u32(bits: Vec<u8>) -> u32 {
         let mut value: u32 = 0;
-        for bit in bits.iter().rev().take(32) {
+        for bit in bits.iter().take(32) {
             value = (value << 1) | (*bit as u32);
         }
         value
@@ -640,35 +681,363 @@ pub mod custom_radiorust_blocks {
         syndrome
     }
 
-    fn send_rbds_data(param_name: &str, data: String, window: Window) {
-        let message = format!("{{ \"{}\": \"{}\" }}", param_name, data);
-        window
-            .emit("rtlsdr_rbds", message.as_str())
+    fn send_rbds_data<T: serde::Serialize>(param_name: &str, data: T, app: AppHandle) {
+        let json_object: String = json!({
+            param_name: data
+        })
+        .to_string();
+        app.emit("rtlsdr_rbds", json_object.as_str())
             .expect("failed to emit event");
     }
 
-    fn process_rbds_group(group_data: Vec<(u32, String)>, window: Window) {
+    #[derive(Clone)]
+    struct RbdsState {
+        service_name: String,
+        radio_text: String,
+        radio_text_ab_flag: bool, // if switches from previous value, then clear radio_text
+        pty_name: String,
+        pty_name_ab_flag: bool, // if switches from previous value, then clear pty_name
+    }
+
+    impl RbdsState {
+        pub fn new() -> Self {
+            Self {
+                service_name: String::from(" ".repeat(8)),
+                radio_text: String::from(" ".repeat(64)),
+                radio_text_ab_flag: false,
+                pty_name: String::from(" ".repeat(8)),
+                pty_name_ab_flag: false,
+            }
+        }
+    }
+
+    fn process_rbds_group(
+        group_data: Vec<(u32, String)>,
+        rbds_state: &mut RbdsState,
+        app: AppHandle,
+    ) {
+        // group info
+        let mut pi: u16 = 0; // program identification code
+        let mut gtype: u8 = 0; // group type
+        let mut b0: bool = false; // if true, block C repeats PIC, otherwise, block C is group specific data
+        let mut tp: bool = false; // periodic traffic reports?
+        let mut pty: usize = 0; // program type
+        let mut g_data: u8 = 0; // group specific data (bits 4-0 of block B)
+
+        // block data
+        let mut block3_data: Option<u16> = None;
+        let mut block4_data: u16 = 0;
+
         for (raw_data, block_type) in group_data.iter() {
             let data = (raw_data >> 10) as u16;
-            let _checkword = (raw_data & 0b11_1111_1111) as u16;
 
             match block_type.as_str() {
-                "A" => {}
-                "B" => {
-                    let pty: usize = ((data >> 5) & 0b11111) as usize;
-                    send_rbds_data(
-                        "program_type",
-                        RBDS_PTY_INDEX[pty].to_string(),
-                        window.clone(),
-                    );
+                "A" => {
+                    pi = data;
                 }
-                "C" => {}
-                "D" => {}
+                "B" => {
+                    gtype = ((data >> 12) & 0b1111) as u8;
+                    b0 = if (data >> 11) & 0b1 == 1 { true } else { false };
+                    tp = if (data >> 10) & 0b1 == 1 { true } else { false };
+                    pty = ((data >> 5) & 0b11111) as usize;
+                    g_data = (data & 0b11111) as u8;
+                }
+                "C" => {
+                    if b0 {
+                        pi = data
+                    } else {
+                        block3_data = Some(data);
+                    }
+                }
+                "D" => {
+                    block4_data = data;
+                }
                 _ => {
                     println!("Unexpected Block");
                     return;
                 }
             }
+        }
+
+        // process blocks based on group type
+        match gtype {
+            // Program Service Name
+            0b0000 => {
+                // set the decoder control bit
+                let decoder_control_bit_index = g_data & 0b11;
+                let decoder_control_bit = if ((g_data >> 2) & 1) == 1 {
+                    true
+                } else {
+                    false
+                };
+                let mut di_bit_name = "";
+
+                match decoder_control_bit_index {
+                    0 => di_bit_name = "di_is_stereo",
+                    1 => di_bit_name = "di_is_binaural",
+                    2 => di_bit_name = "di_is_compressed",
+                    3 => di_bit_name = "di_is_pty_dynamic",
+                    _ => {}
+                }
+                if di_bit_name.len() > 0 {
+                    send_rbds_data(&di_bit_name, decoder_control_bit, app.clone());
+                }
+
+                // set the traffic announcement bit
+                let ta = if ((g_data >> 4) & 1) == 1 {
+                    true
+                } else {
+                    false
+                };
+                send_rbds_data("ta", ta, app.clone());
+
+                // get and set the service_name characters
+                let mut service_name_segment: String = String::from("");
+                service_name_segment.push(((block4_data >> 8) & 0xff) as u8 as char);
+                service_name_segment.push((block4_data & 0xff) as u8 as char);
+
+                let char_starting_index = decoder_control_bit_index as usize * 2;
+                let char_ending_index = char_starting_index + 2;
+
+                // if indexes are not at char boundaries, assume error and reset string
+                if !rbds_state
+                    .service_name
+                    .is_char_boundary(char_starting_index)
+                    || !rbds_state.service_name.is_char_boundary(char_ending_index)
+                {
+                    rbds_state.service_name.clear();
+                    rbds_state.service_name = String::from(" ".repeat(8));
+                }
+
+                rbds_state.service_name.replace_range(
+                    Range {
+                        start: char_starting_index,
+                        end: char_ending_index,
+                    },
+                    &service_name_segment,
+                );
+
+                // get the music/speech flag (true = Music, false = speech)
+                let ms_flag = if ((g_data >> 3) & 1) == 1 {
+                    true
+                } else {
+                    false
+                };
+
+                // send rbds data to UI
+                send_rbds_data(
+                    "program_service_name",
+                    rbds_state.service_name.clone(),
+                    app.clone(),
+                );
+                send_rbds_data("ms_flag", ms_flag, app.clone());
+            }
+            // RadioText
+            0b0010 => {
+                let mut radio_text_segment = String::from("");
+
+                if !b0 {
+                    radio_text_segment.push(((block3_data.unwrap() >> 8) & 0xff) as u8 as char);
+                    radio_text_segment.push((block3_data.unwrap() & 0xff) as u8 as char);
+                }
+                radio_text_segment.push(((block4_data >> 8) & 0xff) as u8 as char);
+                radio_text_segment.push((block4_data & 0xff) as u8 as char);
+
+                // if ab_flag changes, clear radio text
+                let ab_flag = if ((g_data >> 4) & 1) == 1 {
+                    true
+                } else {
+                    false
+                };
+                if ab_flag != rbds_state.radio_text_ab_flag {
+                    rbds_state.radio_text.clear();
+                    rbds_state.radio_text = String::from(" ".repeat(64));
+                    rbds_state.radio_text_ab_flag = ab_flag;
+                }
+
+                let char_starting_index = (g_data & 0b1111) as usize * radio_text_segment.len();
+                let char_ending_index = char_starting_index + radio_text_segment.len();
+
+                // if indexes are not at char boundaries, assume error and reset string
+                if !rbds_state.radio_text.is_char_boundary(char_starting_index)
+                    || !rbds_state.radio_text.is_char_boundary(char_ending_index)
+                {
+                    rbds_state.radio_text.clear();
+                    rbds_state.radio_text = String::from(" ".repeat(64));
+                }
+
+                rbds_state
+                    .radio_text
+                    .replace_range(char_starting_index..char_ending_index, &radio_text_segment);
+
+                // send rbds data to UI
+                send_rbds_data("radio_text", rbds_state.radio_text.clone(), app.clone());
+            }
+            // Open Data Application Identification (3A) and Open Data (3B)
+            0b0011 => {
+                if !b0 {
+                    let application_id = block4_data;
+
+                    // match the application id to do proper decoding
+                    match application_id {
+                        // RadioText+
+                        0x4BD7 => {
+                            println!("This Station Supports RadioText+");
+                        }
+                        _ => {
+                            println!("Unhandled Open Data Application: {:04x}", application_id);
+                        }
+                    }
+                }
+            }
+            // Program Type Name (10A) and Open Data (10B)
+            0b1010 => {
+                if !b0 {
+                    let mut ptyn_segment = String::from("");
+
+                    ptyn_segment.push(((block3_data.unwrap() >> 8) & 0xff) as u8 as char);
+                    ptyn_segment.push((block3_data.unwrap() & 0xff) as u8 as char);
+                    ptyn_segment.push(((block4_data >> 8) & 0xff) as u8 as char);
+                    ptyn_segment.push((block4_data & 0xff) as u8 as char);
+
+                    // if ab_flag changes, clear pty_name
+                    let ab_flag = if ((g_data >> 4) & 1) == 1 {
+                        true
+                    } else {
+                        false
+                    };
+                    if ab_flag != rbds_state.pty_name_ab_flag {
+                        rbds_state.pty_name = String::from(" ".repeat(8));
+                        rbds_state.pty_name_ab_flag = ab_flag;
+                    }
+
+                    let char_starting_index = (g_data & 0b1) as usize * 4;
+                    let char_ending_index = char_starting_index + 4;
+
+                    // if indexes are not at char boundaries, assume error and reset string
+                    if !rbds_state.pty_name.is_char_boundary(char_starting_index)
+                        || !rbds_state.pty_name.is_char_boundary(char_ending_index)
+                    {
+                        rbds_state.pty_name.clear();
+                        rbds_state.pty_name = String::from(" ".repeat(8));
+                    }
+
+                    rbds_state
+                        .pty_name
+                        .replace_range(char_starting_index..char_ending_index, &ptyn_segment);
+
+                    // send rbds data to UI
+                    send_rbds_data("pty_name", rbds_state.pty_name.clone(), app.clone());
+                }
+            }
+            _ => {}
+        }
+
+        // send rbds data to UI
+        send_rbds_data("program_type", RBDS_PTY_INDEX[pty].to_string(), app.clone());
+        send_rbds_data("tp", tp, app.clone());
+    }
+
+    fn rbds_process_bits(
+        bit_stream: &mut Vec<u8>,
+        rbds_decode_state: &mut RbdsDecodeState,
+        app: AppHandle,
+        bit_stream_ending: bool,
+    ) {
+        for bit in bit_stream {
+            rbds_decode_state.last_28_bits.push_back(*bit);
+            rbds_decode_state.bits_since_last_block = rbds_decode_state.bits_since_last_block + 1;
+
+            if rbds_decode_state.bits_since_last_block > 28 {
+                rbds_decode_state.are_blocks_synced = false;
+            }
+
+            if rbds_decode_state.last_28_bits.len() >= 26 {
+                let mut last_26_bits_u32 =
+                    (bits_to_u32(rbds_decode_state.last_28_bits.clone().into()))
+                        & 0b11_1111_1111_1111_1111_1111_1111;
+
+                let mut offset_word_result = determine_offset_word(last_26_bits_u32);
+                let mut is_error_corrected = false;
+
+                // if offset_word_result is err and block sync is achieved, attempt error correction
+                if offset_word_result.is_err() && rbds_decode_state.are_blocks_synced {
+                    let new_data_result = attempt_error_correction(
+                        last_26_bits_u32,
+                        rbds_decode_state.current_block_group.len(),
+                    );
+                    if new_data_result.is_ok() {
+                        let (new_data, new_offset_type, new_offset_bits) = new_data_result.unwrap();
+                        last_26_bits_u32 = new_data;
+                        offset_word_result = Ok((new_offset_type, new_offset_bits));
+                        is_error_corrected = true;
+                    }
+                }
+
+                // calculate and check CRC
+                let data: u16 = (last_26_bits_u32 >> 10) as u16;
+                let data_check_crc: u16 = (last_26_bits_u32 & 0b11_1111_1111) as u16;
+
+                if offset_word_result.is_ok() {
+                    let (offset_word, offset_bits) = offset_word_result.unwrap();
+                    let received_crc = remove_offset_word(data_check_crc, offset_bits);
+                    let computed_crc = compute_crc(data);
+
+                    if (computed_crc == received_crc
+                        && data != 0x0
+                        && (rbds_decode_state.current_block_group.len() == 0
+                            || offset_word != "A".to_owned())
+                        && is_block_next(
+                            &offset_word,
+                            &rbds_decode_state.last_block_offset_word,
+                            &rbds_decode_state.bits_since_last_block,
+                        ))
+                    {
+                        if is_error_corrected {
+                            println!("Error Corrected Block was Accepted!");
+                        }
+                        rbds_decode_state
+                            .current_block_group
+                            .push((last_26_bits_u32, offset_word.clone()));
+
+                        // if 2 valid blocks in a row, then block synced has been achieved (as defined by RSD spec)
+                        if rbds_decode_state.current_block_group.len() >= 2 {
+                            rbds_decode_state.are_blocks_synced = true;
+                        }
+
+                        if rbds_decode_state.current_block_group.len() == 4 {
+                            process_rbds_group(
+                                rbds_decode_state.current_block_group.clone(),
+                                &mut rbds_decode_state.rbds_state,
+                                app.clone(),
+                            );
+                            rbds_decode_state.current_block_group.clear();
+                        }
+
+                        if rbds_decode_state.are_blocks_synced {
+                            rbds_decode_state.last_28_bits.clear();
+                        }
+                    } else {
+                        rbds_decode_state.are_blocks_synced = false;
+                        rbds_decode_state.current_block_group.clear();
+                    }
+
+                    rbds_decode_state.last_block_offset_word = offset_word.clone();
+
+                    rbds_decode_state.bits_since_last_block = 0;
+                }
+            }
+
+            if rbds_decode_state.last_28_bits.len() > 28 {
+                rbds_decode_state.last_28_bits.pop_front();
+            }
+        }
+
+        // if bit stream is ending (in case of clock losing sync), then reset decode state (but keep RBDS state)
+        if bit_stream_ending {
+            let saved_rbds_state = rbds_decode_state.rbds_state.clone();
+            *rbds_decode_state = RbdsDecodeState::new();
+            rbds_decode_state.rbds_state = saved_rbds_state;
         }
     }
 }

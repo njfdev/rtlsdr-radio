@@ -51,4 +51,14 @@ export interface StreamSettings {
 
 export interface RbdsData {
   program_type?: string;
+  pty_name?: string;
+  program_service_name?: string;
+  radio_text?: string;
+  ms_flag?: boolean;
+  di_is_stereo?: boolean;
+  di_is_binaural?: boolean;
+  di_is_compressed?: boolean;
+  di_is_pty_dynamic?: boolean;
+  ta?: boolean;
+  tp?: boolean;
 }

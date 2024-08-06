@@ -1,0 +1,30 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "migrated",
+  "description": "permissions that were migrated from v1",
+  "local": true,
+  "windows": ["main"],
+  "permissions": [
+    "core:path:default",
+    "core:event:default",
+    "core:window:default",
+    "core:app:default",
+    "core:resources:default",
+    "core:menu:default",
+    "core:tray:default",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "args": false,
+          "cmd": "",
+          "name": "../build/bin/nrsc5",
+          "sidecar": true
+        }
+      ]
+    },
+    "shell:allow-open",
+    "shell:default",
+    "updater:default"
+  ]
+}

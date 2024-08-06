@@ -20,10 +20,22 @@ import {
   StreamType,
   volumeStorageName,
 } from "@/lib/types";
-import { invoke } from "@tauri-apps/api";
-import { appWindow } from "@tauri-apps/api/window";
+import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Loader2 } from "lucide-react";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { TabsContent, TabsTrigger, Tabs, TabsList } from "./ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { Skeleton } from "./ui/skeleton";
+import { Badge } from "./ui/badge";
+const appWindow = getCurrentWebviewWindow();
 
 enum RtlSdrStatus {
   Stopped = "stopped",
@@ -63,6 +75,8 @@ export default function RtlSdrControls({
   const [isProcessingRequest, setIsProcessingRequest] = useState(false);
   const [error, setError] = useState("");
   const [rbdsData, setRbdsData] = useState<RbdsData>({});
+  const [has10SecondsElapsed, set10SecondsElapsed] = useState(false);
+  let counterId: NodeJS.Timeout | undefined;
 
   const [isSaved, setIsSaved] = useState(
     isStationSaved({
@@ -128,13 +142,21 @@ export default function RtlSdrControls({
       frequency: streamSettings.freq,
       channel: undefined,
     });
+
+    // If no RBDS data after 10 seconds, alert user
+    counterId = setTimeout(() => set10SecondsElapsed(true), 10 * 1000);
   };
   const stop_stream = async () => {
     setStatus(RtlSdrStatus.Pausing);
-    setRbdsData({});
+    if (counterId) {
+      clearTimeout(counterId);
+      counterId = undefined;
+    }
+    set10SecondsElapsed(false);
     await invoke<string>("stop_stream", {});
     await setIsInUse(false);
     setCurrentStation(undefined);
+    await setRbdsData({});
   };
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
@@ -175,128 +197,343 @@ export default function RtlSdrControls({
   }, []);
 
   return (
-    <form
-      className="grid gap-3 max-w-[24rem] w-[24rem]"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (status == RtlSdrStatus.Stopped) {
-          setRequestedStation({
-            type: currentStationType,
-            frequency: streamSettings.freq,
-          });
-        }
-      }}
-    >
-      {streamType == StreamType.AM && (
-        <span className="text-center text-amber-300">
-          RTL-SDRs often struggle with AM radio signals below 24 MHz (without an
-          upconvertor), resulting in significant static. Reception quality will
-          likely be poor.
-        </span>
-      )}
-      <div className="grid w-full gap-1.5">
-        <Label htmlFor="freq_slider">{streamType.valueOf()} Station</Label>
-        <Input
-          type="number"
-          step={streamType == StreamType.FM ? 0.2 : 10}
-          min={streamType == StreamType.FM ? 88.1 : 540}
-          max={streamType == StreamType.FM ? 107.9 : 1700}
-          placeholder="#"
-          value={streamSettings.freq}
-          onChange={(e) =>
-            setStreamSettings((old) => ({
-              ...old,
-              freq: parseFloat(e.target.value),
-            }))
-          }
-        />
-      </div>
-      <div className="grid w-full gap-1.5">
-        <Label htmlFor="audio_sr">Audio Sample Rate</Label>
-        <Input
-          type="number"
-          id="audio_sr"
-          step={1}
-          min={44100.0}
-          max={192000.0}
-          placeholder="#"
-          value={streamSettings.sample_rate}
-          onChange={(e) =>
-            setStreamSettings((old) => ({
-              ...old,
-              sample_rate: parseFloat(e.target.value),
-            }))
-          }
-        />
-      </div>
-      <div className="grid w-full gap-1.5">
-        <Label htmlFor="volume_slider">Volume</Label>
-        <Slider
-          min={0.0}
-          max={1.0}
-          step={0.01}
-          value={[streamSettings.volume]}
-          id="volume_slider"
-          className="py-[2px]"
-          onValueChange={(values) => {
-            setStreamSettings((old) => ({ ...old, volume: values[0] }));
-          }}
-        />
-      </div>
-      <Button
-        onClick={() => {
-          if (status == RtlSdrStatus.Running) {
-            setRequestedStation(undefined);
+    <div className="flex xl:flex-row flex-col gap-8 xl:w-[48rem] w-[24rem]">
+      <form
+        className="grid gap-3 max-w-[24rem] w-[24rem] h-max mx-auto"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (status == RtlSdrStatus.Stopped) {
+            setRequestedStation({
+              type: currentStationType,
+              frequency: streamSettings.freq,
+            });
           }
         }}
-        disabled={
-          status == RtlSdrStatus.Starting || status == RtlSdrStatus.Pausing
-        }
       >
-        {status == RtlSdrStatus.Running ? (
-          `Stop ${streamType.valueOf()} Stream`
-        ) : status == RtlSdrStatus.Starting ? (
-          <>
-            <Loader2 className="animate-spin mr-2" /> Starting...
-          </>
-        ) : status == RtlSdrStatus.Pausing ? (
-          <>
-            <Loader2 className="animate-spin mr-2" /> Stopping...
-          </>
-        ) : (
-          `Start ${streamType.valueOf()} Stream`
+        {streamType == StreamType.AM && (
+          <span className="text-center text-amber-300">
+            RTL-SDRs often struggle with AM radio signals below 24 MHz (without
+            an upconvertor), resulting in significant static. Reception quality
+            will likely be poor.
+          </span>
         )}
-      </Button>
-      {error.length > 0 && (
-        <span className="text-center text-red-400">{error}</span>
-      )}
-      {status == RtlSdrStatus.Running && (
+        <div className="grid w-full gap-1.5">
+          <Label htmlFor="freq_slider">{streamType.valueOf()} Station</Label>
+          <Input
+            type="number"
+            step={streamType == StreamType.FM ? 0.2 : 10}
+            min={streamType == StreamType.FM ? 88.1 : 540}
+            max={streamType == StreamType.FM ? 107.9 : 1700}
+            placeholder="#"
+            value={streamSettings.freq}
+            onChange={(e) =>
+              setStreamSettings((old) => ({
+                ...old,
+                freq: parseFloat(e.target.value),
+              }))
+            }
+          />
+        </div>
+        <div className="grid w-full gap-1.5">
+          <Label htmlFor="audio_sr">Audio Sample Rate</Label>
+          <Input
+            type="number"
+            id="audio_sr"
+            step={1}
+            min={44100.0}
+            max={192000.0}
+            placeholder="#"
+            value={streamSettings.sample_rate}
+            onChange={(e) =>
+              setStreamSettings((old) => ({
+                ...old,
+                sample_rate: parseFloat(e.target.value),
+              }))
+            }
+          />
+        </div>
+        <div className="grid w-full gap-1.5">
+          <Label htmlFor="volume_slider">Volume</Label>
+          <Slider
+            min={0.0}
+            max={1.0}
+            step={0.01}
+            value={[streamSettings.volume]}
+            id="volume_slider"
+            className="py-[2px]"
+            onValueChange={(values) => {
+              setStreamSettings((old) => ({ ...old, volume: values[0] }));
+            }}
+          />
+        </div>
         <Button
-          className="w-full"
-          variant={isSaved ? "secondary" : "default"}
-          onClick={async () => {
-            let stationData: StationDetails = {
-              type: currentStationType,
-              title: `${streamType.valueOf()} Radio: ${streamSettings.freq}`,
-              frequency: streamSettings.freq,
-              isFavorite: false,
-            };
-
-            if (isSaved) {
-              await removeStation(stationData);
-              setIsSaved(false);
-            } else {
-              await saveStation(stationData);
-              setIsSaved(true);
+          onClick={() => {
+            if (status == RtlSdrStatus.Running) {
+              setRequestedStation(undefined);
             }
           }}
+          disabled={
+            status == RtlSdrStatus.Starting || status == RtlSdrStatus.Pausing
+          }
         >
-          {isSaved ? "Remove " : "Save "} Station
+          {status == RtlSdrStatus.Running ? (
+            `Stop ${streamType.valueOf()} Stream`
+          ) : status == RtlSdrStatus.Starting ? (
+            <>
+              <Loader2 className="animate-spin mr-2" /> Starting...
+            </>
+          ) : status == RtlSdrStatus.Pausing ? (
+            <>
+              <Loader2 className="animate-spin mr-2" /> Stopping...
+            </>
+          ) : (
+            `Start ${streamType.valueOf()} Stream`
+          )}
         </Button>
+        {error.length > 0 && (
+          <span className="text-center text-red-400">{error}</span>
+        )}
+        {status == RtlSdrStatus.Running && (
+          <Button
+            className="w-full"
+            variant={isSaved ? "secondary" : "default"}
+            onClick={async () => {
+              let stationTitle = `${streamType.valueOf()} ${
+                streamSettings.freq
+              }`;
+
+              if (rbdsData.program_type) {
+                stationTitle += ` - ${rbdsData.program_type}`;
+              }
+
+              let stationData: StationDetails = {
+                type: currentStationType,
+                title: stationTitle,
+                frequency: streamSettings.freq,
+                isFavorite: false,
+              };
+
+              if (isSaved) {
+                await removeStation(stationData);
+                setIsSaved(false);
+              } else {
+                await saveStation(stationData);
+                setIsSaved(true);
+              }
+            }}
+          >
+            {isSaved ? "Remove " : "Save "} Station
+          </Button>
+        )}
+      </form>
+      {streamType == StreamType.FM && (
+        <>
+          <Tabs
+            defaultValue="radioInfo"
+            className={`transition-all max-w-[24rem] w-[24rem] ${
+              status == RtlSdrStatus.Stopped ? "opacity-75" : ""
+            }`}
+            style={{ gridColumn: 0, gridRow: 0 }}
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger
+                disabled={status == RtlSdrStatus.Stopped}
+                value="radioInfo"
+              >
+                Radio Info
+              </TabsTrigger>
+              <TabsTrigger
+                disabled={status == RtlSdrStatus.Stopped}
+                value="advancedInfo"
+              >
+                Advanced Info
+              </TabsTrigger>
+            </TabsList>
+            {status != RtlSdrStatus.Stopped ? (
+              <>
+                <TabsContent value="radioInfo">
+                  <Card>
+                    <CardHeader>
+                      {rbdsData.radio_text ? (
+                        <CardTitle
+                          className="whitespace-pre-wrap"
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              rbdsData.radio_text &&
+                              rbdsData.radio_text.trimEnd()
+                                ? rbdsData.radio_text
+                                    .trimEnd()
+                                    .replace(
+                                      /( {2,})/g,
+                                      '<span class="font-mono">$1</span>'
+                                    )
+                                : "",
+                          }}
+                        ></CardTitle>
+                      ) : (
+                        <Skeleton className="h-6 max-w-52" />
+                      )}
+                      <CardDescription>
+                        {rbdsData.program_type ? (
+                          rbdsData.program_type
+                        ) : (
+                          <Skeleton className="h-4 max-w-20" />
+                        )}
+                      </CardDescription>
+                    </CardHeader>
+                    {has10SecondsElapsed &&
+                      Object.values(rbdsData).every((x) => x === undefined) && (
+                        <CardContent className="flex flex-col items-center align-middle justify-center">
+                          <CardDescription className="text-center">
+                            Cannot receive RBDS signal! It is either too weak or
+                            the station does not support RBDS.
+                          </CardDescription>
+                        </CardContent>
+                      )}
+                  </Card>
+                </TabsContent>
+                <TabsContent value="advancedInfo">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Advanced Info</CardTitle>
+                      <CardDescription>
+                        This is all the other RBDS/RDS data that RTL-SDR Radio
+                        can decode.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-2">
+                      <span className="flex items-center gap-1">
+                        <b>Program Service Name:</b>{" "}
+                        <span className="font-mono">
+                          {rbdsData.program_service_name != undefined ? (
+                            <>
+                              {rbdsData.program_service_name}
+                              {rbdsData.pty_name
+                                ? ` - ${rbdsData.pty_name}`
+                                : ""}
+                            </>
+                          ) : (
+                            <div>
+                              <Skeleton className="h-5 w-24" />
+                            </div>
+                          )}
+                        </span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <b>Radio Type:</b>{" "}
+                        {rbdsData.di_is_stereo != undefined ? (
+                          rbdsData.ms_flag ? (
+                            "Music"
+                          ) : (
+                            "Speech"
+                          )
+                        ) : (
+                          <Skeleton className="h-4 w-[3.5rem]" />
+                        )}
+                      </span>
+                      <span className="font-bold">
+                        Decoder Identification Info
+                      </span>
+                      <div className="indent-4 flex flex-col -mt-2">
+                        <span className="flex items-center gap-1">
+                          <b>Channels:</b>{" "}
+                          {rbdsData.di_is_stereo != undefined ? (
+                            rbdsData.di_is_stereo ? (
+                              "Stereo"
+                            ) : (
+                              "Mono"
+                            )
+                          ) : (
+                            <Skeleton className="h-4 w-[4.25rem]" />
+                          )}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <b>Binaural Audio:</b>{" "}
+                          {rbdsData.di_is_binaural != undefined ? (
+                            rbdsData.di_is_binaural ? (
+                              "Yes"
+                            ) : (
+                              "No"
+                            )
+                          ) : (
+                            <Skeleton className="h-4 w-8" />
+                          )}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <b>Compression:</b>{" "}
+                          {rbdsData.di_is_compressed != undefined ? (
+                            rbdsData.di_is_compressed ? (
+                              "Yes"
+                            ) : (
+                              "No"
+                            )
+                          ) : (
+                            <Skeleton className="h-4 w-8" />
+                          )}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <b>PTY Type:</b>{" "}
+                          {rbdsData.di_is_pty_dynamic != undefined ? (
+                            rbdsData.di_is_pty_dynamic ? (
+                              "Dynamic"
+                            ) : (
+                              "Static"
+                            )
+                          ) : (
+                            <Skeleton className="h-4 w-[4.25rem]" />
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex gap-1 items-center">
+                        <span className="items-center gap-1">
+                          <b>Traffic Info:</b>{" "}
+                          {(() => {
+                            if (
+                              rbdsData.ta != undefined &&
+                              rbdsData.tp != undefined
+                            ) {
+                              switch (true) {
+                                case rbdsData.tp == false &&
+                                  rbdsData.ta == false:
+                                  return "This radio station does not carry traffic announcements.";
+                                case rbdsData.tp == false &&
+                                  rbdsData.ta == true:
+                                  return "This radio station does not carry traffic announcements, but it carries EON information about a station that does.";
+                                case rbdsData.tp == false &&
+                                  rbdsData.ta == false:
+                                  return "This radio station carries traffic announcements, but none are ongoing presently.";
+                                case rbdsData.tp == false &&
+                                  rbdsData.ta == false:
+                                  return "There is an ongoing traffic announcement.";
+                              }
+                            }
+                          })()}
+                        </span>
+                        {(rbdsData.tp == undefined ||
+                          rbdsData.ta == undefined) && (
+                          <Skeleton className="h-4 grow" />
+                        )}
+                      </div>
+                      {(rbdsData.tp == undefined ||
+                        rbdsData.ta == undefined) && (
+                        <Skeleton className="h-4 w-64 -mt-0.5" />
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </>
+            ) : (
+              <Card>
+                <CardHeader />
+                <CardContent>
+                  <span className="w-full text-center">SDR Not Running</span>
+                </CardContent>
+                <CardFooter />
+              </Card>
+            )}
+          </Tabs>
+        </>
       )}
-      {streamType == StreamType.FM && status == RtlSdrStatus.Running && (
-        <span>Program Type: {rbdsData.program_type || "loading..."}</span>
-      )}
-    </form>
+    </div>
   );
 }

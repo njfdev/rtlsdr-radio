@@ -12,7 +12,7 @@ pub mod rtlsdr {
         prelude::*,
     };
     use soapysdr::Direction;
-    use tauri::{async_runtime, Window};
+    use tauri::{async_runtime, AppHandle, Emitter, Window};
     use tokio::{self, time};
 
     use crate::custom_radiorust_blocks::custom_radiorust_blocks::{AmDemod, DownMixer, RbdsDecode};
@@ -46,7 +46,7 @@ pub mod rtlsdr {
             })))
         }
 
-        pub fn start_stream(&self, window: Window, stream_settings: StreamSettings) {
+        pub fn start_stream(&self, app: AppHandle, stream_settings: StreamSettings) {
             let rtlsdr_state = self.0.clone();
             let rtlsdr_state_clone = rtlsdr_state.clone();
 
@@ -72,10 +72,10 @@ pub mod rtlsdr {
 
                             if rtlsdr_dev_result.is_err() {
                                 // notify frontend of error
-                                window
+                                app
                                     .emit("rtlsdr_err", "Could not connect to your RTL-SDR. Make sure it is plugged in!")
                                     .expect("failed to emit event");
-                                window
+                                app
                                     .emit("rtlsdr_status", "stopped")
                                     .expect("failed to emit event");
 
@@ -179,7 +179,7 @@ pub mod rtlsdr {
                                 rbds_lowpass_filter.feed_from(&rbds_downmixer);
 
                                 // add rbds decoder to output FM stream
-                                let rdbs_decoder = RbdsDecode::<f32>::new(window.clone());
+                                let rdbs_decoder = RbdsDecode::<f32>::new(app.clone());
                                 rdbs_decoder.feed_from(&rbds_lowpass_filter);
                             } else if stream_settings.stream_type == StreamType::AM {
                                 let demodulator = AmDemod::<f32>::new();
@@ -218,7 +218,7 @@ pub mod rtlsdr {
 
                             while !shutdown_flag.load(Ordering::SeqCst) {
                                 // notify frontend that audio is playing
-                                window
+                                app
                                     .emit("rtlsdr_status", format!("{}_{}", prefix, "running"))
                                     .expect("failed to emit event");
 
@@ -229,7 +229,7 @@ pub mod rtlsdr {
             ));
         }
 
-        pub async fn stop_stream(&self, window: Window) {
+        pub async fn stop_stream(&self, app: AppHandle) {
             if let Ok(mut rtl_sdr_data) = self.0.clone().lock() {
                 rtl_sdr_data.shutdown_flag.store(true, Ordering::SeqCst);
 
@@ -239,8 +239,7 @@ pub mod rtlsdr {
 
                 rtl_sdr_data.shutdown_flag.store(false, Ordering::SeqCst);
 
-                window
-                    .emit("rtlsdr_status", Some("stopped"))
+                app.emit("rtlsdr_status", Some("stopped"))
                     .expect("failed to emit event");
             } else {
                 println!("Could not acquire lock immediately");

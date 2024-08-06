@@ -2,61 +2,58 @@
   "build": {
     "beforeBuildCommand": "python3 build_scripts/run_all.py && yarn build",
     "beforeDevCommand": "python3 build_scripts/run_all.py && yarn dev",
-    "devPath": "http://localhost:3000",
-    "distDir": "../out"
+    "frontendDist": "../out",
+    "devUrl": "http://localhost:3000"
   },
-  "package": {
-    "productName": "RTL-SDR Radio",
-    "version": "0.4.0-beta.1"
-  },
-  "tauri": {
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "sidecar": true,
-        "scope": [{ "name": "../build/bin/nrsc5", "sidecar": true }],
-        "open": true
-      }
+  "bundle": {
+    "active": true,
+    "category": "DeveloperTool",
+    "copyright": "",
+    "targets": "all",
+    "externalBin": ["../build/bin/nrsc5"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
     },
-    "bundle": {
-      "active": true,
-      "category": "DeveloperTool",
-      "copyright": "",
+    "longDescription": "",
+    "macOS": {
+      "entitlements": null,
+      "exceptionDomain": "",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": null
+    },
+    "resources": {
+      "../build/lib/*": "resources/lib/",
+      "../build/lib/SoapySDR/modules0.8/*": "resources/lib/SoapySDR/modules0.8",
+      "../build/lib/pkgconfig/*": "resources/lib/pkgconfig"
+    },
+    "shortDescription": "",
+    "linux": {
       "deb": {
         "depends": []
-      },
-      "externalBin": ["../build/bin/nrsc5"],
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ],
-      "identifier": "dev.njf.rtlsdr-radio",
-      "longDescription": "",
-      "macOS": {
-        "entitlements": null,
-        "exceptionDomain": "",
-        "frameworks": [],
-        "providerShortName": null,
-        "signingIdentity": null
-      },
-      "resources": [],
-      "shortDescription": "",
-      "targets": "all",
-      "windows": {
-        "certificateThumbprint": null,
-        "digestAlgorithm": "sha256",
-        "timestampUrl": ""
       }
     },
-    "security": {
-      "csp": null
-    },
+    "createUpdaterArtifacts": "v1Compatible"
+  },
+  "productName": "RTL-SDR Radio",
+  "version": "0.4.0-beta.2",
+  "identifier": "dev.njf.rtlsdr-radio",
+  "plugins": {
     "updater": {
-      "active": false
-    },
+      "pubkey": "",
+      "endpoints": []
+    }
+  },
+  "app": {
     "windows": [
       {
         "fullscreen": false,
@@ -67,6 +64,9 @@
         "minHeight": 450,
         "minWidth": 800
       }
-    ]
+    ],
+    "security": {
+      "csp": null
+    }
   }
 }
