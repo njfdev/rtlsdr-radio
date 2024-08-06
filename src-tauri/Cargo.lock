@@ -3413,7 +3413,7 @@ dependencies = [
 
 [[package]]
 name = "rtlsdr_radio"
-version = "0.1.0"
+version = "0.4.0-beta.2"
 dependencies = [
  "biquad",
  "cpal 0.15.3",

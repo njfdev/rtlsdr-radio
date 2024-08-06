@@ -45,7 +45,7 @@
     "createUpdaterArtifacts": "v1Compatible"
   },
   "productName": "RTL-SDR Radio",
-  "version": "0.4.0-beta.1",
+  "version": "0.4.0-beta.2",
   "identifier": "dev.njf.rtlsdr-radio",
   "plugins": {
     "updater": {
