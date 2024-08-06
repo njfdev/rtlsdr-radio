@@ -11,6 +11,7 @@ import {
   saveStation,
 } from "@/lib/stationsStorage";
 import {
+  freqStorageName,
   RbdsData,
   srStorageName,
   Station,
@@ -66,10 +67,17 @@ export default function RtlSdrControls({
 
   const [status, setStatus] = useState(RtlSdrStatus.Stopped);
   const [streamSettings, setStreamSettings] = useState<StreamSettings>({
-    freq: streamType == StreamType.FM ? 101.5 : 850,
-    volume: parseFloat(localStorage.getItem(volumeStorageName) || "0.5"),
+    freq: parseFloat(
+      localStorage.getItem(streamType.toString() + freqStorageName) ||
+        (streamType == StreamType.FM ? "101.5" : "850")
+    ),
+    volume: parseFloat(
+      localStorage.getItem(streamType.toString() + volumeStorageName) || "0.5"
+    ),
     gain: streamType == StreamType.FM ? 1.0 : 2000.0,
-    sample_rate: parseFloat(localStorage.getItem(srStorageName) || "48000.0"),
+    sample_rate: parseFloat(
+      localStorage.getItem(streamType.toString() + srStorageName) || "48000.0"
+    ),
     stream_type: streamType,
   });
   const [isProcessingRequest, setIsProcessingRequest] = useState(false);
@@ -86,9 +94,19 @@ export default function RtlSdrControls({
   );
 
   useEffect(() => {
-    localStorage.setItem(volumeStorageName, streamSettings.volume.toString());
-    localStorage.setItem(srStorageName, streamSettings.sample_rate.toString());
-  });
+    localStorage.setItem(
+      streamType.toString() + freqStorageName,
+      streamSettings.freq.toString()
+    );
+    localStorage.setItem(
+      streamType.toString() + volumeStorageName,
+      streamSettings.volume.toString()
+    );
+    localStorage.setItem(
+      streamType.toString() + srStorageName,
+      streamSettings.sample_rate.toString()
+    );
+  }, [streamSettings, streamType]);
 
   useEffect(() => {
     if (currentStation) {

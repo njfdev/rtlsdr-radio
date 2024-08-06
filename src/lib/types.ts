@@ -1,5 +1,6 @@
-export const srStorageName = "fm_radio_sample_rate";
-export const volumeStorageName = "fm_radio_volume";
+export const srStorageName = "radio_sample_rate";
+export const volumeStorageName = "radio_volume";
+export const freqStorageName = "radio_freq";
 
 export enum StationSavingState {
   Idle,
