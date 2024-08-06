@@ -420,6 +420,14 @@ export default function RtlSdrControls({
                         </span>
                       </span>
                       <span className="flex items-center gap-1">
+                        <b>Program Identification Code:</b>{" "}
+                        {rbdsData.pi != undefined ? (
+                          `0x${rbdsData.pi.toString(16)}`
+                        ) : (
+                          <Skeleton className="h-4 w-[3.5rem]" />
+                        )}
+                      </span>
+                      <span className="flex items-center gap-1">
                         <b>Radio Type:</b>{" "}
                         {rbdsData.di_is_stereo != undefined ? (
                           rbdsData.ms_flag ? (

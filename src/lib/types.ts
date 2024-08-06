@@ -50,6 +50,7 @@ export interface StreamSettings {
 }
 
 export interface RbdsData {
+  pi?: number;
   program_type?: string;
   pty_name?: string;
   program_service_name?: string;
