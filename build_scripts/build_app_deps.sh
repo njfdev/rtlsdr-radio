@@ -67,7 +67,7 @@ fi
 cd "$BUILD_DIR"
 git clone https://github.com/osmocom/rtl-sdr.git
 cd rtl-sdr
-git reset --hard d52e355daa09f17ce64819122cb067b8a2ee0d4b
+git reset --hard 619ac3186ea0ffc092615e1f59f7397e5e6f668c
 # patch cmake file with custom libusb installation path
 git checkout -- CMakeLists.txt
 PATCH_DATA="/if(PKG_CONFIG_FOUND AND NOT LIBUSB_FOUND)/i\\
