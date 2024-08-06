@@ -68,10 +68,14 @@ jobs:
         with:
           workspaces: "./src-tauri -> target"
 
-      - name: install frontend dependencies
+      - name: Install Frontend Dependencies
         run: yarn install
 
-      - uses: tauri-apps/tauri-action@v0
+      - name: Install Tauri Cargo CLI
+        run: cargo install tauri-cli --version "^2.0.0-rc"
+
+      - name: Build and Release Tauri App
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
