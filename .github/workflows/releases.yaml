@@ -65,10 +65,17 @@ jobs:
           python-version: "3.10"
 
       # setup caching to speed up builds
-      - name: Rust cache
+      - name: Rust Cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
+
+      - name: Dependencies Build Cache
+        id: deps-build-cache
+        uses: actions/cache@v4
+        with:
+          path: ./build
+          key: ${{ matrix.platform }}-${{ matrix.args }}-deps-build
 
       - name: Install Frontend Dependencies
         run: yarn install
