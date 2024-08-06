@@ -37,7 +37,7 @@ jobs:
         run: |
           brew tap pothosware/homebrew-pothos
           brew update
-          brew install librtlsdr soapyrtlsdr soapysdr libao
+          brew install cmake autoconf automake libtool git librtlsdr libao fftw soapyrtlsdr libusb
 
       - name: Install Dependencies (Ubuntu Only)
         if: matrix.platform == 'ubuntu-22.04'
