@@ -1,9 +1,5 @@
 pub mod custom_radiorust_blocks {
-    use std::{
-        collections::VecDeque,
-        f64::consts::PI,
-        ops::{Range, RangeFrom},
-    };
+    use std::{collections::VecDeque, f64::consts::PI, ops::Range};
 
     use serde_json::json;
 
@@ -26,7 +22,7 @@ pub mod custom_radiorust_blocks {
         prelude::{ChunkBuf, ChunkBufPool, Complex},
         signal::Signal,
     };
-    use tauri::{AppHandle, Emitter, Window};
+    use tauri::{AppHandle, Emitter};
     use tokio::spawn;
 
     pub struct AmDemod<Flt> {
@@ -573,11 +569,6 @@ pub mod custom_radiorust_blocks {
         raw_data: u32,
         block_index: usize,
     ) -> Result<(u32, String, u16), ()> {
-        let data = (raw_data >> 10) as u16;
-        let received_crc = (raw_data & 0b11_1111_1111) as u16;
-
-        let expected_crc = compute_crc(data);
-
         let block_index_starting_chars = ["A", "B", "C", "D"];
         // get valid block_offsets for block_index
         let valid_block_offsets: Vec<&(&str, u16, u16)> = RBDS_OFFSET_WORDS
@@ -593,7 +584,7 @@ pub mod custom_radiorust_blocks {
             for mask in bit_mask {
                 for (offset_type, offset_bits, _offset_syndrome) in valid_block_offsets.clone() {
                     // flip bit specified in mask
-                    let new_raw_data = (raw_data ^ mask);
+                    let new_raw_data = raw_data ^ mask;
                     // remove possible offset word
                     let corrected_data = new_raw_data ^ (*offset_bits as u32);
                     let new_data = (corrected_data >> 10) as u16;
@@ -936,6 +927,7 @@ pub mod custom_radiorust_blocks {
         // send rbds data to UI
         send_rbds_data("program_type", RBDS_PTY_INDEX[pty].to_string(), app.clone());
         send_rbds_data("tp", tp, app.clone());
+        send_rbds_data("pi", pi, app.clone());
     }
 
     fn rbds_process_bits(
@@ -983,7 +975,7 @@ pub mod custom_radiorust_blocks {
                     let received_crc = remove_offset_word(data_check_crc, offset_bits);
                     let computed_crc = compute_crc(data);
 
-                    if (computed_crc == received_crc
+                    if computed_crc == received_crc
                         && data != 0x0
                         && (rbds_decode_state.current_block_group.len() == 0
                             || offset_word != "A".to_owned())
@@ -991,7 +983,7 @@ pub mod custom_radiorust_blocks {
                             &offset_word,
                             &rbds_decode_state.last_block_offset_word,
                             &rbds_decode_state.bits_since_last_block,
-                        ))
+                        )
                     {
                         if is_error_corrected {
                             println!("Error Corrected Block was Accepted!");

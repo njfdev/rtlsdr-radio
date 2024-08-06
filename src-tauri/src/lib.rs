@@ -6,14 +6,13 @@ mod nrsc5;
 mod rtlsdr;
 mod utils;
 
-use libloading::Library;
 use nrsc5::nrsc5::Nrsc5State;
 use rtlsdr::rtlsdr::{RtlSdrState, StreamSettings};
 use std::{
     env,
     sync::{Arc, Mutex},
 };
-use tauri::{async_runtime::block_on, utils::platform::current_exe, AppHandle, State, Window};
+use tauri::{async_runtime::block_on, AppHandle, State};
 use utils::utils::setup_dependencies;
 
 struct AppState {

@@ -12,7 +12,7 @@ pub mod rtlsdr {
         prelude::*,
     };
     use soapysdr::Direction;
-    use tauri::{async_runtime, AppHandle, Emitter, Window};
+    use tauri::{async_runtime, AppHandle, Emitter};
     use tokio::{self, time};
 
     use crate::custom_radiorust_blocks::custom_radiorust_blocks::{AmDemod, DownMixer, RbdsDecode};

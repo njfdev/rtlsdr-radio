@@ -8,11 +8,8 @@ pub mod nrsc5 {
         thread,
     };
 
-    use tauri::{AppHandle, Emitter, Window};
-    use tauri_plugin_shell::{
-        process::{Command, CommandEvent},
-        ShellExt,
-    };
+    use tauri::{AppHandle, Emitter};
+    use tauri_plugin_shell::{process::CommandEvent, ShellExt};
 
     pub struct Nrsc5State(Arc<Mutex<Nrsc5>>);
     pub struct Nrsc5 {
