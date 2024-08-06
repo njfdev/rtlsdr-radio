@@ -72,6 +72,9 @@ jobs:
       - name: Install Frontend Dependencies
         run: yarn install
 
+      - name: Install Tauri Cargo CLI
+        run: cargo install tauri-cli --version "^2.0.0-rc"
+
       - name: Build and Release Tauri App
         uses: tauri-apps/tauri-action@v0
         env:
@@ -84,3 +87,4 @@ jobs:
           prerelease: false
           includeUpdaterJson: true
           args: ${{ matrix.args }}
+          tauriScript: "cargo tauri"
