@@ -42,15 +42,17 @@
         "depends": []
       }
     },
-    "createUpdaterArtifacts": "v1Compatible"
+    "createUpdaterArtifacts": true
   },
   "productName": "RTL-SDR Radio",
   "version": "0.4.0-beta.2",
   "identifier": "dev.njf.rtlsdr-radio",
   "plugins": {
     "updater": {
-      "pubkey": "",
-      "endpoints": []
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNCQTFGREJGOTI1QTkzRjUKUldUMWsxcVN2LzJoTzRKbnVueXVQUXRCNTVobWV2YjV1cVNaV1JYMzF4UHRmaVI2NlQxWlpieEsK",
+      "endpoints": [
+        "https://github.com/njfdev/rtlsdr-radio/releases/latest/download/latest.json"
+      ]
     }
   },
   "app": {

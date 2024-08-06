@@ -27,6 +27,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
     env:
       NEXT_PUBLIC_EXCLUDE_SIDECAR: true # excludes nrsc5 sidecar and disables HD Radio in the app (due to building issues)
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -81,4 +82,5 @@ jobs:
           releaseBody: "See the assets to download this version and install."
           releaseDraft: true
           prerelease: false
+          includeUpdaterJson: true
           args: ${{ matrix.args }}
