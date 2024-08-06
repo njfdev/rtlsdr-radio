@@ -114,29 +114,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3d1d046238990b9cf5bcde22a3fb3584ee5cf65fb2765f454ed428c7a0063da"
 
 [[package]]
-name = "app"
-version = "0.1.0"
-dependencies = [
- "biquad",
- "cpal 0.15.3",
- "crc",
- "fundsp",
- "hound",
- "libloading 0.8.5",
- "nalgebra",
- "radiorust",
- "rustfft",
- "serde",
- "serde_json",
- "soapysdr",
- "tauri",
- "tauri-build",
- "tauri-plugin-shell",
- "tauri-plugin-updater",
- "tokio",
-]
-
-[[package]]
 name = "approx"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3432,6 +3409,29 @@ dependencies = [
  "spin",
  "untrusted",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "rtlsdr_radio"
+version = "0.1.0"
+dependencies = [
+ "biquad",
+ "cpal 0.15.3",
+ "crc",
+ "fundsp",
+ "hound",
+ "libloading 0.8.5",
+ "nalgebra",
+ "radiorust",
+ "rustfft",
+ "serde",
+ "serde_json",
+ "soapysdr",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-shell",
+ "tauri-plugin-updater",
+ "tokio",
 ]
 
 [[package]]
