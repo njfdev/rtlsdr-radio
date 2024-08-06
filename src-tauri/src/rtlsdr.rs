@@ -150,6 +150,10 @@ pub mod rtlsdr {
                                 demodulator.feed_from(&filter1);
                                 filter2.feed_from(&demodulator);
 
+                                // add a buffer
+                                let rbds_buffer = blocks::Buffer::new(0.0, 0.0, 0.0, 5.0);
+                                rbds_buffer.feed_from(&demodulator);
+
                                 // upper sideband
                                 const RBDS_FREQ: f64 = 57_000.0;
                                 const RBDS_BANDWIDTH: f64 = 2_000.0;
@@ -162,7 +166,7 @@ pub mod rtlsdr {
                                         Complex::from(0.0)
                                     }
                                 });
-                                rbds_bandpass_filter.feed_from(&demodulator);
+                                rbds_bandpass_filter.feed_from(&rbds_buffer);
 
                                 // Step 2. downmix the signal
                                 let rbds_downmixer = DownMixer::<f32>::new(RBDS_FREQ as f32);
