@@ -27,6 +27,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
     env:
       NEXT_PUBLIC_EXCLUDE_SIDECAR: true # excludes nrsc5 sidecar and disables HD Radio in the app (due to building issues)
+      CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_DEBUG: true # enable debug information generation to debug GitHub Actions
 
     steps:
       - uses: actions/checkout@v4
