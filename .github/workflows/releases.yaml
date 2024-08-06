@@ -38,10 +38,17 @@ jobs:
           brew update
           brew install librtlsdr soapyrtlsdr soapysdr libao
 
+      - name: Install Dependencies (Ubuntu Only)
+        if: matrix.platform == 'ubuntu-20.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev librsvg2-dev patchelf git build-essential cmake autoconf automake libtool libao-dev libfftw3-dev librtlsdr-dev nodejs npm libsoapysdr-dev soapysdr-module-rtlsdr libusb-dev libusb-1.0-0-dev curl wget file libxdo-dev libssl-dev libappindicator3-dev librsvg2-dev libasound2-dev libclang-dev libudev-dev patchelf
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
+          cache: "yarn"
 
       - name: Install Rust Stable
         uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -49,17 +56,17 @@ jobs:
           # If on Mac, we need to include both architectures
           target: ${{ matrix.args == '--target aarch64-apple-darwin' && 'aarch64-apple-darwin' || matrix.args == '--target x86_64-apple-darwin' && 'x86_64-apple-darwin' || '' }}
 
-        # required to run build scripts
+      # required to run build scripts
       - name: Install Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: Install Dependencies (Ubuntu Only)
-        if: matrix.platform == 'ubuntu-20.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev librsvg2-dev patchelf librtlsdr-dev libsoapysdr-dev soapysdr-module-rtlsdr libasound2-dev libudev-dev
+      # setup caching to speed up builds
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
 
       - name: install frontend dependencies
         run: yarn install
