@@ -18,7 +18,7 @@ jobs:
             args: "--target aarch64-apple-darwin"
           - platform: "macos-13" # for Intel based Macs
             args: "--target x86_64-apple-darwin"
-          - platform: "ubuntu-20.04"
+          - platform: "ubuntu-22.04"
             args: ""
             # Issues with getting SoapySDR Libraries Installed on Windows
           #- platform: "windows-latest"
@@ -39,7 +39,7 @@ jobs:
           brew install librtlsdr soapyrtlsdr soapysdr libao
 
       - name: Install Dependencies (Ubuntu Only)
-        if: matrix.platform == 'ubuntu-20.04'
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev librsvg2-dev patchelf git build-essential cmake autoconf automake libtool libao-dev libfftw3-dev librtlsdr-dev nodejs npm libsoapysdr-dev soapysdr-module-rtlsdr libusb-dev libusb-1.0-0-dev curl wget file libxdo-dev libssl-dev libappindicator3-dev librsvg2-dev libasound2-dev libclang-dev libudev-dev patchelf
