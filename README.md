@@ -1,23 +1,29 @@
 # RTL-SDR Radio
 
-> As of writing this (July 22nd, 2024), this app is a minimalistic UI for listening to FM and HD Radio on your RTL-SDR. However, I envision this project to evolve and bundle all the tools into a nice user interface to make the most out of your RTL-SDR.
+RTL-SDR Radio is your one-stop shop for listening to the radio frequencies in the air! It is designed to be lightweight, easy-to-use, and minimalistic.
 
-RTL-SDR Radio is your one-stop shop for listening to the radio frequencies in the air. Using this app, you can listen to any [HD Radio Station](https://hdradio.com/stations/) or [FM Radio Station](https://radio-locator.com/) in your area!
+## Features
+
+- Listen to FM Radio
+  - Decoding RBDS (Radio Broadcast Data System)
+- Listen to AM Radio
+- Save Radio Stations to Listen to Later
+- 🔋 "Batteries Included" - No need to install anything else! Everything comes bundled within the app.
 
 ## Installation
 
-> Note: A recent upgrade to Tauri V2 has caused HD Radio to stop working. This is being investigated.
-
 Installation should be as simple as going to the [GitHub Releases](https://github.com/njfdev/rtlsdr-radio/releases) and downloading the most recent application from the "Assets" dropdown for your specific OS.
 
-There is one extra step if you get an error like: `"RTL-SDR Radio" is damaged and can't be opned. You should move it to the Trash.`. I, [njfdev](https://github.com/njfdev), do not have an Apple Developer Account so I cannot sign/notarize the app. This means your Mac will automatically move RTL-SDR Radio to the quarantine, so you will need to remove it:
+There is one extra step if you get an error like: `"RTL-SDR Radio" is damaged and can't be opened. You should move it to the Trash.`. I, [njfdev](https://github.com/njfdev), do not have an Apple Developer Account so I cannot sign/notarize the app. This means your Mac will automatically move RTL-SDR Radio to the quarantine, so you will need to remove it from quarantine:
 
-```bash
+```zsh
 # ONLY on MacOS
 xattr -d com.apple.quarantine /Applications/RTL-SDR\ Radio.app
 ```
 
 ## Compiling from Source
+
+> Note: A recent upgrade to Tauri V2 has caused HD Radio to stop working. It will probably not work.
 
 > ⚠️ Building on Windows is not tested so there are no instructions to do so.
 
@@ -48,11 +54,11 @@ cd rtlsdr-radio
 sudo npm install --global yarn
 yarn install
 cargo install tauri-cli --version "^2.0.0-rc"
-cargo tauri build
+NEXT_PUBLIC_EXCLUDE_SIDECAR=true cargo tauri build
 ```
 
-Optionally, you can build without HD Radio functionality (if building is causing issues). Just replace the last command with this one:
+Optionally, you can build with HD Radio functionality, but it might cause issues. Just replace the last command with this one:
 
 ```bash
-NEXT_PUBLIC_EXCLUDE_SIDECAR=true cargo tauri build
+NEXT_PUBLIC_EXCLUDE_SIDECAR=false cargo tauri build
 ```
