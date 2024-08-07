@@ -35,5 +35,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# debug wav file
+# debug wav files
 rbds_output.wav
+adsb_output.wav
+*.pkf
