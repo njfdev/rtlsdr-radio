@@ -87,15 +87,15 @@ impl AdsbDecoderState {
                         let sdr_rx = rf::soapysdr::SoapySdrRx::new(rx_stream, sample_rate);
                         sdr_rx.activate().await.unwrap();
 
-                        let adsb_decode = AdsbDecode::new(true);
+                        let adsb_decode = AdsbDecode::new(false);
                         adsb_decode.feed_from(&sdr_rx);
 
-                        let wavwriter = WavWriterBlock::new(
-                            String::from("../adsb_output.wav"),
-                            false,
-                            Some(10.0),
-                        );
-                        wavwriter.feed_from(&adsb_decode);
+                        // let wavwriter = WavWriterBlock::new(
+                        //     String::from("../adsb_output.wav"),
+                        //     false,
+                        //     Some(10.0),
+                        // );
+                        // wavwriter.feed_from(&adsb_decode);
 
                         while !shutdown_flag.load(Ordering::SeqCst) {
                             // notify frontend that audio is playing
