@@ -9,7 +9,7 @@ use tokio::spawn;
 
 const MODES_LONG_MSG_BITS: usize = 112;
 const MODES_SHORT_MSG_BITS: usize = 56;
-const MODES_PREABLE_US: usize = 8; // preamble length in microseconds
+const MODES_PREAMBLE_US: usize = 8; // preamble length in microseconds
 
 /// A custom radiorust block that saves the input stream to a wav file at the specified path. You can enabled the pass_along argument to pass along samples, so it can be between blocks.
 pub struct AdsbDecode<Flt> {
@@ -125,7 +125,7 @@ fn detect_modes_signal(m: Vec<u16>) {
      * 9   -------------------
      */
 
-    for i in 0..(m.len() - MODES_LONG_MSG_BITS * 2) {
+    for i in 0..(m.len() - (MODES_PREAMBLE_US * 2 + MODES_LONG_MSG_BITS * 2)) {
         // First, check if the relations between samples matches. We can skip it if it doesn't.
         if !(m[i] > m[i+1] &&  // 1
             m[i+1] < m[i+2] && // 0
@@ -160,15 +160,13 @@ fn detect_modes_signal(m: Vec<u16>) {
             continue;
         }
 
-        println!("Found good preamble!!!!!");
-
         let mut bits: Vec<u16> = vec![];
 
         // Decode the next 112 bits (regardless of message length/type)
-        for j in (0..MODES_LONG_MSG_BITS * 2).step_by(2) {
+        for j in (0..(MODES_LONG_MSG_BITS * 2)).step_by(2) {
             // get the start and end signal of the current cycle data (make sure to skip preamble)
-            let start = m[i + j + MODES_PREABLE_US * 2];
-            let end = m[i + j + MODES_PREABLE_US * 2 + 1];
+            let start = m[i + j + MODES_PREAMBLE_US * 2];
+            let end = m[i + j + MODES_PREAMBLE_US * 2 + 1];
             // the delta (difference) is use to calculate bit values and detect errors
             let mut delta = start as i32 - end as i32;
             if delta < 0 {
@@ -193,15 +191,54 @@ fn detect_modes_signal(m: Vec<u16>) {
             }
         }
 
-        // ignore any packet with errors for now
-        if bits.contains(&2) {
+        let mut msg: Vec<u8> = vec![];
+
+        // pack bits into bytes
+        for i in (0..MODES_LONG_MSG_BITS).step_by(8) {
+            msg.push(
+                (bits[i] << 7
+                    | bits[i + 1] << 6
+                    | bits[i + 2] << 5
+                    | bits[i + 3] << 4
+                    | bits[i + 4] << 3
+                    | bits[i + 5] << 2
+                    | bits[i + 6] << 1
+                    | bits[i + 7]) as u8,
+            )
+        }
+
+        // get the message type to determine the message length
+        let msg_type = msg[0] >> 3;
+        let msg_len = get_message_length(msg_type);
+
+        // Verify that the high and low bits are different enough to consider this a signal and not noise
+        let mut delta = 0;
+        for j in (0..(msg_len * 2)).step_by(2) {
+            delta += (m[i + j + MODES_PREAMBLE_US * 2] as i32
+                - m[i + j + MODES_PREAMBLE_US * 2 + 1] as i32)
+                .abs() as usize;
+        }
+        delta /= msg_len * 4;
+
+        if delta < 10 * 255 {
             continue;
         }
 
-        print!("Data: ");
-        for bit in bits {
-            print!("{}", bit);
+        // If we reached this point and there are no errors, this is likely a valid Mode S message.
+        if !(bits[0..msg_len].contains(&2)) {
+            print!("Msg Data: ");
+            for byte in msg {
+                print!("{:08b}", byte);
+            }
+            println!();
         }
-        println!();
     }
+}
+
+fn get_message_length(msg_type: u8) -> usize {
+    if msg_type == 0 || msg_type == 4 || msg_type == 5 || msg_type == 11 {
+        return MODES_SHORT_MSG_BITS;
+    }
+
+    MODES_LONG_MSG_BITS
 }
