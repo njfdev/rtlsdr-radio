@@ -27,7 +27,7 @@ where
         let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
         let (sender, sender_connector) = new_sender::<Signal<Complex<Flt>>>();
 
-        let mut processing_buf_pool = ChunkBufPool::<f32>::new();
+        let mut processing_buf_pool = ChunkBufPool::<u8>::new();
         let mut buf_pool = ChunkBufPool::<Complex<Flt>>::new();
 
         spawn(async move {
@@ -57,8 +57,9 @@ where
                                 },
                             };
                             let value = AdsbDecode::calc_magnitude(&abs_sample);
+                            let u8_value = (value * 256.0).round() as u8;
 
-                            processing_chunk.push(value);
+                            processing_chunk.push(u8_value);
                         }
 
                         detect_modes_signal(processing_chunk.to_vec());
@@ -67,7 +68,9 @@ where
                             let mut output_chunk = buf_pool.get_with_capacity(input_chunk.len());
 
                             for value in processing_chunk.iter() {
-                                output_chunk.push(Complex::from(Flt::from(*value).unwrap()));
+                                output_chunk.push(Complex::from(
+                                    Flt::from(((*value) as f32) / 256.0).unwrap(),
+                                ));
                             }
 
                             let Ok(()) = sender
@@ -102,7 +105,7 @@ where
     }
 }
 
-fn detect_modes_signal(m: Vec<f32>) {
+fn detect_modes_signal(m: Vec<u8>) {
     /* Go through each sample, and see if it and the following 9 samples match the start of the Mode S preamble.
      *
      * The Mode S preamble is made of impulses with a width of 0.5 microseconds, and each sample is 0.5 microseconds
@@ -143,7 +146,9 @@ fn detect_modes_signal(m: Vec<f32>) {
          * The final bits of the preamble (10-15) are also low, so we need to check those as well,
          * but only the ones not next to high signals (11-14).
          */
-        let avg_spike = (m[i] + m[i + 2] + m[i + 7] + m[i + 9]) / 4.0;
+        let avg_spike =
+            (((m[i] as u16 + m[i + 2] as u16 + m[i + 7] as u16 + m[i + 9] as u16) as f32) / 4.0)
+                .round() as u8;
         if m[i + 4] >= avg_spike
             || m[i + 5] >= avg_spike
             || m[i + 11] >= avg_spike
