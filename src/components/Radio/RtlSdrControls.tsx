@@ -17,7 +17,7 @@ import {
   Station,
   StationDetails,
   StationType,
-  StreamSettings,
+  RadioStreamSettings,
   StreamType,
   volumeStorageName,
 } from "@/lib/types";
@@ -66,7 +66,7 @@ export default function RtlSdrControls({
     streamType == StreamType.FM ? StationType.FMRadio : StationType.AMRadio;
 
   const [status, setStatus] = useState(RtlSdrStatus.Stopped);
-  const [streamSettings, setStreamSettings] = useState<StreamSettings>({
+  const [streamSettings, setStreamSettings] = useState<RadioStreamSettings>({
     freq: parseFloat(
       localStorage.getItem(streamType.toString() + freqStorageName) ||
         (streamType == StreamType.FM ? "101.5" : "850")

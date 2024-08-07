@@ -42,7 +42,7 @@ export interface Station {
   channel?: number;
 }
 
-export interface StreamSettings {
+export interface RadioStreamSettings {
   freq: number;
   volume: number;
   gain: number;
@@ -63,4 +63,8 @@ export interface RbdsData {
   di_is_pty_dynamic?: boolean;
   ta?: boolean;
   tp?: boolean;
+}
+
+export interface AdsbDecodeSettings {
+  gain?: number;
 }
