@@ -87,12 +87,32 @@ impl AdsbDecoderState {
                             blocks::Downsampler::<f32>::new(16384, 384000.0, 50_000.0);
                         downsample1.feed_from(&sdr_rx);
 
+                        // add lowpass filter
+                        let filter1 = blocks::Filter::new(|_, freq| {
+                            if freq.abs() <= 10000.0 {
+                                Complex::from(1.0)
+                            } else {
+                                Complex::from(0.0)
+                            }
+                        });
+                        filter1.feed_from(&downsample1);
+
                         let amdemod = AmDemod::new();
-                        amdemod.feed_from(&downsample1);
+                        amdemod.feed_from(&filter1);
+
+                        // filter frequencies beyond ADS-B range
+                        let filter2 = blocks::filters::Filter::new_rectangular(|bin, freq| {
+                            if bin.abs() >= 1 && freq.abs() >= 20.0 && freq.abs() <= 2_000_000.0 {
+                                blocks::filters::deemphasis_factor(50e-6, freq)
+                            } else {
+                                Complex::from(0.0)
+                            }
+                        });
+                        filter2.feed_from(&amdemod);
 
                         let wavwriter =
                             WavWriterBlock::new(String::from("../adsb_output.wav"), false);
-                        wavwriter.feed_from(&amdemod);
+                        wavwriter.feed_from(&filter2);
 
                         while !shutdown_flag.load(Ordering::SeqCst) {
                             // notify frontend that audio is playing
