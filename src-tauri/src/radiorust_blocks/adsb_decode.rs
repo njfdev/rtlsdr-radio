@@ -11,6 +11,8 @@ const MODES_LONG_MSG_BITS: usize = 112;
 const MODES_SHORT_MSG_BITS: usize = 56;
 const MODES_PREAMBLE_US: usize = 8; // preamble length in microseconds
 
+const AIS_CHARSET: &str = "?ABCDEFGHIJKLMNOPQRSTUVWXYZ????? ???????????????0123456789??????";
+
 /// A custom radiorust block that saves the input stream to a wav file at the specified path. You can enabled the pass_along argument to pass along samples, so it can be between blocks.
 pub struct AdsbDecode<Flt> {
     receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
@@ -226,12 +228,72 @@ fn detect_modes_signal(m: Vec<u16>) {
 
         // If we reached this point and there are no errors, this is likely a Mode S message.
         if !(bits[0..msg_len].contains(&2)) {
-            decode_modes_message(msg.clone());
+            let result = perform_modes_crc(msg);
+
+            if result.is_ok() {
+                let fixed_msg = result.unwrap();
+                decode_modes_msg(fixed_msg);
+            }
         }
     }
 }
 
-fn decode_modes_message(msg: Vec<u8>) -> Result<(), ()> {
+fn decode_modes_msg(msg: Vec<u8>) {
+    let msg_type = msg[0] >> 3;
+    let ca = msg[0] & 0b111; // responder capabilities
+
+    // extended squitter (a.k.a. ADS-B)
+    if msg_type == 17 {
+        let icao_address = ((msg[1] as u32) << 16) | ((msg[2] as u32) << 8) | msg[3] as u32;
+
+        println!("Decoded ICAO Address: {:#06x}", icao_address);
+
+        // the ADS-B message is bytes 5-11 (4-10 as indexes)
+        let type_code = msg[4] >> 3;
+
+        match type_code {
+            // Aircraft identification
+            1..=4 => {
+                println!("Mode S msg Type: Aircraft identification");
+            }
+            // Surface position
+            5..=8 => {
+                println!("Mode S msg Type: Surface position");
+            }
+            // Airborne position (barometric altitude)
+            9..=18 => {
+                println!("Mode S msg Type: Airborne position (barometric altitude)");
+            }
+            // Airborne velocities
+            19 => {
+                println!("Mode S msg Type: Airborne velocity");
+            }
+            // Airborne position (GNSS height)
+            20..=22 => {
+                println!("Mode S msg Type: Airborne position (GNSS height)");
+            }
+            // Reserved
+            23..=27 => {
+                println!("Mode S msg Type: Reserved");
+            }
+            // Aircraft status
+            28 => {
+                println!("Mode S msg Type: Aircraft status");
+            }
+            // Target state and status information
+            29 => {
+                println!("Mode S msg Type: Target state and status information");
+            }
+            // Aircraft operation status
+            31 => {
+                println!("Mode S msg Type: Aircraft operation status");
+            }
+            _ => {}
+        }
+    }
+}
+
+fn perform_modes_crc(msg: Vec<u8>) -> Result<Vec<u8>, ()> {
     let msg_type = msg[0] >> 3;
     let msg_bits = get_message_length(msg_type);
 
@@ -246,12 +308,12 @@ fn decode_modes_message(msg: Vec<u8>) -> Result<(), ()> {
     }
 
     print!("Valid Mode S Message Demodulated: ");
-    for byte in msg {
+    for byte in msg.clone() {
         print!("{:08b}", byte);
     }
     println!();
 
-    Ok(())
+    Ok(msg)
 }
 
 // Precalculated values for ADS-B checksum for each bit of the 112 bits.
