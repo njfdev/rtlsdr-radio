@@ -1,13 +1,3 @@
-use std::{
-    collections::btree_map::Range,
-    fs,
-    io::BufWriter,
-    sync::{Arc, Mutex},
-};
-
-use biquad::{self, Biquad, Coefficients, DirectForm1, ToHertz, Type, Q_BUTTERWORTH_F64};
-
-use hound::{WavSpec, WavWriter};
 use radiorust::{
     flow::{new_receiver, new_sender, ReceiverConnector, SenderConnector},
     impl_block_trait,
@@ -16,6 +6,9 @@ use radiorust::{
     signal::Signal,
 };
 use tokio::spawn;
+
+const MODES_LONG_MSG_BITS: usize = 112;
+const MODES_SHORT_MSG_BITS: usize = 56;
 
 /// A custom radiorust block that saves the input stream to a wav file at the specified path. You can enabled the pass_along argument to pass along samples, so it can be between blocks.
 pub struct AdsbDecode<Flt> {
@@ -110,12 +103,12 @@ where
 }
 
 fn detect_modes_signal(m: Vec<f32>) {
-    /* Go through each sample, and see if it and the following 9 samples match the Mode S preamble.
+    /* Go through each sample, and see if it and the following 9 samples match the start of the Mode S preamble.
      *
      * The Mode S preamble is made of impulses with a width of 0.5 microseconds, and each sample is 0.5 microseconds
      * wide (as determined by the sample rate of 2MHz). This means each sample should be equal to 1 bit.
      *
-     * This is what the preamble (1010000101) should look like (taken from dump1090 comments):
+     * This is what the start of the preamble (1010000101) should look like (taken from dump1090 comments):
      * 0   -----------------
      * 1   -
      * 2   ------------------
@@ -128,7 +121,7 @@ fn detect_modes_signal(m: Vec<f32>) {
      * 9   -------------------
      */
 
-    for i in 0..(m.len() - 9) {
+    for i in 0..(m.len() - MODES_LONG_MSG_BITS * 2) {
         // First, check if the relations between samples matches. We can skip it if it doesn't.
         if !(m[i] > m[i+1] &&  // 1
             m[i+1] < m[i+2] && // 0
@@ -143,6 +136,24 @@ fn detect_modes_signal(m: Vec<f32>) {
         {
             continue;
         }
-        println!("Found possible preamble!");
+
+        /* Now, check if the samples between the spikes are below the average of the spikes.
+         * We don't want to test bits next to the spikes as they could be out of phase.
+         *
+         * The final bits of the preamble (10-15) are also low, so we need to check those as well,
+         * but only the ones not next to high signals (11-14).
+         */
+        let avg_spike = (m[i] + m[i + 2] + m[i + 7] + m[i + 9]) / 4.0;
+        if m[i + 4] >= avg_spike
+            || m[i + 5] >= avg_spike
+            || m[i + 11] >= avg_spike
+            || m[i + 12] >= avg_spike
+            || m[i + 13] >= avg_spike
+            || m[i + 14] >= avg_spike
+        {
+            continue;
+        }
+
+        println!("Found good preamble!!!!!");
     }
 }
