@@ -90,8 +90,11 @@ impl AdsbDecoderState {
                         // let amdemod = AmDemod::new();
                         // amdemod.feed_from(&filter1);
 
-                        let wavwriter =
-                            WavWriterBlock::new(String::from("../adsb_output.wav"), false);
+                        let wavwriter = WavWriterBlock::new(
+                            String::from("../adsb_output.wav"),
+                            false,
+                            Some(10.0),
+                        );
                         wavwriter.feed_from(&sdr_rx);
 
                         while !shutdown_flag.load(Ordering::SeqCst) {

@@ -29,7 +29,7 @@ impl<Flt> WavWriterBlock<Flt>
 where
     Flt: Float + Into<f64>,
 {
-    pub fn new(filepath: String, pass_along: bool) -> Self {
+    pub fn new(filepath: String, pass_along: bool, slowdown_factor: Option<f64>) -> Self {
         let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
         let (sender, sender_connector) = new_sender::<Signal<Complex<Flt>>>();
 
@@ -49,7 +49,7 @@ where
                         if wav_writer.clone().lock().unwrap().is_none() {
                             let wav_spec = WavSpec {
                                 channels: 1,
-                                sample_rate: sample_rate as u32,
+                                sample_rate: (sample_rate / slowdown_factor.unwrap_or(1.0)) as u32,
                                 bits_per_sample: 32,
                                 sample_format: hound::SampleFormat::Float,
                             };
