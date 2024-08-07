@@ -9,6 +9,7 @@ use tokio::spawn;
 
 const MODES_LONG_MSG_BITS: usize = 112;
 const MODES_SHORT_MSG_BITS: usize = 56;
+const MODES_PREABLE_US: usize = 8; // preamble length in microseconds
 
 /// A custom radiorust block that saves the input stream to a wav file at the specified path. You can enabled the pass_along argument to pass along samples, so it can be between blocks.
 pub struct AdsbDecode<Flt> {
@@ -27,7 +28,7 @@ where
         let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
         let (sender, sender_connector) = new_sender::<Signal<Complex<Flt>>>();
 
-        let mut processing_buf_pool = ChunkBufPool::<u8>::new();
+        let mut processing_buf_pool = ChunkBufPool::<u16>::new();
         let mut buf_pool = ChunkBufPool::<Complex<Flt>>::new();
 
         spawn(async move {
@@ -57,7 +58,7 @@ where
                                 },
                             };
                             let value = AdsbDecode::calc_magnitude(&abs_sample);
-                            let u8_value = (value * 256.0).round() as u8;
+                            let u8_value = (value * (65536.0)).round() as u16;
 
                             processing_chunk.push(u8_value);
                         }
@@ -69,7 +70,7 @@ where
 
                             for value in processing_chunk.iter() {
                                 output_chunk.push(Complex::from(
-                                    Flt::from(((*value) as f32) / 256.0).unwrap(),
+                                    Flt::from(((*value) as f32) / 65536.0).unwrap(),
                                 ));
                             }
 
@@ -105,7 +106,7 @@ where
     }
 }
 
-fn detect_modes_signal(m: Vec<u8>) {
+fn detect_modes_signal(m: Vec<u16>) {
     /* Go through each sample, and see if it and the following 9 samples match the start of the Mode S preamble.
      *
      * The Mode S preamble is made of impulses with a width of 0.5 microseconds, and each sample is 0.5 microseconds
@@ -147,8 +148,8 @@ fn detect_modes_signal(m: Vec<u8>) {
          * but only the ones not next to high signals (11-14).
          */
         let avg_spike =
-            (((m[i] as u16 + m[i + 2] as u16 + m[i + 7] as u16 + m[i + 9] as u16) as f32) / 4.0)
-                .round() as u8;
+            (((m[i] as u32 + m[i + 2] as u32 + m[i + 7] as u32 + m[i + 9] as u32) as f64) / 4.0)
+                .round() as u16;
         if m[i + 4] >= avg_spike
             || m[i + 5] >= avg_spike
             || m[i + 11] >= avg_spike
@@ -160,5 +161,47 @@ fn detect_modes_signal(m: Vec<u8>) {
         }
 
         println!("Found good preamble!!!!!");
+
+        let mut bits: Vec<u16> = vec![];
+
+        // Decode the next 112 bits (regardless of message length/type)
+        for j in (0..MODES_LONG_MSG_BITS * 2).step_by(2) {
+            // get the start and end signal of the current cycle data (make sure to skip preamble)
+            let start = m[i + j + MODES_PREABLE_US * 2];
+            let end = m[i + j + MODES_PREABLE_US * 2 + 1];
+            // the delta (difference) is use to calculate bit values and detect errors
+            let mut delta = start as i32 - end as i32;
+            if delta < 0 {
+                delta = -delta;
+            }
+
+            if delta < 256 {
+                // if change is small, it is probably equal to the last bit
+                let last_value = bits.get(j);
+                if last_value.is_none() {
+                    bits.push(2);
+                } else {
+                    bits.push(last_value.unwrap().clone());
+                }
+            } else if start == end {
+                // if 2 adjacent samples have the same magnitude, it is probably an error/noise
+                bits.push(2);
+            } else if start > end {
+                bits.push(1)
+            } else {
+                bits.push(0);
+            }
+        }
+
+        // ignore any packet with errors for now
+        if bits.contains(&2) {
+            continue;
+        }
+
+        print!("Data: ");
+        for bit in bits {
+            print!("{}", bit);
+        }
+        println!();
     }
 }
