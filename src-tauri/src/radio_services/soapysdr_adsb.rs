@@ -65,8 +65,8 @@ impl AdsbDecoderState {
 
                         let rtlsdr_dev = rtlsdr_dev_result.unwrap();
 
-                        // set sample rate
-                        let sample_rate = 1.024e6;
+                        // set sample rate (the clock is 1MHz, so we need at least 2MHz sample rate, which the RTL-SDR can barely do)
+                        let sample_rate = 2e6;
                         let _ = rtlsdr_dev.set_sample_rate(Direction::Rx, 0, sample_rate);
 
                         // set center frequency
@@ -74,45 +74,25 @@ impl AdsbDecoderState {
                             .set_frequency(Direction::Rx, 0, 1090.0 * 1_000_000.0, "")
                             .expect("Failed to set frequency");
 
+                        // enable automatic gain mode
+                        rtlsdr_dev
+                            .set_gain_mode(Direction::Rx, 0, true)
+                            .expect("Failed to set automatic gain");
+
                         // set the bandwidth
-                        let _ = rtlsdr_dev.set_bandwidth(Direction::Rx, 0, 1.024e6);
+                        let _ = rtlsdr_dev.set_bandwidth(Direction::Rx, 0, sample_rate / 2.0);
 
                         // start sdr rx stream
                         let rx_stream = rtlsdr_dev.rx_stream::<Complex<f32>>(&[0]).unwrap();
                         let sdr_rx = rf::soapysdr::SoapySdrRx::new(rx_stream, sample_rate);
                         sdr_rx.activate().await.unwrap();
 
-                        // add downsampler
-                        let downsample1 =
-                            blocks::Downsampler::<f32>::new(16384, 384000.0, 50_000.0);
-                        downsample1.feed_from(&sdr_rx);
-
-                        // add lowpass filter
-                        let filter1 = blocks::Filter::new(|_, freq| {
-                            if freq.abs() <= 10000.0 {
-                                Complex::from(1.0)
-                            } else {
-                                Complex::from(0.0)
-                            }
-                        });
-                        filter1.feed_from(&downsample1);
-
-                        let amdemod = AmDemod::new();
-                        amdemod.feed_from(&filter1);
-
-                        // filter frequencies beyond ADS-B range
-                        let filter2 = blocks::filters::Filter::new_rectangular(|bin, freq| {
-                            if bin.abs() >= 1 && freq.abs() >= 20.0 && freq.abs() <= 2_000_000.0 {
-                                blocks::filters::deemphasis_factor(50e-6, freq)
-                            } else {
-                                Complex::from(0.0)
-                            }
-                        });
-                        filter2.feed_from(&amdemod);
+                        // let amdemod = AmDemod::new();
+                        // amdemod.feed_from(&filter1);
 
                         let wavwriter =
                             WavWriterBlock::new(String::from("../adsb_output.wav"), false);
-                        wavwriter.feed_from(&filter2);
+                        wavwriter.feed_from(&sdr_rx);
 
                         while !shutdown_flag.load(Ordering::SeqCst) {
                             // notify frontend that audio is playing
