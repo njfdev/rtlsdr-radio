@@ -1,4 +1,5 @@
 use std::{
+    collections::btree_map::Range,
     fs,
     io::BufWriter,
     sync::{Arc, Mutex},
@@ -33,6 +34,7 @@ where
         let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
         let (sender, sender_connector) = new_sender::<Signal<Complex<Flt>>>();
 
+        let mut processing_buf_pool = ChunkBufPool::<f32>::new();
         let mut buf_pool = ChunkBufPool::<Complex<Flt>>::new();
 
         spawn(async move {
@@ -45,7 +47,8 @@ where
                         sample_rate,
                         chunk: input_chunk,
                     } => {
-                        let mut output_chunk = buf_pool.get_with_capacity(input_chunk.len());
+                        let mut processing_chunk =
+                            processing_buf_pool.get_with_capacity(input_chunk.len());
 
                         for sample in input_chunk.iter() {
                             let abs_sample = Complex {
@@ -62,14 +65,22 @@ where
                             };
                             let value = AdsbDecode::calc_magnitude(&abs_sample);
 
-                            output_chunk.push(Complex::from(Flt::from(value).unwrap()));
+                            processing_chunk.push(value);
                         }
 
+                        detect_modes_signal(processing_chunk.to_vec());
+
                         if pass_along {
+                            let mut output_chunk = buf_pool.get_with_capacity(input_chunk.len());
+
+                            for value in processing_chunk.iter() {
+                                output_chunk.push(Complex::from(Flt::from(*value).unwrap()));
+                            }
+
                             let Ok(()) = sender
                                 .send(Signal::Samples {
                                     sample_rate,
-                                    chunk: input_chunk,
+                                    chunk: output_chunk.finalize(),
                                 })
                                 .await
                             else {
@@ -95,5 +106,43 @@ where
 
     fn calc_magnitude(c: &Complex<Flt>) -> f32 {
         (c.re.powi(2) + c.im.powi(2)).sqrt().to_f32().unwrap()
+    }
+}
+
+fn detect_modes_signal(m: Vec<f32>) {
+    /* Go through each sample, and see if it and the following 9 samples match the Mode S preamble.
+     *
+     * The Mode S preamble is made of impulses with a width of 0.5 microseconds, and each sample is 0.5 microseconds
+     * wide (as determined by the sample rate of 2MHz). This means each sample should be equal to 1 bit.
+     *
+     * This is what the preamble (1010000101) should look like (taken from dump1090 comments):
+     * 0   -----------------
+     * 1   -
+     * 2   ------------------
+     * 3   --
+     * 4   -
+     * 5   --
+     * 6   -
+     * 7   ------------------
+     * 8   --
+     * 9   -------------------
+     */
+
+    for i in 0..(m.len() - 9) {
+        // First, check if the relations between samples matches. We can skip it if it doesn't.
+        if !(m[i] > m[i+1] &&  // 1
+            m[i+1] < m[i+2] && // 0
+            m[i+2] > m[i+3] && // 1
+            m[i+3] < m[i] &&   // 0
+            m[i+4] < m[i] &&   // 0
+            m[i+5] < m[i] &&   // 0
+            m[i+6] < m[i] &&   // 0
+            m[i+7] > m[i+8] && // 1
+            m[i+8] < m[i+9] && // 0
+            m[i+9] > m[i+6]/* 1 */)
+        {
+            continue;
+        }
+        println!("Found possible preamble!");
     }
 }
