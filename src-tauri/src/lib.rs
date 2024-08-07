@@ -5,8 +5,11 @@ mod radio_services;
 mod radiorust_blocks;
 mod utils;
 
-use radio_services::nrsc5::Nrsc5State;
-use radio_services::soapysdr_radio::{RtlSdrState, StreamSettings};
+use radio_services::{
+    nrsc5::Nrsc5State,
+    soapysdr_adsb::{self, AdsbDecoderState},
+    soapysdr_radio::{self, RtlSdrState},
+};
 use std::{
     env,
     sync::{Arc, Mutex},
@@ -17,6 +20,7 @@ use utils::utils::setup_dependencies;
 struct AppState {
     nrsc5_state: Nrsc5State,
     rtl_sdr_state: Arc<Mutex<RtlSdrState>>,
+    adsb_state: Arc<Mutex<AdsbDecoderState>>,
 }
 
 #[tokio::main]
@@ -32,12 +36,15 @@ pub async fn run() {
         .manage(AppState {
             nrsc5_state: Nrsc5State::new(),
             rtl_sdr_state: Arc::new(Mutex::new(RtlSdrState::new())),
+            adsb_state: Arc::new(Mutex::new(AdsbDecoderState::new())),
         })
         .invoke_handler(tauri::generate_handler![
             start_nrsc5,
             stop_nrsc5,
             start_stream,
-            stop_stream
+            stop_stream,
+            start_adsb_decoding,
+            stop_adsb_decoding
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -57,7 +64,11 @@ fn stop_nrsc5(app: AppHandle, state: State<AppState>) {
 }
 
 #[tauri::command]
-fn start_stream(app: AppHandle, state: State<AppState>, stream_settings: StreamSettings) {
+fn start_stream(
+    app: AppHandle,
+    state: State<AppState>,
+    stream_settings: soapysdr_radio::StreamSettings,
+) {
     if state.rtl_sdr_state.lock().unwrap().is_playing() {
         return;
     };
@@ -74,6 +85,34 @@ async fn stop_stream(app: AppHandle, state: State<'_, AppState>) -> Result<Strin
 
     tokio::task::spawn_blocking(move || {
         block_on(rtlsdr_state_clone.lock().unwrap().stop_stream(app));
+    })
+    .await
+    .unwrap();
+    Ok("".to_string())
+}
+
+#[tauri::command]
+fn start_adsb_decoding(
+    app: AppHandle,
+    state: State<AppState>,
+    stream_settings: soapysdr_adsb::StreamSettings,
+) {
+    if state.adsb_state.lock().unwrap().is_running() {
+        return;
+    };
+    state
+        .adsb_state
+        .lock()
+        .unwrap()
+        .start_decoding(app, stream_settings);
+}
+
+#[tauri::command]
+async fn stop_adsb_decoding(app: AppHandle, state: State<'_, AppState>) -> Result<String, ()> {
+    let adsb_state_clone = state.adsb_state.clone();
+
+    tokio::task::spawn_blocking(move || {
+        block_on(adsb_state_clone.lock().unwrap().stop_decoding(app));
     })
     .await
     .unwrap();
