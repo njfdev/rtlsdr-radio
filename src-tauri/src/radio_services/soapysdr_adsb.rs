@@ -87,8 +87,12 @@ impl AdsbDecoderState {
                         let sdr_rx = rf::soapysdr::SoapySdrRx::new(rx_stream, sample_rate);
                         sdr_rx.activate().await.unwrap();
 
+                        // add buffer to discard samples that take long than 1 second to be processed by ADS-B decode (to prevent slowdowns)
+                        let buffer = blocks::Buffer::new(0.0, 0.0, 0.0, 0.1);
+                        buffer.feed_from(&sdr_rx);
+
                         let adsb_decode = AdsbDecode::new(false);
-                        adsb_decode.feed_from(&sdr_rx);
+                        adsb_decode.feed_from(&buffer);
 
                         // let wavwriter = WavWriterBlock::new(
                         //     String::from("../adsb_output.wav"),
