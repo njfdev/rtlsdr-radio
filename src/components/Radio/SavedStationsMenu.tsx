@@ -5,7 +5,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./ui/card";
+} from "../ui/card";
 import {
   Station,
   StationDetails,
@@ -20,8 +20,8 @@ import {
   updateStation,
 } from "@/lib/stationsStorage";
 import { Loader2, RadioTower, Star } from "lucide-react";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
 import {
   Select,
   SelectContent,
@@ -29,9 +29,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
-import { Label } from "./ui/label";
-import { Input } from "./ui/input";
+} from "../ui/select";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
 
 export default function SavedStationsMenu({
   setRequestedStation,
@@ -86,71 +86,66 @@ export default function SavedStationsMenu({
   }, [stations, sortOption]);
 
   return (
-    <>
-      <div className="max-w-[24rem] float-right w-full m-2" />
-      <div className="max-w-[24rem] right-0 w-full m-2 h-[calc(100vh_-_1rem)] absolute">
-        <Card className="flex flex-col h-full">
-          <CardHeader>
-            <CardTitle>Saved Stations</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2 h-full overflow-y-clip">
-            <Label htmlFor="saved-stations-sort">Sort</Label>
-            <Select
-              value={(
-                Object.keys(StationSortOption) as Array<
-                  keyof typeof StationSortOption
-                >
-              ).find((key) => StationSortOption[key] === sortOption)}
-              onValueChange={(newValue) => {
-                setSortOption(
-                  StationSortOption[newValue as keyof typeof StationSortOption]
-                );
-              }}
-            >
-              <SelectTrigger id="saved-stations-sort">
-                <SelectValue placeholder="Sort" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {Object.entries(StationSortOption).map(
-                    (sortString, index) => {
-                      return (
-                        <SelectItem
-                          key={`saved-stations-sort-option-${sortString[0]}`}
-                          value={sortString[0]}
-                        >
-                          {sortString[1]}
-                        </SelectItem>
-                      );
-                    }
-                  )}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <div className="h-full flex flex-col gap-2 overflow-y-auto">
-              {sortedStations && sortedStations.length > 0 ? (
-                sortedStations?.map((station) => (
-                  <SavedStationCard
-                    key={`${station.type}-${station.frequency}-${
-                      station.channel || 0
-                    }`}
-                    station={station}
-                    isStationPlaying={isStationPlaying}
-                    currentStation={currentStation}
-                    loadingStation={loadingStation}
-                    updateRequestedStation={updateRequestedStation}
-                  />
-                ))
-              ) : (
-                <div className="flex items-center align-middle justify-center w-full h-[12rem]">
-                  <span className="text-gray-400">No Saved Stations!</span>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </>
+    <div className="max-w-[24rem] w-full h-full justify-end">
+      <Card className="flex flex-col h-full">
+        <CardHeader>
+          <CardTitle>Saved Stations</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2 h-full overflow-y-clip">
+          <Label htmlFor="saved-stations-sort">Sort</Label>
+          <Select
+            value={(
+              Object.keys(StationSortOption) as Array<
+                keyof typeof StationSortOption
+              >
+            ).find((key) => StationSortOption[key] === sortOption)}
+            onValueChange={(newValue) => {
+              setSortOption(
+                StationSortOption[newValue as keyof typeof StationSortOption]
+              );
+            }}
+          >
+            <SelectTrigger id="saved-stations-sort">
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {Object.entries(StationSortOption).map((sortString, index) => {
+                  return (
+                    <SelectItem
+                      key={`saved-stations-sort-option-${sortString[0]}`}
+                      value={sortString[0]}
+                    >
+                      {sortString[1]}
+                    </SelectItem>
+                  );
+                })}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <div className="h-full flex flex-col gap-2 overflow-y-auto">
+            {sortedStations && sortedStations.length > 0 ? (
+              sortedStations?.map((station) => (
+                <SavedStationCard
+                  key={`${station.type}-${station.frequency}-${
+                    station.channel || 0
+                  }`}
+                  station={station}
+                  isStationPlaying={isStationPlaying}
+                  currentStation={currentStation}
+                  loadingStation={loadingStation}
+                  updateRequestedStation={updateRequestedStation}
+                />
+              ))
+            ) : (
+              <div className="flex items-center align-middle justify-center w-full h-[12rem]">
+                <span className="text-gray-400">No Saved Stations!</span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

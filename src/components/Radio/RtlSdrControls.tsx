@@ -25,7 +25,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Loader2 } from "lucide-react";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { TabsContent, TabsTrigger, Tabs, TabsList } from "./ui/tabs";
+import { TabsContent, TabsTrigger, Tabs, TabsList } from "../ui/tabs";
 import {
   Card,
   CardContent,
@@ -33,9 +33,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./ui/card";
-import { Skeleton } from "./ui/skeleton";
-import { Badge } from "./ui/badge";
+} from "../ui/card";
+import { Skeleton } from "../ui/skeleton";
+import { Badge } from "../ui/badge";
 const appWindow = getCurrentWebviewWindow();
 
 enum RtlSdrStatus {
