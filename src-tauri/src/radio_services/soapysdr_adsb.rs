@@ -12,7 +12,7 @@ use tauri::{async_runtime, AppHandle, Emitter};
 use tokio::{self, time};
 
 use crate::radiorust_blocks::{
-    am_demod::AmDemod, rbds_decode::DownMixer, wav_writer::WavWriterBlock,
+    adsb_decode::AdsbDecode, am_demod::AmDemod, rbds_decode::DownMixer, wav_writer::WavWriterBlock,
 };
 
 pub struct AdsbDecoderState(Arc<Mutex<AdsbDecoderData>>);
@@ -87,15 +87,15 @@ impl AdsbDecoderState {
                         let sdr_rx = rf::soapysdr::SoapySdrRx::new(rx_stream, sample_rate);
                         sdr_rx.activate().await.unwrap();
 
-                        // let amdemod = AmDemod::new();
-                        // amdemod.feed_from(&filter1);
+                        let adsb_decode = AdsbDecode::new(true);
+                        adsb_decode.feed_from(&sdr_rx);
 
                         let wavwriter = WavWriterBlock::new(
                             String::from("../adsb_output.wav"),
                             false,
                             Some(10.0),
                         );
-                        wavwriter.feed_from(&sdr_rx);
+                        wavwriter.feed_from(&adsb_decode);
 
                         while !shutdown_flag.load(Ordering::SeqCst) {
                             // notify frontend that audio is playing
