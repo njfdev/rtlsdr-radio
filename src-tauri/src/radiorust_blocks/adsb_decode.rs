@@ -278,8 +278,10 @@ fn decode_modes_msg(msg: Vec<u8>) {
                 let subtype = me[0] & 0b111;
                 let intent_change_flag = if me[1] >> 7 == 1 { true } else { false };
                 let ifr_capability = if (me[1] >> 6) & 1 == 1 { true } else { false };
-                let subtype_specific_data =
-                    ((me[1] & 0b111) << 19) | ((me[2]) << 11) | ((me[3]) << 3) | (me[4] >> 5);
+                let subtype_specific_data = ((me[1] as u32 & 0b111) << 19)
+                    | ((me[2] as u32) << 11)
+                    | ((me[3] as u32) << 3)
+                    | (me[4] as u32 >> 5);
                 let vertical_rate_source = if (me[4] >> 3) & 1 == 1 {
                     AltitudeType::Barometer
                 } else {
@@ -295,6 +297,66 @@ fn decode_modes_msg(msg: Vec<u8>) {
                     println!("Vertical Velocity: {} ft/min", vertical_rate);
                 } else {
                     println!("Vertical Velocity: N/A");
+                }
+
+                // decode subtype data
+                match subtype {
+                    // ground speed
+                    1..=2 => {
+                        // subtype 1 -> subsonic, subtype 2 -> supersonic
+                        let multiplier = if subtype == 2 { 4 } else { 1 };
+
+                        // 0 -> West to East (1), 1 -> East to West (-1)
+                        let ew_sign = if (subtype_specific_data >> 21) == 1 {
+                            -1
+                        } else {
+                            1
+                        };
+                        let ew_velocity_raw = (subtype_specific_data >> 20) as u16 & 0b11_1111_1111;
+                        let mut ew_velocity_abs: Option<u16> = None;
+                        if ew_velocity_raw != 0 {
+                            ew_velocity_abs = Some((ew_velocity_raw as u16 - 1) * multiplier);
+                        }
+
+                        // 0 -> South to North (1), 1 -> North to South (-1)
+                        let ns_sign = if ((subtype_specific_data >> 10) & 1) == 1 {
+                            -1
+                        } else {
+                            1
+                        };
+                        let ns_velocity_raw = subtype_specific_data as u16 & 0b11_1111_1111;
+                        let mut ns_velocity_abs: Option<u16> = None;
+                        if ns_velocity_raw != 0 {
+                            ns_velocity_abs = Some((ns_velocity_raw as u16 - 1) * multiplier);
+                        }
+
+                        print!("Ground Speed: ");
+                        if ns_velocity_abs.is_some() && ew_velocity_abs.is_some() {
+                            let real_speed = ((ns_velocity_abs.unwrap() ^ 2) as f32
+                                + (ew_velocity_abs.unwrap() ^ 2) as f32)
+                                .sqrt();
+                            println!("{} knots", real_speed);
+                        } else {
+                            println!()
+                        }
+                        if ns_velocity_abs.is_some() {
+                            println!(
+                                "  {} knots {}",
+                                ns_velocity_abs.unwrap(),
+                                if ns_sign > 0 { "North" } else { "South" }
+                            );
+                        }
+                        if ew_velocity_abs.is_some() {
+                            println!(
+                                "  {} knots {}",
+                                ew_velocity_abs.unwrap(),
+                                if ew_sign > 0 { "East" } else { "West" }
+                            );
+                        }
+                    }
+                    // air speed
+                    3..=4 => {}
+                    _ => {}
                 }
             }
             // Airborne position (GNSS height)
