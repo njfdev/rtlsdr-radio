@@ -238,9 +238,16 @@ fn detect_modes_signal(m: Vec<u16>) {
     }
 }
 
+enum AltitudeType {
+    GNSS,
+    Barometer,
+}
+
 fn decode_modes_msg(msg: Vec<u8>) {
     let msg_type = msg[0] >> 3;
     let ca = msg[0] & 0b111; // responder capabilities
+
+    println!("\n-------------------------");
 
     // extended squitter (a.k.a. ADS-B)
     if msg_type == 17 {
@@ -249,7 +256,8 @@ fn decode_modes_msg(msg: Vec<u8>) {
         println!("Decoded ICAO Address: {:#06x}", icao_address);
 
         // the ADS-B message is bytes 5-11 (4-10 as indexes)
-        let type_code = msg[4] >> 3;
+        let me: &[u8] = &msg[4..10];
+        let type_code = me[0] >> 3;
 
         match type_code {
             // Aircraft identification
@@ -267,6 +275,27 @@ fn decode_modes_msg(msg: Vec<u8>) {
             // Airborne velocities
             19 => {
                 println!("Mode S msg Type: Airborne velocity");
+                let subtype = me[0] & 0b111;
+                let intent_change_flag = if me[1] >> 7 == 1 { true } else { false };
+                let ifr_capability = if (me[1] >> 6) & 1 == 1 { true } else { false };
+                let subtype_specific_data =
+                    ((me[1] & 0b111) << 19) | ((me[2]) << 11) | ((me[3]) << 3) | (me[4] >> 5);
+                let vertical_rate_source = if (me[4] >> 3) & 1 == 1 {
+                    AltitudeType::Barometer
+                } else {
+                    AltitudeType::GNSS
+                };
+                // 1 means down and 0 means up
+                let vertical_rate_sign = if (me[4] >> 2) & 1 == 1 { -1 } else { 0 };
+                let vertical_rate_raw = ((me[4] as u16 & 0b11) << 7) | (me[5] as u16 >> 1);
+
+                if vertical_rate_raw != 0 {
+                    let vertical_rate =
+                        ((vertical_rate_raw as isize) - 1) * 64 * (vertical_rate_sign as isize);
+                    println!("Vertical Velocity: {} ft/min", vertical_rate);
+                } else {
+                    println!("Vertical Velocity: N/A");
+                }
             }
             // Airborne position (GNSS height)
             20..=22 => {
@@ -291,6 +320,8 @@ fn decode_modes_msg(msg: Vec<u8>) {
             _ => {}
         }
     }
+
+    println!("-------------------------\n");
 }
 
 fn perform_modes_crc(msg: Vec<u8>) -> Result<Vec<u8>, ()> {
