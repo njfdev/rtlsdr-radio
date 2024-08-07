@@ -5,21 +5,22 @@ import { AdsbDecodeSettings } from "@/lib/types";
 import { Button } from "./ui/button";
 
 export default function AdsbDecoderView() {
-  const start_stream = async () => {
+  const start_decoding = async () => {
     await invoke<string>("start_adsb_decoding", {
       streamSettings: {
         gain: 20.0,
       } as AdsbDecodeSettings,
     });
   };
-  const stop_stream = async () => {
+  const stop_decoding = async () => {
     await invoke<string>("stop_adsb_decoding", {});
   };
 
   return (
     <div>
       <h1>ADS-B Decoder</h1>
-      <Button onClick={() => start_stream()}>Start Decoding</Button>
+      <Button onClick={() => start_decoding()}>Start Decoding</Button>
+      <Button onClick={() => stop_decoding()}>Stop Decoding</Button>
     </div>
   );
 }
