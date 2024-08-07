@@ -1,13 +1,12 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod custom_radiorust_blocks;
-mod nrsc5;
-mod rtlsdr;
+mod radio_services;
+mod radiorust_blocks;
 mod utils;
 
-use nrsc5::nrsc5::Nrsc5State;
-use rtlsdr::rtlsdr::{RtlSdrState, StreamSettings};
+use radio_services::nrsc5::Nrsc5State;
+use radio_services::soapysdr_radio::{RtlSdrState, StreamSettings};
 use std::{
     env,
     sync::{Arc, Mutex},
