@@ -33,6 +33,46 @@ where
         let mut processing_buf_pool = ChunkBufPool::<u16>::new();
         let mut buf_pool = ChunkBufPool::<Complex<Flt>>::new();
 
+        // used just for testing
+        #[cfg(debug_assertions)]
+        {
+            let example_messages = [
+              "1000110110101100010000101101111101011000101001010010001110110101001001001111110111111011100000000100111111011101",
+              "1000110110101100010000101101111110011001000100001111011000110011101110000100000001001100010011011000101010110011",
+              "1000110110101100010000101101111101011000101001010100011101001111000101010110110111000010011010111111100101100111",
+              "0101110110101100010000101101111100001001001110101011100010110010110100101010101101000101111011111110111000001111",
+              "1000110110101100010000101101111110011001000100001111011000110011101110000011110001001101010110000011000010100001",
+              "0101110110101100001011001001110011100011110111001101000100001110101001011010111001000011000101010010010000011011",
+            ];
+
+            for message in example_messages {
+                let mut message_vec: Vec<u8> = Vec::new();
+                let mut current_byte = 0u8;
+                let mut bit_index = 0;
+
+                for (i, c) in message.chars().enumerate() {
+                    if c == '1' {
+                        current_byte |= 1 << (7 - bit_index);
+                    }
+
+                    bit_index += 1;
+
+                    if bit_index == 8 || i == message.len() - 1 {
+                        message_vec.push(current_byte);
+                        current_byte = 0;
+                        bit_index = 0;
+                    }
+                }
+
+                let vec_to_string_vec: Vec<String> = message_vec
+                    .iter_mut()
+                    .map(|byte| format!("{:08b}", byte))
+                    .collect();
+                println!("{}", vec_to_string_vec.join(""));
+                decode_modes_msg(message_vec);
+            }
+        }
+
         spawn(async move {
             loop {
                 let Ok(signal) = receiver.recv().await else {
