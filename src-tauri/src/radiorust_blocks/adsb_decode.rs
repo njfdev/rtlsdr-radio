@@ -299,6 +299,13 @@ fn decode_modes_msg(msg: Vec<u8>) {
         let me: &[u8] = &msg[4..10];
         let type_code = me[0] >> 3;
 
+        println!(
+            "ADS-B bytes: {:?}",
+            me.iter()
+                .map(|byte| format!("{:08b}", byte))
+                .collect::<Vec<String>>()
+        );
+
         match type_code {
             // Aircraft identification
             1..=4 => {
@@ -328,8 +335,8 @@ fn decode_modes_msg(msg: Vec<u8>) {
                     AltitudeType::GNSS
                 };
                 // 1 means down and 0 means up
-                let vertical_rate_sign = if (me[4] >> 2) & 1 == 1 { -1 } else { 0 };
-                let vertical_rate_raw = ((me[4] as u16 & 0b11) << 7) | (me[5] as u16 >> 1);
+                let vertical_rate_sign = if (me[4] >> 3) & 1 == 1 { -1 } else { 0 };
+                let vertical_rate_raw = ((me[4] as u16 & 0b111) << 6) | (me[5] as u16 >> 2);
 
                 if vertical_rate_raw != 0 {
                     let vertical_rate =
