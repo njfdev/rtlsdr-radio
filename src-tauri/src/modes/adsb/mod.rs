@@ -1,6 +1,8 @@
+pub mod airborne_pos;
 pub mod airborne_vel;
 pub mod aircraft_ident;
 
+use airborne_pos::*;
 use airborne_vel::*;
 use aircraft_ident::*;
 

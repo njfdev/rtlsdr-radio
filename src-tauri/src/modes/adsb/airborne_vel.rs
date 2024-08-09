@@ -11,9 +11,9 @@ pub fn decode_airborne_vel(me: &[u8]) {
         | ((me[3] as u32) << 3)
         | (me[4] as u32 >> 5);
     let vertical_rate_source = if (me[4] >> 3) & 1 == 1 {
-        VerticalVelocitySource::Barometer
+        AltitudeSource::Barometer
     } else {
-        VerticalVelocitySource::GNSS
+        AltitudeSource::GNSS
     };
     // 1 means down and 0 means up
     let vertical_rate_sign = if (me[4] >> 3) & 1 == 1 { -1 } else { 0 };
@@ -23,7 +23,7 @@ pub fn decode_airborne_vel(me: &[u8]) {
         let vertical_rate = ((vertical_rate_raw as i32) - 1) * 64 * (vertical_rate_sign as i32);
         println!(
             "Vertical Velocity ({}): {} ft/min",
-            if vertical_rate_source == VerticalVelocitySource::GNSS {
+            if vertical_rate_source == AltitudeSource::GNSS {
                 "GNSS"
             } else {
                 "Barometer"
@@ -34,7 +34,7 @@ pub fn decode_airborne_vel(me: &[u8]) {
         // derive the other velocity type if it exists
         let mut velocity_source_difference_sign = if (me[5] >> 7) == 1 { -1 } else { 1 };
         // swap if vertical rate source is GNSS
-        if vertical_rate_source == VerticalVelocitySource::GNSS {
+        if vertical_rate_source == AltitudeSource::GNSS {
             velocity_source_difference_sign = -velocity_source_difference_sign;
         }
         let velocity_source_difference_raw = me[5] & 0b111_1111;
@@ -44,7 +44,7 @@ pub fn decode_airborne_vel(me: &[u8]) {
                 (velocity_source_difference_raw as i32 - 1) * 25 * velocity_source_difference_sign;
             println!(
                 "Vertical Velocity ({}): {} ft/min",
-                if vertical_rate_source != VerticalVelocitySource::GNSS {
+                if vertical_rate_source != AltitudeSource::GNSS {
                     "GNSS"
                 } else {
                     "Barometer"

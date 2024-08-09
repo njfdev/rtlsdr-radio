@@ -7,7 +7,7 @@ pub const AIS_CHARSET: &str = "?ABCDEFGHIJKLMNOPQRSTUVWXYZ????? ???????????????0
 
 // ADS-B
 #[derive(PartialEq)]
-pub enum VerticalVelocitySource {
+pub enum AltitudeSource {
     GNSS,
     Barometer,
 }
