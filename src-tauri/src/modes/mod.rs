@@ -142,6 +142,8 @@ pub fn decode_modes_msg(msg: Vec<u8>) {
 
     println!("\n-------------------------");
 
+    println!("Downlink Format: {}", msg_type);
+
     // extended squitter (a.k.a. ADS-B)
     if msg_type == 17 {
         let icao_address = ((msg[1] as u32) << 16) | ((msg[2] as u32) << 8) | msg[3] as u32;
