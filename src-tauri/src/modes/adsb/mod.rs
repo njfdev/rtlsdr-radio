@@ -29,6 +29,7 @@ pub fn decode_adsb_msg(me: &[u8]) {
         // Airborne position (barometric altitude)
         9..=18 => {
             println!("Mode S msg Type: Airborne position (barometric altitude)");
+            decode_aircraft_pos(me);
         }
         // Airborne velocities
         19 => {
@@ -38,6 +39,7 @@ pub fn decode_adsb_msg(me: &[u8]) {
         // Airborne position (GNSS height)
         20..=22 => {
             println!("Mode S msg Type: Airborne position (GNSS height)");
+            decode_aircraft_pos(me);
         }
         // Reserved
         23..=27 => {
