@@ -359,7 +359,7 @@ fn decode_modes_msg(msg: Vec<u8>) {
                         } else {
                             1
                         };
-                        let ew_velocity_raw = (subtype_specific_data >> 20) as u16 & 0b11_1111_1111;
+                        let ew_velocity_raw = (subtype_specific_data >> 11) as u16 & 0b11_1111_1111;
                         let mut ew_velocity_abs: Option<u16> = None;
                         if ew_velocity_raw != 0 {
                             ew_velocity_abs = Some((ew_velocity_raw as u16 - 1) * multiplier);
@@ -379,9 +379,9 @@ fn decode_modes_msg(msg: Vec<u8>) {
 
                         print!("Ground Speed: ");
                         if ns_velocity_abs.is_some() && ew_velocity_abs.is_some() {
-                            let real_speed = ((ns_velocity_abs.unwrap() ^ 2) as f32
-                                + (ew_velocity_abs.unwrap() ^ 2) as f32)
-                                .sqrt();
+                            let real_speed = ((ns_velocity_abs.unwrap() as f32).powi(2)
+                                + (ew_velocity_abs.unwrap() as f32).powi(2))
+                            .sqrt();
                             println!("{} knots", real_speed);
                         } else {
                             println!()
