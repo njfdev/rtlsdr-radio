@@ -388,7 +388,14 @@ fn decode_modes_msg(msg: Vec<u8>) {
                             println!("Heading (Relative to East): {:.2}°", angle_rad);
                         }
 
-                        print!("Ground Speed: ");
+                        print!(
+                            "Ground Speed ({}): ",
+                            if subtype == 1 {
+                                "subsonic"
+                            } else {
+                                "supersonic"
+                            }
+                        );
                         if ns_velocity_abs.is_some() && ew_velocity_abs.is_some() {
                             let real_speed = ((ns_velocity_abs.unwrap() as f32).powi(2)
                                 + (ew_velocity_abs.unwrap() as f32).powi(2))
