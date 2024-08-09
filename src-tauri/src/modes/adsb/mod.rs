@@ -1,6 +1,8 @@
 pub mod airborne_vel;
+pub mod aircraft_ident;
 
-use crate::modes::adsb::airborne_vel::decode_airborne_vel;
+use airborne_vel::*;
+use aircraft_ident::*;
 
 pub fn decode_adsb_msg(me: &[u8]) {
     let type_code = me[0] >> 3;
@@ -16,6 +18,7 @@ pub fn decode_adsb_msg(me: &[u8]) {
         // Aircraft identification
         1..=4 => {
             println!("Mode S msg Type: Aircraft identification");
+            decode_aircraft_ident(me);
         }
         // Surface position
         5..=8 => {
