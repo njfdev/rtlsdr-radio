@@ -282,7 +282,7 @@ fn detect_modes_signal(m: Vec<u16>) {
 }
 
 #[derive(PartialEq)]
-enum AltitudeType {
+enum VerticalVelocitySource {
     GNSS,
     Barometer,
 }
@@ -333,16 +333,16 @@ fn decode_modes_msg(msg: Vec<u8>) {
             19 => {
                 println!("Mode S msg Type: Airborne velocity");
                 let subtype = me[0] & 0b111;
-                let intent_change_flag = if me[1] >> 7 == 1 { true } else { false };
-                let ifr_capability = if (me[1] >> 6) & 1 == 1 { true } else { false };
+                let _intent_change_flag = if me[1] >> 7 == 1 { true } else { false };
+                let _ifr_capability = if (me[1] >> 6) & 1 == 1 { true } else { false };
                 let subtype_specific_data = ((me[1] as u32 & 0b111) << 19)
                     | ((me[2] as u32) << 11)
                     | ((me[3] as u32) << 3)
                     | (me[4] as u32 >> 5);
                 let vertical_rate_source = if (me[4] >> 3) & 1 == 1 {
-                    AltitudeType::Barometer
+                    VerticalVelocitySource::Barometer
                 } else {
-                    AltitudeType::GNSS
+                    VerticalVelocitySource::GNSS
                 };
                 // 1 means down and 0 means up
                 let vertical_rate_sign = if (me[4] >> 3) & 1 == 1 { -1 } else { 0 };
@@ -351,7 +351,15 @@ fn decode_modes_msg(msg: Vec<u8>) {
                 if vertical_rate_raw != 0 {
                     let vertical_rate =
                         ((vertical_rate_raw as isize) - 1) * 64 * (vertical_rate_sign as isize);
-                    println!("Vertical Velocity: {} ft/min", vertical_rate);
+                    println!(
+                        "Vertical Velocity ({}): {} ft/min",
+                        if vertical_rate_source == VerticalVelocitySource::GNSS {
+                            "GNSS"
+                        } else {
+                            "Barometer"
+                        },
+                        vertical_rate
+                    );
                 } else {
                     println!("Vertical Velocity: N/A");
                 }
