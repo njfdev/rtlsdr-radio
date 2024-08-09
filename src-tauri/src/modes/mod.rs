@@ -148,7 +148,7 @@ pub fn decode_modes_msg(msg: Vec<u8>) {
         println!("Decoded ICAO Address: {:#06x}", icao_address);
 
         // the ADS-B message is bytes 5-11 (4-10 as indexes)
-        let me: &[u8] = &msg[4..10];
+        let me: &[u8] = &msg[4..=10];
 
         decode_adsb_msg(me)
     }
