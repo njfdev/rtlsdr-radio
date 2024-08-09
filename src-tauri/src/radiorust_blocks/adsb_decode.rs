@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use radiorust::{
     flow::{new_receiver, new_sender, ReceiverConnector, SenderConnector},
     impl_block_trait,
@@ -354,7 +356,7 @@ fn decode_modes_msg(msg: Vec<u8>) {
                         let multiplier = if subtype == 2 { 4 } else { 1 };
 
                         // 0 -> West to East (1), 1 -> East to West (-1)
-                        let ew_sign = if (subtype_specific_data >> 21) == 1 {
+                        let ew_sign: i16 = if (subtype_specific_data >> 21) == 1 {
                             -1
                         } else {
                             1
@@ -366,7 +368,7 @@ fn decode_modes_msg(msg: Vec<u8>) {
                         }
 
                         // 0 -> South to North (1), 1 -> North to South (-1)
-                        let ns_sign = if ((subtype_specific_data >> 10) & 1) == 1 {
+                        let ns_sign: i16 = if ((subtype_specific_data >> 10) & 1) == 1 {
                             -1
                         } else {
                             1
@@ -375,6 +377,15 @@ fn decode_modes_msg(msg: Vec<u8>) {
                         let mut ns_velocity_abs: Option<u16> = None;
                         if ns_velocity_raw != 0 {
                             ns_velocity_abs = Some((ns_velocity_raw as u16 - 1) * multiplier);
+                        }
+
+                        if ns_velocity_abs.is_some() && ew_velocity_abs.is_some() {
+                            // calculate heading
+                            let angle_rad = ((((ns_velocity_abs.unwrap() as i16 * -1) as f32)
+                                .atan2((ew_velocity_abs.unwrap() as i16 * ew_sign) as f32))
+                                / PI)
+                                * 180.0;
+                            println!("Heading (Relative to East): {:.2}°", angle_rad);
                         }
 
                         print!("Ground Speed: ");
