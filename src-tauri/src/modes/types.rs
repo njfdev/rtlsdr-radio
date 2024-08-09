@@ -5,13 +5,30 @@ pub const MODES_PREAMBLE_US: usize = 8; // preamble length in microseconds
 
 pub const AIS_CHARSET: &str = "?ABCDEFGHIJKLMNOPQRSTUVWXYZ????? ???????????????0123456789??????";
 
+#[derive(Debug)]
 pub struct ModeSState {
-    aircraft: Vec<AircraftState>,
+    pub aircraft: Vec<AircraftState>,
 }
 
+impl ModeSState {
+    pub fn new() -> Self {
+        Self { aircraft: vec![] }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct AircraftState {
-    icao_address: u32,
-    adsb_state: AdsbState,
+    pub icao_address: u32,
+    pub adsb_state: AdsbState,
+}
+
+impl AircraftState {
+    pub fn new(icao_address: u32) -> Self {
+        Self {
+            icao_address,
+            adsb_state: AdsbState::new(),
+        }
+    }
 }
 
 // ADS-B
@@ -27,13 +44,34 @@ pub enum AirspeedType {
     TAS, // true airspeed
 }
 
+#[derive(Clone, Debug)]
 pub struct AdsbState {
-    cpr_position: CprPosition,
+    pub cpr_position: CprPosition,
 }
 
+impl AdsbState {
+    pub fn new() -> Self {
+        Self {
+            cpr_position: CprPosition::new(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct CprPosition {
-    cpr_even_lat: u32,
-    cpr_odd_lat: u32,
-    cpr_even_lon: u32,
-    cpr_odd_lon: u32,
+    pub cpr_even_lat: u32,
+    pub cpr_odd_lat: u32,
+    pub cpr_even_lon: u32,
+    pub cpr_odd_lon: u32,
+}
+
+impl CprPosition {
+    pub fn new() -> Self {
+        Self {
+            cpr_even_lat: 0,
+            cpr_odd_lat: 0,
+            cpr_even_lon: 0,
+            cpr_odd_lon: 0,
+        }
+    }
 }

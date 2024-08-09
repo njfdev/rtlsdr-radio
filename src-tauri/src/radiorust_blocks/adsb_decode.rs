@@ -9,6 +9,7 @@ use radiorust::{
     signal::Signal,
 };
 use tokio::spawn;
+use types::ModeSState;
 
 /// A custom radiorust block that saves the input stream to a wav file at the specified path. You can enabled the pass_along argument to pass along samples, so it can be between blocks.
 pub struct AdsbDecode<Flt> {
@@ -29,6 +30,8 @@ where
 
         let mut processing_buf_pool = ChunkBufPool::<u16>::new();
         let mut buf_pool = ChunkBufPool::<Complex<Flt>>::new();
+
+        let mut modes_state = ModeSState::new();
 
         // used just for testing
         #[cfg(debug_assertions)]
@@ -74,7 +77,7 @@ where
                     .map(|byte| format!("{:08b}", byte))
                     .collect();
                 println!("{}", vec_to_string_vec.join(""));
-                decode_modes_msg(message_vec);
+                decode_modes_msg(message_vec, &mut modes_state);
             }
         }
 
@@ -110,7 +113,7 @@ where
                             processing_chunk.push(u8_value);
                         }
 
-                        detect_modes_signal(processing_chunk.to_vec());
+                        detect_modes_signal(processing_chunk.to_vec(), &mut modes_state);
 
                         if pass_along {
                             let mut output_chunk = buf_pool.get_with_capacity(input_chunk.len());

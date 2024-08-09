@@ -6,7 +6,7 @@ use adsb::decode_adsb_msg;
 use crc::perform_modes_crc;
 use types::*;
 
-pub fn detect_modes_signal(m: Vec<u16>) {
+pub fn detect_modes_signal(m: Vec<u16>, modes_state: &mut ModeSState) {
     /* Go through each sample, and see if it and the following 9 samples match the start of the Mode S preamble.
      *
      * The Mode S preamble is made of impulses with a width of 0.5 microseconds, and each sample is 0.5 microseconds
@@ -130,15 +130,25 @@ pub fn detect_modes_signal(m: Vec<u16>) {
 
             if result.is_ok() {
                 let fixed_msg = result.unwrap();
-                decode_modes_msg(fixed_msg);
+                decode_modes_msg(fixed_msg, modes_state);
             }
         }
     }
 }
 
-pub fn decode_modes_msg(msg: Vec<u8>) {
+pub fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
     let msg_type = msg[0] >> 3;
     let ca = msg[0] & 0b111; // responder capabilities
+
+    println!(
+        "Existing Known ICAO Addresses: {:?}",
+        modes_state
+            .aircraft
+            .clone()
+            .into_iter()
+            .map(|state| format!("{:#x}", state.icao_address))
+            .collect::<Vec<String>>()
+    );
 
     println!("\n-------------------------");
 
@@ -149,10 +159,21 @@ pub fn decode_modes_msg(msg: Vec<u8>) {
         let icao_address = ((msg[1] as u32) << 16) | ((msg[2] as u32) << 8) | msg[3] as u32;
         println!("Decoded ICAO Address: {:#06x}", icao_address);
 
+        // check if data from airplane with ICAO address has already been received, otherwise add entry
+        let airplanes_with_icao: Vec<AircraftState> = modes_state
+            .aircraft
+            .clone()
+            .into_iter()
+            .filter(|a| a.icao_address == icao_address)
+            .collect();
+        if airplanes_with_icao.len() == 0 {
+            modes_state.aircraft.push(AircraftState::new(icao_address));
+        }
+
         // the ADS-B message is bytes 5-11 (4-10 as indexes)
         let me: &[u8] = &msg[4..=10];
 
-        decode_adsb_msg(me)
+        decode_adsb_msg(me, modes_state);
     }
 
     println!("-------------------------\n");
