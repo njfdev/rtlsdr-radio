@@ -46,6 +46,10 @@ where
               "1000110110101100010000101101111110011001000100001111011000110011101110000011110001001101010110000011000010100001",
               "0101110110101100001011001001110011100011110111001101000100001110101001011010111001000011000101010010010000011011",
               "1000110110100000010111110010000110011011000001101011011010101111000110001001010000000000110010111100001100111111", // Airborne velocity (air speed)
+              "1000110110101100000011111111100101011000101111110000011101100001100111010110001111001101110110111101001100001101", // Airborne position
+              "1000110110101100000011111111100111100001000010100011001000000000000000000000000000000000000101111101011101101000", // Aircraft Status
+              "0101110110101100000011111111100100110010000000001011011101001001101101110010010111010001110100010111000010001101",
+              "1000110110100000000001001110100011101010001000010100100001010101111011110101110000001000100010100010010001001001", // Target and Status Information
             ];
 
             for message in example_messages {
@@ -350,7 +354,7 @@ fn decode_modes_msg(msg: Vec<u8>) {
 
                 if vertical_rate_raw != 0 {
                     let vertical_rate =
-                        ((vertical_rate_raw as isize) - 1) * 64 * (vertical_rate_sign as isize);
+                        ((vertical_rate_raw as i32) - 1) * 64 * (vertical_rate_sign as i32);
                     println!(
                         "Vertical Velocity ({}): {} ft/min",
                         if vertical_rate_source == VerticalVelocitySource::GNSS {
@@ -360,6 +364,31 @@ fn decode_modes_msg(msg: Vec<u8>) {
                         },
                         vertical_rate
                     );
+
+                    // derive the other velocity type if it exists
+                    let mut velocity_source_difference_sign =
+                        if (me[5] >> 7) == 1 { -1 } else { 1 };
+                    // swap if vertical rate source is GNSS
+                    if vertical_rate_source == VerticalVelocitySource::GNSS {
+                        velocity_source_difference_sign = -velocity_source_difference_sign;
+                    }
+                    let velocity_source_difference_raw = me[5] & 0b111_1111;
+
+                    if velocity_source_difference_raw != 0 {
+                        let velocity_source_difference = (velocity_source_difference_raw as i32
+                            - 1)
+                            * 25
+                            * velocity_source_difference_sign;
+                        println!(
+                            "Vertical Velocity ({}): {} ft/min",
+                            if vertical_rate_source != VerticalVelocitySource::GNSS {
+                                "GNSS"
+                            } else {
+                                "Barometer"
+                            },
+                            vertical_rate + velocity_source_difference
+                        );
+                    }
                 } else {
                     println!("Vertical Velocity: N/A");
                 }
