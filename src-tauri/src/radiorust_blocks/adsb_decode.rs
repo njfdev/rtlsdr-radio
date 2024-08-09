@@ -45,6 +45,7 @@ where
               "0101110110101100010000101101111100001001001110101011100010110010110100101010101101000101111011111110111000001111",
               "1000110110101100010000101101111110011001000100001111011000110011101110000011110001001101010110000011000010100001",
               "0101110110101100001011001001110011100011110111001101000100001110101001011010111001000011000101010010010000011011",
+              "1000110110100000010111110010000110011011000001101011011010101111000110001001010000000000110010111100001100111111", // Airborne velocity (air speed)
             ];
 
             for message in example_messages {
@@ -280,9 +281,16 @@ fn detect_modes_signal(m: Vec<u16>) {
     }
 }
 
+#[derive(PartialEq)]
 enum AltitudeType {
     GNSS,
     Barometer,
+}
+
+#[derive(PartialEq)]
+enum AirspeedType {
+    IAS, // indicated airspeed
+    TAS, // true airspeed
 }
 
 fn decode_modes_msg(msg: Vec<u8>) {
@@ -348,13 +356,13 @@ fn decode_modes_msg(msg: Vec<u8>) {
                     println!("Vertical Velocity: N/A");
                 }
 
+                // subtype 1/3 -> subsonic, subtype 2/4 -> supersonic
+                let speed_multiplier = if subtype % 2 == 0 { 4 } else { 1 };
+
                 // decode subtype data
                 match subtype {
                     // ground speed
                     1..=2 => {
-                        // subtype 1 -> subsonic, subtype 2 -> supersonic
-                        let multiplier = if subtype == 2 { 4 } else { 1 };
-
                         // 0 -> West to East (1), 1 -> East to West (-1)
                         let ew_sign: i16 = if (subtype_specific_data >> 21) == 1 {
                             -1
@@ -364,7 +372,7 @@ fn decode_modes_msg(msg: Vec<u8>) {
                         let ew_velocity_raw = (subtype_specific_data >> 11) as u16 & 0b11_1111_1111;
                         let mut ew_velocity_abs: Option<u16> = None;
                         if ew_velocity_raw != 0 {
-                            ew_velocity_abs = Some((ew_velocity_raw as u16 - 1) * multiplier);
+                            ew_velocity_abs = Some((ew_velocity_raw as u16 - 1) * speed_multiplier);
                         }
 
                         // 0 -> South to North (1), 1 -> North to South (-1)
@@ -376,7 +384,7 @@ fn decode_modes_msg(msg: Vec<u8>) {
                         let ns_velocity_raw = subtype_specific_data as u16 & 0b11_1111_1111;
                         let mut ns_velocity_abs: Option<u16> = None;
                         if ns_velocity_raw != 0 {
-                            ns_velocity_abs = Some((ns_velocity_raw as u16 - 1) * multiplier);
+                            ns_velocity_abs = Some((ns_velocity_raw as u16 - 1) * speed_multiplier);
                         }
 
                         if ns_velocity_abs.is_some() && ew_velocity_abs.is_some() {
@@ -420,7 +428,55 @@ fn decode_modes_msg(msg: Vec<u8>) {
                         }
                     }
                     // air speed
-                    3..=4 => {}
+                    3..=4 => {
+                        let is_magnetic_heading_included = if (subtype_specific_data >> 21) == 1 {
+                            true
+                        } else {
+                            false
+                        };
+                        let magnetic_heading_raw =
+                            (subtype_specific_data >> 11) as u16 & 0b11_1111_1111;
+                        let mut magnetic_heading: Option<f32> = None;
+
+                        if is_magnetic_heading_included {
+                            magnetic_heading =
+                                Some((magnetic_heading_raw as f32) * (360.0 / 1024.0));
+                        }
+
+                        let airspeed_type = if (subtype_specific_data >> 10) & 1 == 1 {
+                            AirspeedType::TAS
+                        } else {
+                            AirspeedType::IAS
+                        };
+                        let airspeed_raw = subtype_specific_data as u16 & 0b11_1111_1111;
+                        let mut airspeed: Option<u16> = None;
+
+                        if airspeed_raw != 0 {
+                            airspeed = Some((airspeed_raw - 1) * speed_multiplier);
+                        }
+
+                        println!(
+                            "Magnetic Heading (Relative to North): {}",
+                            if is_magnetic_heading_included {
+                                format!("{:.2}°", magnetic_heading.unwrap())
+                            } else {
+                                "N/A".to_string()
+                            }
+                        );
+                        println!(
+                            "{} Airspeed: {}",
+                            if airspeed_type == AirspeedType::TAS {
+                                "True"
+                            } else {
+                                "Indicated"
+                            },
+                            if airspeed.is_some() {
+                                format!("{} knots", airspeed.unwrap())
+                            } else {
+                                "N/A".to_string()
+                            }
+                        )
+                    }
                     _ => {}
                 }
             }
