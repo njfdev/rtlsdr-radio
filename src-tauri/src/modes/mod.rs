@@ -160,20 +160,20 @@ pub fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
         println!("Decoded ICAO Address: {:#06x}", icao_address);
 
         // check if data from airplane with ICAO address has already been received, otherwise add entry
-        let airplanes_with_icao: Vec<AircraftState> = modes_state
+        let mut cur_aircraft = modes_state
             .aircraft
-            .clone()
-            .into_iter()
-            .filter(|a| a.icao_address == icao_address)
-            .collect();
-        if airplanes_with_icao.len() == 0 {
+            .iter_mut()
+            .find(|aircraft| aircraft.icao_address == icao_address);
+        if cur_aircraft.is_none() {
             modes_state.aircraft.push(AircraftState::new(icao_address));
+            let new_aircraft = modes_state.aircraft.last_mut().unwrap();
+            cur_aircraft = Some(new_aircraft);
         }
 
         // the ADS-B message is bytes 5-11 (4-10 as indexes)
         let me: &[u8] = &msg[4..=10];
 
-        decode_adsb_msg(me, modes_state);
+        decode_adsb_msg(me, &mut cur_aircraft.unwrap().adsb_state);
     }
 
     println!("-------------------------\n");

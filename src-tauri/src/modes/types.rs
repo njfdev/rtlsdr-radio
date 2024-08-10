@@ -46,32 +46,18 @@ pub enum AirspeedType {
 
 #[derive(Clone, Debug)]
 pub struct AdsbState {
-    pub cpr_position: CprPosition,
+    pub cpr_position: Option<CprPosition>,
 }
 
 impl AdsbState {
     pub fn new() -> Self {
-        Self {
-            cpr_position: CprPosition::new(),
-        }
+        Self { cpr_position: None }
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct CprPosition {
-    pub cpr_even_lat: u32,
-    pub cpr_odd_lat: u32,
-    pub cpr_even_lon: u32,
-    pub cpr_odd_lon: u32,
-}
-
-impl CprPosition {
-    pub fn new() -> Self {
-        Self {
-            cpr_even_lat: 0,
-            cpr_odd_lat: 0,
-            cpr_even_lon: 0,
-            cpr_odd_lon: 0,
-        }
-    }
+    pub cpr_lat: f64,
+    pub cpr_lon: f64,
+    pub cpr_format: u8,
 }

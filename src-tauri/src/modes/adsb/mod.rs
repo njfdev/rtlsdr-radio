@@ -6,9 +6,9 @@ use airborne_pos::*;
 use airborne_vel::*;
 use aircraft_ident::*;
 
-use super::ModeSState;
+use super::{AdsbState, ModeSState};
 
-pub fn decode_adsb_msg(me: &[u8], modes_state: &mut ModeSState) {
+pub fn decode_adsb_msg(me: &[u8], adsb_state: &mut AdsbState) {
     let type_code = me[0] >> 3;
 
     println!(
@@ -31,7 +31,7 @@ pub fn decode_adsb_msg(me: &[u8], modes_state: &mut ModeSState) {
         // Airborne position (barometric altitude)
         9..=18 => {
             println!("Mode S msg Type: Airborne position (barometric altitude)");
-            decode_aircraft_pos(me);
+            decode_aircraft_pos(me, adsb_state);
         }
         // Airborne velocities
         19 => {
@@ -41,7 +41,7 @@ pub fn decode_adsb_msg(me: &[u8], modes_state: &mut ModeSState) {
         // Airborne position (GNSS height)
         20..=22 => {
             println!("Mode S msg Type: Airborne position (GNSS height)");
-            decode_aircraft_pos(me);
+            decode_aircraft_pos(me, adsb_state);
         }
         // Reserved
         23..=27 => {
