@@ -12,7 +12,7 @@ const N_Z: f64 = 15.0;
 
 pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
     let type_code = me[0] >> 3;
-    let altitude_type = if type_code >= 9 && type_code <= 18 {
+    let altitude_source = if type_code >= 9 && type_code <= 18 {
         AltitudeSource::Barometer
     } else {
         AltitudeSource::GNSS
@@ -115,7 +115,7 @@ pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
     let mut final_altitude: Option<i32> = None;
 
     // decode altitude
-    match altitude_type {
+    match altitude_source {
         AltitudeSource::Barometer => {
             let q_bit = (encoded_alt >> 4) as u8 & 1;
 
@@ -136,10 +136,12 @@ pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
             final_altitude = Some(length::metres::to_feet(encoded_alt as f64).round() as i32);
         }
     }
+    adsb_state.altitude = Some(final_altitude.unwrap().clone());
+    adsb_state.altitude_source = Some(altitude_source.clone());
 
     println!(
         "Altitude ({}): {}",
-        if altitude_type == AltitudeSource::GNSS {
+        if altitude_source == AltitudeSource::GNSS {
             "GNSS"
         } else {
             "Barometer"

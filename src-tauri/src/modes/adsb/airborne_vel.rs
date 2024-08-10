@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use crate::modes::types::*;
 
-pub fn decode_airborne_vel(me: &[u8]) {
+pub fn decode_airborne_vel(me: &[u8], adsb_state: &mut AdsbState) {
     let subtype = me[0] & 0b111;
     let _intent_change_flag = if me[1] >> 7 == 1 { true } else { false };
     let _ifr_capability = if (me[1] >> 6) & 1 == 1 { true } else { false };
@@ -15,6 +15,7 @@ pub fn decode_airborne_vel(me: &[u8]) {
     } else {
         AltitudeSource::GNSS
     };
+    adsb_state.preferred_vertical_velocity_source = Some(vertical_rate_source.clone());
     // 1 means down and 0 means up
     let vertical_rate_sign = if (me[4] >> 3) & 1 == 1 { -1 } else { 0 };
     let vertical_rate_raw = ((me[4] as u16 & 0b111) << 6) | (me[5] as u16 >> 2);
@@ -30,6 +31,11 @@ pub fn decode_airborne_vel(me: &[u8]) {
             },
             vertical_rate
         );
+        if vertical_rate_source == AltitudeSource::GNSS {
+            adsb_state.gnss_vertical_velocity = Some(vertical_rate);
+        } else {
+            adsb_state.barometer_vertical_velocity = Some(vertical_rate);
+        }
 
         // derive the other velocity type if it exists
         let mut velocity_source_difference_sign = if (me[5] >> 7) == 1 { -1 } else { 1 };
@@ -42,6 +48,7 @@ pub fn decode_airborne_vel(me: &[u8]) {
         if velocity_source_difference_raw != 0 {
             let velocity_source_difference =
                 (velocity_source_difference_raw as i32 - 1) * 25 * velocity_source_difference_sign;
+            let other_vertical_velocity_source = vertical_rate + velocity_source_difference;
             println!(
                 "Vertical Velocity ({}): {} ft/min",
                 if vertical_rate_source != AltitudeSource::GNSS {
@@ -49,15 +56,28 @@ pub fn decode_airborne_vel(me: &[u8]) {
                 } else {
                     "Barometer"
                 },
-                vertical_rate + velocity_source_difference
+                other_vertical_velocity_source
             );
+            if vertical_rate_source != AltitudeSource::GNSS {
+                adsb_state.gnss_vertical_velocity = Some(other_vertical_velocity_source);
+            } else {
+                adsb_state.barometer_vertical_velocity = Some(other_vertical_velocity_source);
+            }
         }
     } else {
         println!("Vertical Velocity: N/A");
     }
 
     // subtype 1/3 -> subsonic, subtype 2/4 -> supersonic
-    let speed_multiplier = if subtype % 2 == 0 { 4 } else { 1 };
+    let speed_multiplier;
+
+    if subtype & 2 == 0 {
+        speed_multiplier = 4;
+        adsb_state.speed_category = Some(SpeedCategory::Supersonic);
+    } else {
+        speed_multiplier = 1;
+        adsb_state.speed_category = Some(SpeedCategory::Subsonic);
+    }
 
     // decode subtype data
     match subtype {
@@ -95,6 +115,7 @@ pub fn decode_airborne_vel(me: &[u8]) {
                     % 360.0;
 
                 println!("Heading: {:.2}°", angle);
+                adsb_state.heading = Some(angle);
             }
 
             print!(
@@ -110,6 +131,7 @@ pub fn decode_airborne_vel(me: &[u8]) {
                     + (ew_velocity_abs.unwrap() as f32).powi(2))
                 .sqrt();
                 println!("{} knots", real_speed);
+                adsb_state.speed = Some(real_speed.round() as u16);
             } else {
                 println!()
             }
@@ -127,6 +149,8 @@ pub fn decode_airborne_vel(me: &[u8]) {
                     if ew_sign > 0 { "East" } else { "West" }
                 );
             }
+
+            adsb_state.velocity_type = Some(SpeedType::GroundSpeed);
         }
         // air speed
         3..=4 => {
@@ -174,7 +198,9 @@ pub fn decode_airborne_vel(me: &[u8]) {
                 } else {
                     "N/A".to_string()
                 }
-            )
+            );
+
+            adsb_state.velocity_type = Some(SpeedType::AirSpeed(airspeed_type));
         }
         _ => {}
     }

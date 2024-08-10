@@ -177,6 +177,8 @@ pub fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
     }
 
     println!("-------------------------\n");
+
+    println!("New Mode S State: {:#?}", modes_state);
 }
 
 fn get_message_length(msg_type: u8) -> usize {

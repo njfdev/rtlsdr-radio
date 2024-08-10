@@ -38,7 +38,7 @@ const WAKE_VORTEX_CATEGORY_TABLE: [[&str; 8]; 4] = [
     ],
 ];
 
-pub fn decode_aircraft_ident(me: &[u8]) {
+pub fn decode_aircraft_ident(me: &[u8], adsb_state: &mut AdsbState) {
     let tc = me[0] >> 3;
     let ca = me[0] & 0b111;
     let wake_vortex_category = *(WAKE_VORTEX_CATEGORY_TABLE.get(tc as usize - 1).unwrap())
@@ -52,7 +52,9 @@ pub fn decode_aircraft_ident(me: &[u8]) {
         .collect();
 
     println!("Callsign: {}", callsign);
+    adsb_state.callsign = Some(callsign);
     println!("Wake Vortex Category: {}", wake_vortex_category);
+    adsb_state.wake_vortex_cat = Some(wake_vortex_category.to_owned());
 }
 
 fn extract_each_6_bits(data: Vec<u8>) -> Vec<u8> {

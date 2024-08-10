@@ -22,7 +22,7 @@ pub fn decode_adsb_msg(me: &[u8], adsb_state: &mut AdsbState) {
         // Aircraft identification
         1..=4 => {
             println!("Mode S msg Type: Aircraft identification");
-            decode_aircraft_ident(me);
+            decode_aircraft_ident(me, adsb_state);
         }
         // Surface position
         5..=8 => {
@@ -36,7 +36,7 @@ pub fn decode_adsb_msg(me: &[u8], adsb_state: &mut AdsbState) {
         // Airborne velocities
         19 => {
             println!("Mode S msg Type: Airborne velocity");
-            decode_airborne_vel(me);
+            decode_airborne_vel(me, adsb_state);
         }
         // Airborne position (GNSS height)
         20..=22 => {
