@@ -88,12 +88,13 @@ pub fn decode_airborne_vel(me: &[u8]) {
             }
 
             if ns_velocity_abs.is_some() && ew_velocity_abs.is_some() {
-                // calculate heading
-                let angle_rad = ((((ns_velocity_abs.unwrap() as i16 * -1) as f32)
-                    .atan2((ew_velocity_abs.unwrap() as i16 * ew_sign) as f32))
-                    / PI)
-                    * 180.0;
-                println!("Heading (Relative to East): {:.2}°", angle_rad);
+                // convert to heading relative to north
+                let angle = ((ew_velocity_abs.unwrap() as i16 * ew_sign) as f32)
+                    .atan2((ns_velocity_abs.unwrap() as i16 * ns_sign) as f32)
+                    * (360.0 / (2.0 * PI))
+                    % 360.0;
+
+                println!("Heading: {:.2}°", angle);
             }
 
             print!(
@@ -154,7 +155,7 @@ pub fn decode_airborne_vel(me: &[u8]) {
             }
 
             println!(
-                "Magnetic Heading (Relative to North): {}",
+                "Magnetic Heading: {}",
                 if is_magnetic_heading_included {
                     format!("{:.2}°", magnetic_heading.unwrap())
                 } else {
