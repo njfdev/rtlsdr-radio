@@ -67,8 +67,8 @@ pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
 
         if calculation_result.is_ok() {
             let (lat, lon) = calculation_result.unwrap();
-            println!("Latitude: {}", lat);
-            println!("Longitude: {}", lon);
+            println!("Latitude: {}°", lat);
+            println!("Longitude: {}°", lon);
         } else {
             println!("Error in decoding Latitude and Longitude!");
         }
@@ -80,19 +80,19 @@ pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
     }
 }
 
-fn calculate_lon_zones(latitude: f64) -> u8 {
+fn calculate_lon_zones(latitude: f64) -> f64 {
     if latitude == 0.0 {
-        return 59;
+        return 59.0;
     } else if latitude.abs() == 87.0 {
-        return 2;
+        return 2.0;
     } else if latitude.abs() > 87.0 {
-        return 1;
+        return 1.0;
     }
 
     ((2.0 * PI)
         / (1.0 - ((1.0 - (PI / (2.0 * N_Z)).cos()) / (((PI / 180.0) * latitude).cos().powi(2))))
             .acos())
-    .floor() as u8
+    .floor()
 }
 
 fn calc_lat_long(
@@ -111,8 +111,9 @@ fn calc_lat_long(
     let lat_even = lat_even_zone_size * ((lat_zone_index % 60.0) + lat_even_cpr);
     let lat_odd = lat_odd_zone_size * ((lat_zone_index % 59.0) + lat_odd_cpr);
 
+    let lon_zones = calculate_lon_zones(lat_even);
     // if lat even and odd are in different zones, then return err
-    if calculate_lon_zones(lat_even) != calculate_lon_zones(lat_odd) {
+    if lon_zones != calculate_lon_zones(lat_odd) {
         return Err(());
     }
 
@@ -123,5 +124,23 @@ fn calc_lat_long(
         lat_odd
     };
 
-    Ok((final_lat, 0.0))
+    // now calculate longitude
+    let m = ((lon_even_cpr * (lon_zones - 1.0)) - (lon_odd_cpr * lon_zones) + 0.5).floor();
+    let n = 1.0_f64.max(calculate_lon_zones(final_lat - most_recent_format as f64));
+    let d_lon = 360.0 / n;
+
+    let mut final_lon = d_lon
+        * ((m % n)
+            + (if most_recent_format == 0 {
+                lon_even_cpr
+            } else {
+                lon_odd_cpr
+            }));
+
+    // shift longitude from 0 to 360 -> -180 to 180
+    if final_lon >= 180.0 {
+        final_lon -= 360.0;
+    }
+
+    Ok((final_lat, final_lon))
 }
