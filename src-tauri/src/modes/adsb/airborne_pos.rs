@@ -3,6 +3,7 @@ use std::f64::consts::PI;
 use fundsp::typenum::Pow;
 use nalgebra::ComplexField;
 use rustfft::num_complex::ComplexFloat;
+use unit_conversions::length;
 
 use crate::modes::types::*;
 
@@ -78,6 +79,45 @@ pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
         // if there is a previous cpr and the formats are the same, assume we missed a message, and reset
         adsb_state.cpr_position = None;
     }
+
+    let mut final_altitude: Option<i32> = None;
+
+    // decode altitude
+    match altitude_type {
+        AltitudeSource::Barometer => {
+            let q_bit = (encoded_alt >> 4) as u8 & 1;
+
+            if q_bit == 1 {
+                let altitude_11_bit = ((encoded_alt >> 5) << 4) | (encoded_alt & 0b1111);
+                if altitude_11_bit != 0 {
+                    final_altitude = Some((25 * (altitude_11_bit as i32)) - 1000);
+                }
+            } else {
+                /* TODO: Handle case where q_bit is 0
+                 This only happens when altitude is above 50,175 feet, so it is very uncommon.
+                 I do not have any examples messages to verify the logic for this.
+                */
+            }
+        }
+        AltitudeSource::GNSS => {
+            // convert to feet because GNSS messages are stored in meters
+            final_altitude = Some(length::metres::to_feet(encoded_alt as f64).round() as i32);
+        }
+    }
+
+    println!(
+        "Altitude ({}): {}",
+        if altitude_type == AltitudeSource::GNSS {
+            "GNSS"
+        } else {
+            "Barometer"
+        },
+        if final_altitude.is_some() {
+            format!("{} feet", final_altitude.unwrap())
+        } else {
+            "N/A".to_string()
+        }
+    )
 }
 
 fn calculate_lon_zones(latitude: f64) -> f64 {
