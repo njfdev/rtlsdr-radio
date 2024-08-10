@@ -47,11 +47,17 @@ pub enum AirspeedType {
 #[derive(Clone, Debug)]
 pub struct AdsbState {
     pub cpr_position: Option<CprPosition>,
+    pub latitude: Option<f64>,
+    pub longitude: Option<f64>,
 }
 
 impl AdsbState {
     pub fn new() -> Self {
-        Self { cpr_position: None }
+        Self {
+            cpr_position: None,
+            latitude: None,
+            longitude: None,
+        }
     }
 }
 

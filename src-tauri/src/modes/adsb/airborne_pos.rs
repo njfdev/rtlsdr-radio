@@ -28,8 +28,26 @@ pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
     let lat_cpr = (encoded_lat as f64) / 2.0_f64.powi(17);
     let lon_cpr = (encoded_lon as f64) / 2.0_f64.powi(17);
 
-    // if no previous cpr value, store this one and move on
-    if adsb_state.cpr_position.is_none() {
+    /* If there is a previous latitude and longitude, use locally unambiguous
+      position decoding to get the updated position right away with the current
+      message. For this to work, the new position must be less than 180 nm away.
+
+      If there is no existing latitude and longitude, we need to gather 2 messages
+      of different formats (odd and even cpr) to perform globally unambiguous
+      position decoding.
+    */
+    if adsb_state.latitude.is_some() && adsb_state.longitude.is_some() {
+        let (lat, lon) = calc_locally_unambiguous_lat_long(
+            cpr_format,
+            lat_cpr,
+            lon_cpr,
+            adsb_state.latitude.unwrap(),
+            adsb_state.longitude.unwrap(),
+        );
+        adsb_state.latitude = Some(lat.clone());
+        adsb_state.longitude = Some(lon.clone());
+    } else if adsb_state.cpr_position.is_none() {
+        // if no previous cpr value, store this one and move on
         adsb_state.cpr_position = Some(CprPosition {
             cpr_lat: lat_cpr,
             cpr_lon: lon_cpr,
@@ -58,7 +76,7 @@ pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
             adsb_state.cpr_position.clone().unwrap().cpr_lon
         };
 
-        let calculation_result = calc_lat_long(
+        let calculation_result = calc_globally_unambiguous_lat_long(
             lat_even_cpr,
             lat_odd_cpr,
             lon_even_cpr,
@@ -68,8 +86,8 @@ pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
 
         if calculation_result.is_ok() {
             let (lat, lon) = calculation_result.unwrap();
-            println!("Latitude: {}°", lat);
-            println!("Longitude: {}°", lon);
+            adsb_state.latitude = Some(lat.clone());
+            adsb_state.longitude = Some(lon.clone());
         } else {
             println!("Error in decoding Latitude and Longitude!");
         }
@@ -78,6 +96,20 @@ pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
     } else {
         // if there is a previous cpr and the formats are the same, assume we missed a message, and reset
         adsb_state.cpr_position = None;
+    }
+
+    /* TODO: Ideally, CPR decoding can be wrong in rare cases, so verifying the position
+      should be handled. There are 2 ways to help detect this.
+
+      1. The decoded position should not exceed the maximum range of the receiver (SDR).
+      2. The distance between 2 or more globally ambiguous messages should be reasonable.
+
+    */
+    if adsb_state.latitude.is_some() {
+        println!("Latitude: {}°", adsb_state.latitude.unwrap());
+    }
+    if adsb_state.longitude.is_some() {
+        println!("Longitude: {}°", adsb_state.longitude.unwrap());
     }
 
     let mut final_altitude: Option<i32> = None;
@@ -135,7 +167,7 @@ fn calculate_lon_zones(latitude: f64) -> f64 {
     .floor()
 }
 
-fn calc_lat_long(
+fn calc_globally_unambiguous_lat_long(
     lat_even_cpr: f64,
     lat_odd_cpr: f64,
     lon_even_cpr: f64,
@@ -183,4 +215,22 @@ fn calc_lat_long(
     }
 
     Ok((final_lat, final_lon))
+}
+
+fn calc_locally_unambiguous_lat_long(
+    cpr_format: u8,
+    cpr_lat: f64,
+    cpr_lon: f64,
+    ref_lat: f64,
+    ref_lon: f64,
+) -> (f64, f64) {
+    let d_lat = 360.0 / (4.0 * N_Z - (cpr_format as f64));
+    let j = (ref_lat / d_lat).floor() + (((ref_lat % d_lat) / d_lat) - cpr_lat + 0.5).floor();
+    let lat = d_lat * (j + cpr_lat);
+
+    let d_lon = 360.0 / (calculate_lon_zones(lat) - (cpr_format as f64)).max(1.0);
+    let m = (ref_lon / d_lon).floor() + (((ref_lon % d_lon) / d_lon) - cpr_lon + 0.5).floor();
+    let lon = d_lon * (m + cpr_lon);
+
+    (lat, lon)
 }
