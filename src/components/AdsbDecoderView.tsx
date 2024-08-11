@@ -37,17 +37,27 @@ export default function AdsbDecoderView() {
   });
 
   return (
-    <div>
+    <div className="flex flex-col h-full">
       <h1>ADS-B Decoder</h1>
-      <Button onClick={() => start_decoding()}>Start Decoding</Button>
-      <Button onClick={() => stop_decoding()}>Stop Decoding</Button>
+      <Button className="w-max" onClick={() => start_decoding()}>
+        Start Decoding
+      </Button>
+      <Button className="w-max" onClick={() => stop_decoding()}>
+        Stop Decoding
+      </Button>
       <Map
         initialViewState={{
-          longitude: -122.4,
-          latitude: 37.8,
-          zoom: 14,
+          // initialize at geographic center of the US
+          latitude: 39.8283,
+          longitude: -98.5795,
+          zoom: 2,
         }}
-        style={{ width: 600, height: 400 }}
+        style={{
+          width: "calc(100% + 2rem)",
+          flexGrow: 1,
+          marginInline: "-1rem",
+          marginBottom: "-1rem",
+        }}
         mapStyle="https://tiles.stadiamaps.com/styles/alidade_satellite.json"
       ></Map>
 
