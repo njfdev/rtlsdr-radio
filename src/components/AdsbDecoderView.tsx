@@ -11,7 +11,8 @@ import {
 import { Button } from "./ui/button";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useState } from "react";
-import Map from "react-map-gl/maplibre";
+import Map, { AttributionControl } from "react-map-gl/maplibre";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 const appWindow = getCurrentWebviewWindow();
 
@@ -68,7 +69,8 @@ export default function AdsbDecoderView() {
             },
           ],
         }}
-      />
+      ></Map>
+
       {modesState && (
         <>
           <h2>Aircraft</h2>
