@@ -72,11 +72,11 @@ pub fn decode_airborne_vel(me: &[u8], adsb_state: &mut AdsbState) {
     let speed_multiplier;
 
     if subtype & 2 == 0 {
-        speed_multiplier = 4;
-        adsb_state.speed_category = Some(SpeedCategory::Supersonic);
-    } else {
         speed_multiplier = 1;
         adsb_state.speed_category = Some(SpeedCategory::Subsonic);
+    } else {
+        speed_multiplier = 4;
+        adsb_state.speed_category = Some(SpeedCategory::Supersonic);
     }
 
     // decode subtype data
