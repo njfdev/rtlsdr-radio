@@ -17,7 +17,7 @@ pub fn decode_airborne_vel(me: &[u8], adsb_state: &mut AdsbState) {
     };
     adsb_state.preferred_vertical_velocity_source = Some(vertical_rate_source.clone());
     // 1 means down and 0 means up
-    let vertical_rate_sign = if (me[4] >> 3) & 1 == 1 { -1 } else { 0 };
+    let vertical_rate_sign = if (me[4] >> 3) & 1 == 1 { -1 } else { 1 };
     let vertical_rate_raw = ((me[4] as u16 & 0b111) << 6) | (me[5] as u16 >> 2);
 
     if vertical_rate_raw != 0 {
@@ -38,12 +38,12 @@ pub fn decode_airborne_vel(me: &[u8], adsb_state: &mut AdsbState) {
         }
 
         // derive the other velocity type if it exists
-        let mut velocity_source_difference_sign = if (me[5] >> 7) == 1 { -1 } else { 1 };
+        let mut velocity_source_difference_sign = if (me[6] >> 7) == 1 { -1 } else { 1 };
         // swap if vertical rate source is GNSS
         if vertical_rate_source == AltitudeSource::GNSS {
             velocity_source_difference_sign = -velocity_source_difference_sign;
         }
-        let velocity_source_difference_raw = me[5] & 0b111_1111;
+        let velocity_source_difference_raw = me[6] & 0b111_1111;
 
         if velocity_source_difference_raw != 0 {
             let velocity_source_difference =
@@ -71,12 +71,12 @@ pub fn decode_airborne_vel(me: &[u8], adsb_state: &mut AdsbState) {
     // subtype 1/3 -> subsonic, subtype 2/4 -> supersonic
     let speed_multiplier;
 
-    if subtype & 2 == 0 {
-        speed_multiplier = 1;
-        adsb_state.speed_category = Some(SpeedCategory::Subsonic);
-    } else {
+    if subtype % 2 == 0 {
         speed_multiplier = 4;
         adsb_state.speed_category = Some(SpeedCategory::Supersonic);
+    } else {
+        speed_multiplier = 1;
+        adsb_state.speed_category = Some(SpeedCategory::Subsonic);
     }
 
     // decode subtype data
