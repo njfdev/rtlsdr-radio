@@ -76,7 +76,7 @@ export default function RadioView() {
   }, [requestedStation, isSdrInUse, currentStation]);
 
   return (
-    <div className="flex h-full w-full gap-4">
+    <div className="flex h-full w-full gap-4 px-4 pb-4">
       <div className="flex align-middle justify-center w-full h-full overflow-y-auto">
         <Tabs
           value={openTab}
