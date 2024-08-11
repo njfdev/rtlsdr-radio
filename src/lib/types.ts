@@ -29,18 +29,18 @@ export enum StationSortOption {
 }
 
 export enum AltitudeType {
-  Barometer,
-  GNSS,
+  Barometer = "Barometer",
+  GNSS = "GNSS",
 }
 
 export enum SpeedCategory {
-  Subsonic,
-  Supersonic,
+  Subsonic = "Subsonic",
+  Supersonic = "Supersonic",
 }
 
 export enum AirspeedType {
-  IAS,
-  TAS,
+  IAS = "IAS",
+  TAS = "TAS",
 }
 
 export interface StationDetails {
