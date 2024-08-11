@@ -8,6 +8,7 @@ use radiorust::{
     prelude::{ChunkBufPool, Complex},
     signal::Signal,
 };
+use tauri::{AppHandle, Emitter};
 use tokio::spawn;
 use types::ModeSState;
 
@@ -24,7 +25,7 @@ impl<Flt> AdsbDecode<Flt>
 where
     Flt: Float + Into<f64>,
 {
-    pub fn new(pass_along: bool) -> Self {
+    pub fn new(app: AppHandle, pass_along: bool) -> Self {
         let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
         let (sender, sender_connector) = new_sender::<Signal<Complex<Flt>>>();
 
@@ -79,6 +80,7 @@ where
                     .collect();
                 println!("{}", vec_to_string_vec.join(""));
                 decode_modes_msg(message_vec, &mut modes_state);
+                app.emit("modes_state", modes_state.clone()).unwrap();
             }
         }
 
@@ -114,7 +116,11 @@ where
                             processing_chunk.push(u8_value);
                         }
 
-                        detect_modes_signal(processing_chunk.to_vec(), &mut modes_state);
+                        detect_modes_signal(
+                            processing_chunk.to_vec(),
+                            &mut modes_state,
+                            app.clone(),
+                        );
 
                         if pass_along {
                             let mut output_chunk = buf_pool.get_with_capacity(input_chunk.len());

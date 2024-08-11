@@ -5,7 +5,8 @@ pub const MODES_PREAMBLE_US: usize = 8; // preamble length in microseconds
 
 pub const AIS_CHARSET: &str = "?ABCDEFGHIJKLMNOPQRSTUVWXYZ????? ???????????????0123456789??????";
 
-#[derive(Debug)]
+#[derive(Clone, Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ModeSState {
     pub aircraft: Vec<AircraftState>,
 }
@@ -16,7 +17,8 @@ impl ModeSState {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AircraftState {
     pub icao_address: u32,
     pub adsb_state: AdsbState,
@@ -32,19 +34,19 @@ impl AircraftState {
 }
 
 // ADS-B
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, serde::Serialize)]
 pub enum AltitudeSource {
     GNSS,
     Barometer,
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, serde::Serialize)]
 pub enum AirspeedType {
     IAS, // indicated airspeed
     TAS, // true airspeed
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, serde::Serialize)]
 pub enum SpeedType {
     // heading is magnetic based
     GroundSpeed,
@@ -52,13 +54,14 @@ pub enum SpeedType {
     AirSpeed(AirspeedType),
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, serde::Serialize)]
 pub enum SpeedCategory {
     Subsonic,
     Supersonic,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AdsbState {
     pub cpr_position: Option<CprPosition>,
     pub latitude: Option<f64>,
@@ -97,7 +100,8 @@ impl AdsbState {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CprPosition {
     pub cpr_lat: f64,
     pub cpr_lon: f64,

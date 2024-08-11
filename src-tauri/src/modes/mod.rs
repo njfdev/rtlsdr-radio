@@ -4,9 +4,10 @@ pub mod types;
 
 use adsb::decode_adsb_msg;
 use crc::perform_modes_crc;
+use tauri::{AppHandle, Emitter};
 use types::*;
 
-pub fn detect_modes_signal(m: Vec<u16>, modes_state: &mut ModeSState) {
+pub fn detect_modes_signal(m: Vec<u16>, modes_state: &mut ModeSState, app: AppHandle) {
     /* Go through each sample, and see if it and the following 9 samples match the start of the Mode S preamble.
      *
      * The Mode S preamble is made of impulses with a width of 0.5 microseconds, and each sample is 0.5 microseconds
@@ -131,6 +132,7 @@ pub fn detect_modes_signal(m: Vec<u16>, modes_state: &mut ModeSState) {
             if result.is_ok() {
                 let fixed_msg = result.unwrap();
                 decode_modes_msg(fixed_msg, modes_state);
+                app.emit("modes_state", modes_state.clone()).unwrap();
             }
         }
     }
@@ -177,8 +179,6 @@ pub fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
     }
 
     println!("-------------------------\n");
-
-    println!("New Mode S State: {:#?}", modes_state);
 }
 
 fn get_message_length(msg_type: u8) -> usize {

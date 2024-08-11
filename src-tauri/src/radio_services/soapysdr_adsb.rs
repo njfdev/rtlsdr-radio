@@ -91,7 +91,7 @@ impl AdsbDecoderState {
                         let buffer = blocks::Buffer::new(0.0, 0.0, 0.0, 0.1);
                         buffer.feed_from(&sdr_rx);
 
-                        let adsb_decode = AdsbDecode::new(false);
+                        let adsb_decode = AdsbDecode::new(app.clone(), false);
                         adsb_decode.feed_from(&buffer);
 
                         // let wavwriter = WavWriterBlock::new(

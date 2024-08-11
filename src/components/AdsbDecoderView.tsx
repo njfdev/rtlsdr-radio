@@ -1,8 +1,10 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { AdsbDecodeSettings } from "@/lib/types";
+import { AdsbDecodeSettings, ModesState } from "@/lib/types";
 import { Button } from "./ui/button";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+const appWindow = getCurrentWebviewWindow();
 
 export default function AdsbDecoderView() {
   const start_decoding = async () => {
@@ -15,6 +17,10 @@ export default function AdsbDecoderView() {
   const stop_decoding = async () => {
     await invoke<string>("stop_adsb_decoding", {});
   };
+
+  appWindow.listen("modes_state", (event: { payload: any }) => {
+    console.log(event.payload as ModesState);
+  });
 
   return (
     <div>

@@ -28,6 +28,21 @@ export enum StationSortOption {
   StationType = "Station Type",
 }
 
+export enum AltitudeType {
+  Barometer,
+  GNSS,
+}
+
+export enum SpeedCategory {
+  Subsonic,
+  Supersonic,
+}
+
+export enum AirspeedType {
+  IAS,
+  TAS,
+}
+
 export interface StationDetails {
   type: StationType;
   title: string;
@@ -67,4 +82,31 @@ export interface RbdsData {
 
 export interface AdsbDecodeSettings {
   gain?: number;
+}
+
+export interface ModesState {
+  aircraft: AircraftState[];
+}
+
+export interface AircraftState {
+  icaoAddress: number;
+  adsbState?: AdsbState;
+}
+
+export interface AdsbState {
+  altitude?: number;
+  altitudeSource?: AltitudeType;
+  barometerVerticalVelocity?: number;
+  callsign?: string;
+  // this is an internal state, so we don't really care about its contents
+  cprPosition?: any;
+  gnssVerticalVelocity?: number;
+  heading?: number;
+  latitude?: number;
+  longitude?: number;
+  preferredVerticalVelocitySource?: AltitudeType;
+  speed?: number;
+  speedCategory?: SpeedCategory;
+  velocityType?: "GroundSpeed" | { AirSpeed: AirspeedType };
+  wakeVortexCat?: string;
 }
