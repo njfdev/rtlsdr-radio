@@ -12,6 +12,7 @@ import { Button } from "./ui/button";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 
 const appWindow = getCurrentWebviewWindow();
 
@@ -40,7 +41,12 @@ export default function AdsbDecoderView() {
       <h1>ADS-B Decoder</h1>
       <Button onClick={() => start_decoding()}>Start Decoding</Button>
       <Button onClick={() => stop_decoding()}>Stop Decoding</Button>
-      <MapContainer center={[51.505, -0.09]} zoom={13} scrollWheelZoom={false}>
+      <MapContainer
+        center={[51.505, -0.09]}
+        zoom={13}
+        scrollWheelZoom={false}
+        className="h-[500px]"
+      >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
