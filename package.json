@@ -22,14 +22,17 @@
     "@tauri-apps/plugin-updater": "^2.0.0-beta.8",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.408.0",
     "next": "^15.0.0-canary.74",
     "react": "^19.0.0-rc-512b09b2-20240718",
     "react-dom": "^19.0.0-rc-512b09b2-20240718",
+    "react-leaflet": "^4.2.1",
     "tailwind-merge": "^2.4.0",
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.12",
     "@types/node": "^20",
     "@types/react": "npm:types-react@rc",
     "@types/react-dom": "npm:types-react-dom@rc",
