@@ -36,17 +36,20 @@ pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
       of different formats (odd and even cpr) to perform globally unambiguous
       position decoding.
     */
-    if adsb_state.latitude.is_some() && adsb_state.longitude.is_some() {
-        let (lat, lon) = calc_locally_unambiguous_lat_long(
-            cpr_format,
-            lat_cpr,
-            lon_cpr,
-            adsb_state.latitude.unwrap(),
-            adsb_state.longitude.unwrap(),
-        );
-        adsb_state.latitude = Some(lat.clone());
-        adsb_state.longitude = Some(lon.clone());
-    } else if adsb_state.cpr_position.is_none() {
+    // TODO: add logic to verify in new latitude and longitude make sense because
+    // locally unambiguous calculations don't always guarantee accurate results.
+    // if adsb_state.latitude.is_some() && adsb_state.longitude.is_some() {
+    //     let (lat, lon) = calc_locally_unambiguous_lat_long(
+    //         cpr_format,
+    //         lat_cpr,
+    //         lon_cpr,
+    //         adsb_state.latitude.unwrap(),
+    //         adsb_state.longitude.unwrap(),
+    //     );
+    //     adsb_state.latitude = Some(lat.clone());
+    //     adsb_state.longitude = Some(lon.clone());
+    // } else
+    if adsb_state.cpr_position.is_none() {
         // if no previous cpr value, store this one and move on
         adsb_state.cpr_position = Some(CprPosition {
             cpr_lat: lat_cpr,
