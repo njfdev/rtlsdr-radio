@@ -11,8 +11,7 @@ import {
 import { Button } from "./ui/button";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
+import Map from "react-map-gl/maplibre";
 
 const appWindow = getCurrentWebviewWindow();
 
@@ -41,22 +40,35 @@ export default function AdsbDecoderView() {
       <h1>ADS-B Decoder</h1>
       <Button onClick={() => start_decoding()}>Start Decoding</Button>
       <Button onClick={() => stop_decoding()}>Stop Decoding</Button>
-      <MapContainer
-        center={[51.505, -0.09]}
-        zoom={13}
-        scrollWheelZoom={false}
-        className="h-[500px]"
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <Marker position={[51.505, -0.09]}>
-          <Popup>
-            A pretty CSS3 popup. <br /> Easily customizable.
-          </Popup>
-        </Marker>
-      </MapContainer>
+      <Map
+        initialViewState={{
+          longitude: -122.4,
+          latitude: 37.8,
+          zoom: 14,
+        }}
+        style={{ width: 600, height: 400 }}
+        mapStyle={{
+          version: 8,
+          sources: {
+            "raster-tiles": {
+              type: "raster",
+              tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+              tileSize: 256,
+              attribution:
+                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            },
+          },
+          layers: [
+            {
+              id: "simple-tiles",
+              type: "raster",
+              source: "raster-tiles",
+              minzoom: 0,
+              maxzoom: 22,
+            },
+          ],
+        }}
+      />
       {modesState && (
         <>
           <h2>Aircraft</h2>
