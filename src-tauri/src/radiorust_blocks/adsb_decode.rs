@@ -53,6 +53,7 @@ where
               "1000110101000000011000100001110101011000110000111000011001000011010111001100010000010010011010010010101011010110", // Airborne position (CPR Odd)
               "1000110101000000011000100001110101011000110000111000001011010110100100001100100010101100001010000110001110100111", // Airborne position (CPR Even)
               "1000110101000000011000100001110101011000110000111000001011010110100100001100100010101100001010000110001110100111", // Airborne position (locally unambiguous)
+              "1000110110100100001000111100010010011001000010011011111100011101000100000000100001011010100111000011110000101011", // Vertical Velocity
             ];
 
             for message in example_messages {
@@ -121,6 +122,9 @@ where
                             &mut modes_state,
                             app.clone(),
                         );
+
+                        // send update of data (whether new or not)
+                        app.emit("modes_state", modes_state.clone()).unwrap();
 
                         if pass_along {
                             let mut output_chunk = buf_pool.get_with_capacity(input_chunk.len());

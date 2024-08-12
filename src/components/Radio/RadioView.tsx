@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Station, StationDetails, StationType, StreamType } from "@/lib/types";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import SaveStationsMenu from "@/components/Radio/SavedStationsMenu";
 import { areStationsEqual } from "@/lib/stationsStorage";
 import Link from "next/link";
@@ -15,7 +15,13 @@ const appWindow = getCurrentWebviewWindow();
 const isNrsc5Available =
   process.env.NEXT_PUBLIC_EXCLUDE_SIDECAR == "true" ? false : true;
 
-export default function RadioView() {
+export default function RadioView({
+  isSdrInUse,
+  setIsSdrInUse,
+}: {
+  isSdrInUse: boolean;
+  setIsSdrInUse: Dispatch<SetStateAction<boolean>>;
+}) {
   const [openTab, setOpenTab] = useState<string>(
     isNrsc5Available
       ? StationType.HDRadio.toString()
@@ -27,7 +33,6 @@ export default function RadioView() {
   const [currentStation, setCurrentStation] = useState<undefined | Station>(
     undefined
   );
-  const [isSdrInUse, setIsSdrInUse] = useState(false);
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
     console.log(event.payload);

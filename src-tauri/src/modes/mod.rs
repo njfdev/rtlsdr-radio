@@ -132,7 +132,6 @@ pub fn detect_modes_signal(m: Vec<u16>, modes_state: &mut ModeSState, app: AppHa
             if result.is_ok() {
                 let fixed_msg = result.unwrap();
                 decode_modes_msg(fixed_msg, modes_state);
-                app.emit("modes_state", modes_state.clone()).unwrap();
             }
         }
     }

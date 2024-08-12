@@ -46,12 +46,18 @@ import Image from "next/image";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
 import { Separator } from "./ui/separator";
 
+enum AdsbStatus {
+  Running = "running",
+  Stopped = "stopped",
+}
+
 const appWindow = getCurrentWebviewWindow();
 
 export default function AdsbDecoderView() {
   const [modesState, setModesState] = useState<ModesState | undefined>(
     undefined
   );
+  const [adsbStatus, setAdsbStatus] = useState<AdsbStatus>(AdsbStatus.Stopped);
   const [currentAircraftIcao, setCurrentAircraftIcao] = useState<
     number | undefined
   >(undefined);
@@ -71,15 +77,28 @@ export default function AdsbDecoderView() {
     setModesState(event.payload);
   });
 
+  appWindow.listen("adsb_status", (event: { payload: string }) => {
+    setAdsbStatus(
+      AdsbStatus[
+        Object.keys(AdsbStatus)[
+          Object.values(AdsbStatus).indexOf(event.payload as AdsbStatus)
+        ] as keyof typeof AdsbStatus
+      ]
+    );
+  });
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <h1>ADS-B Decoder</h1>
-      <Button className="w-max" onClick={() => start_decoding()}>
-        Start Decoding
-      </Button>
-      <Button className="w-max" onClick={() => stop_decoding()}>
-        Stop Decoding
-      </Button>
+      {adsbStatus == AdsbStatus.Stopped ? (
+        <Button className="w-max" onClick={() => start_decoding()}>
+          Start Decoding
+        </Button>
+      ) : (
+        <Button className="w-max" onClick={() => stop_decoding()}>
+          Stop Decoding
+        </Button>
+      )}
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel>
           <Map

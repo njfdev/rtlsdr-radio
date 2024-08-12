@@ -102,7 +102,7 @@ impl AdsbDecoderState {
                         // wavwriter.feed_from(&adsb_decode);
 
                         while !shutdown_flag.load(Ordering::SeqCst) {
-                            // notify frontend that audio is playing
+                            // notify frontend that decoding is happening
                             app.emit("adsb_status", "running")
                                 .expect("failed to emit event");
 
