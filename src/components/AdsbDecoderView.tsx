@@ -108,16 +108,22 @@ export default function AdsbDecoderView({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <h1>ADS-B Decoder</h1>
-      {adsbStatus == AdsbStatus.Stopped ? (
-        <Button className="w-max" onClick={() => start_decoding()}>
-          Start Decoding
-        </Button>
-      ) : (
-        <Button className="w-max" onClick={() => stop_decoding()}>
-          Stop Decoding
-        </Button>
-      )}
+      <div className="px-4 pb-4 flex flex-col gap-1">
+        <h1 className="font-bold text-2xl">ADS-B Decoder</h1>
+        {adsbStatus == AdsbStatus.Stopped ? (
+          <Button className="w-max" onClick={() => start_decoding()}>
+            Start Decoding
+          </Button>
+        ) : (
+          <Button
+            className="w-max"
+            variant="secondary"
+            onClick={() => stop_decoding()}
+          >
+            Stop Decoding
+          </Button>
+        )}
+      </div>
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel>
           <Map
@@ -125,7 +131,7 @@ export default function AdsbDecoderView({
               // initialize at geographic center of the US
               [39.8283, -98.5795]
             }
-            defaultZoom={2}
+            defaultZoom={4}
           >
             <ZoomControl />
             {modesState?.aircraft.map((aircraft) => {
