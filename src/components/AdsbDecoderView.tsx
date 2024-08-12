@@ -16,7 +16,13 @@ import {
 } from "./ui/resizable";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useState } from "react";
-import Map, { AttributionControl, Marker } from "react-map-gl/maplibre";
+import Map, {
+  AttributionControl,
+  FullscreenControl,
+  Marker,
+  NavigationControl,
+  ScaleControl,
+} from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Plane } from "lucide-react";
@@ -71,6 +77,9 @@ export default function AdsbDecoderView() {
             }}
             mapStyle="https://tiles.stadiamaps.com/styles/alidade_satellite.json"
           >
+            <NavigationControl />
+            <ScaleControl />
+            <FullscreenControl />
             {modesState?.aircraft.map((aircraft) => {
               if (
                 aircraft.adsbState?.longitude &&
