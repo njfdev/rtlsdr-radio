@@ -156,6 +156,7 @@ export default function AdsbDecoderView({
                     pitchAlignment="map"
                     rotationAlignment="map"
                     anchor="center"
+                    key={aircraft.icaoAddress + "-airplane-icon"}
                   >
                     <HoverCard>
                       <HoverCardTrigger>
