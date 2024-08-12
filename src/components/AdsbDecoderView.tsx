@@ -19,6 +19,9 @@ import { useState } from "react";
 import Map, { AttributionControl, Marker } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Plane } from "lucide-react";
+import airplaneIcon from "../../public/airplane-icon.svg";
+import Image from "next/image";
 
 const appWindow = getCurrentWebviewWindow();
 
@@ -69,14 +72,25 @@ export default function AdsbDecoderView() {
             {modesState?.aircraft.map((aircraft) => {
               if (
                 aircraft.adsbState?.longitude &&
-                aircraft.adsbState.latitude
+                aircraft.adsbState?.latitude &&
+                aircraft.adsbState.heading
               ) {
                 return (
                   <Marker
                     longitude={aircraft.adsbState.longitude}
                     latitude={aircraft.adsbState.latitude}
-                    anchor="bottom"
-                  ></Marker>
+                    // offset 90 degrees because icon is facing east
+                    rotation={aircraft.adsbState.heading - 90}
+                    pitchAlignment="map"
+                    rotationAlignment="map"
+                    anchor="center"
+                  >
+                    <Image
+                      src={airplaneIcon}
+                      className="w-[1.75rem]"
+                      alt={`Icon of airplane with callsign ${aircraft.adsbState.callsign}`}
+                    />
+                  </Marker>
                 );
               }
             })}
