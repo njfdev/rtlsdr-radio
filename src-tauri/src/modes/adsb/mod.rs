@@ -6,7 +6,7 @@ use airborne_pos::*;
 use airborne_vel::*;
 use aircraft_ident::*;
 
-use super::{AdsbState, ModeSState};
+use super::AdsbState;
 
 pub fn decode_adsb_msg(me: &[u8], adsb_state: &mut AdsbState) {
     let type_code = me[0] >> 3;

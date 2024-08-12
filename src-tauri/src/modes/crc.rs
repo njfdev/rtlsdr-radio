@@ -19,7 +19,7 @@ const MODES_CHECKSUM_TABLE: [u32; 112] = [
 
 fn compute_modes_crc(msg: Vec<u8>, msg_bits: usize) -> u32 {
     let mut crc: u32 = 0;
-    let offset = if (msg_bits == MODES_LONG_MSG_BITS) {
+    let offset = if msg_bits == MODES_LONG_MSG_BITS {
         0
     } else {
         MODES_LONG_MSG_BITS - MODES_SHORT_MSG_BITS

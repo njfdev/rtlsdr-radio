@@ -1,8 +1,5 @@
 use std::f64::consts::PI;
 
-use fundsp::typenum::Pow;
-use nalgebra::ComplexField;
-use rustfft::num_complex::ComplexFloat;
 use unit_conversions::length;
 
 use crate::modes::types::*;
@@ -17,8 +14,9 @@ pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
     } else {
         AltitudeSource::GNSS
     };
-    let ss_bits = (me[0] >> 1) & 0b11;
-    let single_antenna_flag = if (me[0] & 1) == 1 { true } else { false };
+    // TODO: use these bits
+    let _ss_bits = (me[0] >> 1) & 0b11;
+    let _single_antenna_flag = if (me[0] & 1) == 1 { true } else { false };
     let encoded_alt = ((me[1] as u16) << 4) | (me[2] as u16 >> 4);
     // 0 -> even frame, 1 -> odd frame
     let cpr_format = (me[2] >> 2) & 1;
@@ -224,6 +222,8 @@ fn calc_globally_unambiguous_lat_long(
     Ok((final_lat, final_lon))
 }
 
+// TODO: actually use this function and remove the allow dead_code statement
+#[allow(dead_code)]
 fn calc_locally_unambiguous_lat_long(
     cpr_format: u8,
     cpr_lat: f64,

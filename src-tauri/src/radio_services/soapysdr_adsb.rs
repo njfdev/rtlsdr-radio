@@ -11,9 +11,7 @@ use soapysdr::Direction;
 use tauri::{async_runtime, AppHandle, Emitter};
 use tokio::{self, time};
 
-use crate::radiorust_blocks::{
-    adsb_decode::AdsbDecode, am_demod::AmDemod, rbds_decode::DownMixer, wav_writer::WavWriterBlock,
-};
+use crate::radiorust_blocks::adsb_decode::AdsbDecode;
 
 pub struct AdsbDecoderState(Arc<Mutex<AdsbDecoderData>>);
 pub struct AdsbDecoderData {
@@ -22,9 +20,7 @@ pub struct AdsbDecoderData {
 }
 
 #[derive(serde::Deserialize)]
-pub struct StreamSettings {
-    gain: f64,
-}
+pub struct StreamSettings {}
 
 impl AdsbDecoderState {
     pub fn new() -> Self {
@@ -34,7 +30,8 @@ impl AdsbDecoderState {
         })))
     }
 
-    pub fn start_decoding(&self, app: AppHandle, stream_settings: StreamSettings) {
+    // TODO: use these stream settings and allow users to modify ADS-B decode settings
+    pub fn start_decoding(&self, app: AppHandle, _stream_settings: StreamSettings) {
         let adbs_decoder_state = self.0.clone();
         let adbs_decoder_state_clone = adbs_decoder_state.clone();
 

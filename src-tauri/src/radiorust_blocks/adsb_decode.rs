@@ -1,5 +1,3 @@
-use std::f32::consts::PI;
-
 use crate::modes::*;
 use radiorust::{
     flow::{new_receiver, new_sender, ReceiverConnector, SenderConnector},
@@ -117,11 +115,7 @@ where
                             processing_chunk.push(u8_value);
                         }
 
-                        detect_modes_signal(
-                            processing_chunk.to_vec(),
-                            &mut modes_state,
-                            app.clone(),
-                        );
+                        detect_modes_signal(processing_chunk.to_vec(), &mut modes_state);
 
                         // send update of data (whether new or not)
                         app.emit("modes_state", modes_state.clone()).unwrap();

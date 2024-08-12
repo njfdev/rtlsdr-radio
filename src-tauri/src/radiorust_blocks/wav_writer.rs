@@ -4,14 +4,12 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use biquad::{self, Biquad, Coefficients, DirectForm1, ToHertz, Type, Q_BUTTERWORTH_F64};
-
 use hound::{WavSpec, WavWriter};
 use radiorust::{
     flow::{new_receiver, new_sender, ReceiverConnector, SenderConnector},
     impl_block_trait,
     numbers::Float,
-    prelude::{ChunkBufPool, Complex},
+    prelude::Complex,
     signal::Signal,
 };
 use tokio::spawn;

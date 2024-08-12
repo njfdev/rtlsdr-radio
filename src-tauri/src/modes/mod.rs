@@ -4,10 +4,9 @@ pub mod types;
 
 use adsb::decode_adsb_msg;
 use crc::perform_modes_crc;
-use tauri::{AppHandle, Emitter};
 use types::*;
 
-pub fn detect_modes_signal(m: Vec<u16>, modes_state: &mut ModeSState, app: AppHandle) {
+pub fn detect_modes_signal(m: Vec<u16>, modes_state: &mut ModeSState) {
     /* Go through each sample, and see if it and the following 9 samples match the start of the Mode S preamble.
      *
      * The Mode S preamble is made of impulses with a width of 0.5 microseconds, and each sample is 0.5 microseconds
@@ -139,7 +138,8 @@ pub fn detect_modes_signal(m: Vec<u16>, modes_state: &mut ModeSState, app: AppHa
 
 pub fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
     let msg_type = msg[0] >> 3;
-    let ca = msg[0] & 0b111; // responder capabilities
+    // TODO: process this and send to frontend
+    let _ca = msg[0] & 0b111; // responder capabilities
 
     println!(
         "Existing Known ICAO Addresses: {:?}",
