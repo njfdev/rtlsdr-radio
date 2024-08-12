@@ -122,6 +122,9 @@ export default function AdsbDecoderView() {
                             // offset 90 degrees because icon is facing east
                             rotate: `${aircraft.adsbState.heading - 90}deg`,
                           }}
+                          onClick={() => {
+                            setCurrentAircraftIcao(aircraft.icaoAddress);
+                          }}
                         />
                       </HoverCardTrigger>
                       <HoverCardContent side="top" className="w-max p-2">
