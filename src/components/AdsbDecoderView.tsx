@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Plane } from "lucide-react";
 import airplaneIcon from "../../public/airplane-icon.svg";
 import Image from "next/image";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
 
 const appWindow = getCurrentWebviewWindow();
 
@@ -79,17 +80,35 @@ export default function AdsbDecoderView() {
                   <Marker
                     longitude={aircraft.adsbState.longitude}
                     latitude={aircraft.adsbState.latitude}
-                    // offset 90 degrees because icon is facing east
-                    rotation={aircraft.adsbState.heading - 90}
                     pitchAlignment="map"
                     rotationAlignment="map"
                     anchor="center"
                   >
-                    <Image
-                      src={airplaneIcon}
-                      className="w-[1.75rem]"
-                      alt={`Icon of airplane with callsign ${aircraft.adsbState.callsign}`}
-                    />
+                    <HoverCard>
+                      <HoverCardTrigger>
+                        <Image
+                          src={airplaneIcon}
+                          className="w-[1.75rem] hover:cursor-pointer"
+                          alt={`Icon of airplane with callsign ${aircraft.adsbState.callsign}`}
+                          style={{
+                            // offset 90 degrees because icon is facing east
+                            rotate: `${aircraft.adsbState.heading - 90}deg`,
+                          }}
+                        />
+                      </HoverCardTrigger>
+                      <HoverCardContent side="top" className="w-max p-2">
+                        <p>
+                          <b>
+                            {aircraft.adsbState.callsign
+                              ? "Call Sign: "
+                              : "ICAO Address: "}
+                          </b>
+                          {aircraft.adsbState.callsign
+                            ? aircraft.adsbState.callsign
+                            : aircraft.icaoAddress.toString(16)}
+                        </p>
+                      </HoverCardContent>
+                    </HoverCard>
                   </Marker>
                 );
               }
