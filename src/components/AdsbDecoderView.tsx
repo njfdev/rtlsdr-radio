@@ -88,6 +88,7 @@ export default function AdsbDecoderView({
     await invoke<string>("stop_adsb_decoding", {});
     setIsSdrInUse(false);
     setShouldStop(false);
+    setModesState(undefined);
   };
 
   appWindow.listen("modes_state", (event: { payload: ModesState }) => {
