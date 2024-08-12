@@ -35,6 +35,7 @@ import {
   Compass,
   Gauge,
   Globe,
+  Loader2,
   Mountain,
   MoveLeft,
   MoveVertical,
@@ -46,7 +47,9 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
 import { Separator } from "./ui/separator";
 
 enum AdsbStatus {
+  Starting = "starting",
   Running = "running",
+  Stopping = "stopping",
   Stopped = "stopped",
 }
 
@@ -72,6 +75,7 @@ export default function AdsbDecoderView({
   >(undefined);
 
   const start_decoding = async () => {
+    setAdsbStatus(AdsbStatus.Starting);
     await setIsSdrInUse(true);
     await invoke<string>("start_adsb_decoding", {
       streamSettings: {
@@ -80,6 +84,7 @@ export default function AdsbDecoderView({
     });
   };
   const stop_decoding = async () => {
+    setAdsbStatus(AdsbStatus.Stopping);
     await invoke<string>("stop_adsb_decoding", {});
     setIsSdrInUse(false);
     setShouldStop(false);
@@ -110,19 +115,32 @@ export default function AdsbDecoderView({
     <div className="flex flex-col h-full overflow-hidden">
       <div className="px-4 pb-4 flex flex-col gap-1">
         <h1 className="font-bold text-2xl">ADS-B Decoder</h1>
-        {adsbStatus == AdsbStatus.Stopped ? (
-          <Button className="w-max" onClick={() => start_decoding()}>
-            Start Decoding
-          </Button>
-        ) : (
-          <Button
-            className="w-max"
-            variant="secondary"
-            onClick={() => stop_decoding()}
-          >
-            Stop Decoding
-          </Button>
-        )}
+        <Button
+          className="w-max"
+          variant={adsbStatus == AdsbStatus.Running ? "secondary" : "default"}
+          disabled={
+            adsbStatus == AdsbStatus.Starting ||
+            adsbStatus == AdsbStatus.Stopping
+          }
+          onClick={() =>
+            adsbStatus == AdsbStatus.Stopped
+              ? start_decoding()
+              : stop_decoding()
+          }
+        >
+          {adsbStatus == AdsbStatus.Stopped ? (
+            "Start Decoding"
+          ) : adsbStatus == AdsbStatus.Running ? (
+            "Stop Decoding"
+          ) : (
+            <>
+              <Loader2 className="animate-spin mr-2" />{" "}
+              {adsbStatus == AdsbStatus.Starting
+                ? "Starting..."
+                : "Stopping..."}
+            </>
+          )}
+        </Button>
       </div>
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel>
