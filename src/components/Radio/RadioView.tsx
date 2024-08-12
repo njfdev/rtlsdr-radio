@@ -16,9 +16,17 @@ const isNrsc5Available =
   process.env.NEXT_PUBLIC_EXCLUDE_SIDECAR == "true" ? false : true;
 
 export default function RadioView({
+  currentStation,
+  setCurrentStation,
+  requestedStation,
+  setRequestedStation,
   isSdrInUse,
   setIsSdrInUse,
 }: {
+  currentStation: Station | undefined;
+  setCurrentStation: Dispatch<SetStateAction<Station | undefined>>;
+  requestedStation: Station | undefined;
+  setRequestedStation: Dispatch<SetStateAction<Station | undefined>>;
   isSdrInUse: boolean;
   setIsSdrInUse: Dispatch<SetStateAction<boolean>>;
 }) {
@@ -26,12 +34,6 @@ export default function RadioView({
     isNrsc5Available
       ? StationType.HDRadio.toString()
       : StationType.FMRadio.toString()
-  );
-  const [requestedStation, setRequestedStation] = useState<undefined | Station>(
-    undefined
-  );
-  const [currentStation, setCurrentStation] = useState<undefined | Station>(
-    undefined
   );
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {

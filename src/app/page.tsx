@@ -3,6 +3,7 @@
 import AdsbDecoderView from "@/components/AdsbDecoderView";
 import RadioView from "@/components/Radio/RadioView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Station } from "@/lib/types";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useEffect, useState } from "react";
 
@@ -10,30 +11,33 @@ const appWindow = getCurrentWebviewWindow();
 
 export default function Home() {
   const [isSdrInUse, setIsSdrInUse] = useState(false);
+  const [requestedStation, setRequestedStation] = useState<undefined | Station>(
+    undefined
+  );
+  const [currentStation, setCurrentStation] = useState<undefined | Station>(
+    undefined
+  );
   const [isChangingTabWhileInUse, setIsChangingTabWhileInUse] = useState(false);
+  const [requestedTab, setRequestedTab] = useState<string | undefined>(
+    undefined
+  );
   const [currentTab, setCurrentTab] = useState("radio");
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
-    if (event.payload.endsWith("running") && !isChangingTabWhileInUse) {
+    if (event.payload.endsWith("running")) {
       setCurrentTab("radio");
-    } else if (event.payload.endsWith("stopped") && isChangingTabWhileInUse) {
-      setIsChangingTabWhileInUse(false);
     }
   });
 
   appWindow.listen("nrsc5_status", (event: { payload: string }) => {
-    if (event.payload != "stopped" && !isChangingTabWhileInUse) {
+    if (event.payload != "stopped") {
       setCurrentTab("radio");
-    } else if (event.payload == "stopped" && isChangingTabWhileInUse) {
-      setIsChangingTabWhileInUse(false);
     }
   });
 
   appWindow.listen("adsb_status", (event: { payload: string }) => {
-    if (event.payload == "running" && !isChangingTabWhileInUse) {
+    if (event.payload == "running") {
       setCurrentTab("adsb");
-    } else if (event.payload == "stopped" && isChangingTabWhileInUse) {
-      setIsChangingTabWhileInUse(false);
     }
   });
 
@@ -43,9 +47,8 @@ export default function Home() {
         value={currentTab}
         onValueChange={async (newTab) => {
           if (isSdrInUse) {
-            await setIsChangingTabWhileInUse(true);
+            setRequestedStation(undefined);
           }
-
           setCurrentTab(newTab);
         }}
         className="flex flex-col justify-start items-center align-middle h-screen w-screen overflow-hidden"
@@ -55,7 +58,14 @@ export default function Home() {
           <TabsTrigger value="adsb">ADS-B</TabsTrigger>
         </TabsList>
         <TabsContent value="radio" className="grow w-full overflow-hidden">
-          <RadioView isSdrInUse={isSdrInUse} setIsSdrInUse={setIsSdrInUse} />
+          <RadioView
+            isSdrInUse={isSdrInUse}
+            setIsSdrInUse={setIsSdrInUse}
+            currentStation={currentStation}
+            setCurrentStation={setCurrentStation}
+            requestedStation={requestedStation}
+            setRequestedStation={setRequestedStation}
+          />
         </TabsContent>
         <TabsContent value="adsb" className="grow w-full overflow-hidden">
           <AdsbDecoderView />
