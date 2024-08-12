@@ -22,14 +22,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import Map, {
-  AttributionControl,
-  FullscreenControl,
-  Marker,
-  NavigationControl,
-  ScaleControl,
-} from "react-map-gl/maplibre";
-import "maplibre-gl/dist/maplibre-gl.css";
+import { Map, Marker, Overlay, ZoomControl } from "pigeon-maps";
 import {
   Card,
   CardContent,
@@ -128,21 +121,13 @@ export default function AdsbDecoderView({
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel>
           <Map
-            initialViewState={{
+            defaultCenter={
               // initialize at geographic center of the US
-              latitude: 39.8283,
-              longitude: -98.5795,
-              zoom: 2,
-            }}
-            style={{
-              flexGrow: 1,
-              height: "100%",
-            }}
-            mapStyle="https://tiles.stadiamaps.com/styles/alidade_satellite.json"
+              [39.8283, -98.5795]
+            }
+            defaultZoom={2}
           >
-            <NavigationControl />
-            <ScaleControl />
-            <FullscreenControl />
+            <ZoomControl />
             {modesState?.aircraft.map((aircraft) => {
               if (
                 aircraft.adsbState?.longitude &&
@@ -150,19 +135,19 @@ export default function AdsbDecoderView({
                 aircraft.adsbState.heading
               ) {
                 return (
-                  <Marker
-                    longitude={aircraft.adsbState.longitude}
-                    latitude={aircraft.adsbState.latitude}
-                    pitchAlignment="map"
-                    rotationAlignment="map"
-                    anchor="center"
+                  <Overlay
+                    anchor={[
+                      aircraft.adsbState.latitude,
+                      aircraft.adsbState.longitude,
+                    ]}
+                    offset={[14, 14]}
                     key={aircraft.icaoAddress + "-airplane-icon"}
                   >
                     <HoverCard>
                       <HoverCardTrigger>
                         <Image
                           src={airplaneIcon}
-                          className="w-[1.75rem] hover:cursor-pointer"
+                          className="w-[28px] hover:cursor-pointer"
                           alt={`Icon of airplane with callsign ${aircraft.adsbState.callsign}`}
                           style={{
                             // offset 90 degrees because icon is facing east
@@ -191,7 +176,7 @@ export default function AdsbDecoderView({
                         </div>
                       </HoverCardContent>
                     </HoverCard>
-                  </Marker>
+                  </Overlay>
                 );
               }
             })}

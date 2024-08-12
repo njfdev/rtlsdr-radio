@@ -26,6 +26,7 @@
     "lucide-react": "^0.408.0",
     "maplibre-gl": "^4.5.2",
     "next": "^15.0.0-canary.74",
+    "pigeon-maps": "^0.21.6",
     "react": "^19.0.0-rc-512b09b2-20240718",
     "react-dom": "^19.0.0-rc-512b09b2-20240718",
     "react-map-gl": "^7.1.7",
