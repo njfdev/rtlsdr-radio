@@ -11,13 +11,13 @@ const appWindow = getCurrentWebviewWindow();
 
 export default function Home() {
   const [isSdrInUse, setIsSdrInUse] = useState(false);
+  const [shouldStopAdsb, setShouldStopAdsb] = useState(false);
   const [requestedStation, setRequestedStation] = useState<undefined | Station>(
     undefined
   );
   const [currentStation, setCurrentStation] = useState<undefined | Station>(
     undefined
   );
-  const [isChangingTabWhileInUse, setIsChangingTabWhileInUse] = useState(false);
   const [requestedTab, setRequestedTab] = useState<string | undefined>(
     undefined
   );
@@ -41,13 +41,25 @@ export default function Home() {
     }
   });
 
+  useEffect(() => {
+    if (requestedTab && !shouldStopAdsb) {
+      setCurrentTab(requestedTab);
+      setRequestedTab(undefined);
+    }
+  });
+
   return (
     <main className="flex flex-col h-screen w-screen gap-4">
       <Tabs
         value={currentTab}
         onValueChange={async (newTab) => {
           if (isSdrInUse) {
-            setRequestedStation(undefined);
+            if (currentStation) {
+              setRequestedStation(undefined);
+            } else {
+              setShouldStopAdsb(true);
+              setRequestedTab(newTab);
+            }
           }
           setCurrentTab(newTab);
         }}
@@ -68,7 +80,12 @@ export default function Home() {
           />
         </TabsContent>
         <TabsContent value="adsb" className="grow w-full overflow-hidden">
-          <AdsbDecoderView />
+          <AdsbDecoderView
+            isSdrInUse={isSdrInUse}
+            setIsSdrInUse={setIsSdrInUse}
+            shouldStop={shouldStopAdsb}
+            setShouldStop={setShouldStopAdsb}
+          />
         </TabsContent>
       </Tabs>
     </main>

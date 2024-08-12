@@ -15,7 +15,13 @@ import {
   ResizableHandle,
 } from "./ui/resizable";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { MouseEventHandler, useState } from "react";
+import {
+  Dispatch,
+  MouseEventHandler,
+  SetStateAction,
+  useEffect,
+  useState,
+} from "react";
 import Map, {
   AttributionControl,
   FullscreenControl,
@@ -53,7 +59,17 @@ enum AdsbStatus {
 
 const appWindow = getCurrentWebviewWindow();
 
-export default function AdsbDecoderView() {
+export default function AdsbDecoderView({
+  isSdrInUse,
+  setIsSdrInUse,
+  shouldStop,
+  setShouldStop,
+}: {
+  isSdrInUse: boolean;
+  setIsSdrInUse: Dispatch<SetStateAction<boolean>>;
+  shouldStop: boolean;
+  setShouldStop: Dispatch<SetStateAction<boolean>>;
+}) {
   const [modesState, setModesState] = useState<ModesState | undefined>(
     undefined
   );
@@ -63,6 +79,7 @@ export default function AdsbDecoderView() {
   >(undefined);
 
   const start_decoding = async () => {
+    await setIsSdrInUse(true);
     await invoke<string>("start_adsb_decoding", {
       streamSettings: {
         gain: 20.0,
@@ -71,6 +88,8 @@ export default function AdsbDecoderView() {
   };
   const stop_decoding = async () => {
     await invoke<string>("stop_adsb_decoding", {});
+    setIsSdrInUse(false);
+    setShouldStop(false);
   };
 
   appWindow.listen("modes_state", (event: { payload: ModesState }) => {
@@ -86,6 +105,13 @@ export default function AdsbDecoderView() {
       ]
     );
   });
+
+  useEffect(() => {
+    console.log(shouldStop);
+    if (shouldStop) {
+      stop_decoding();
+    }
+  }, [shouldStop]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
