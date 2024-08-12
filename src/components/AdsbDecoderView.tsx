@@ -23,6 +23,7 @@ import { Plane } from "lucide-react";
 import airplaneIcon from "../../public/airplane-icon.svg";
 import Image from "next/image";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
+import { Separator } from "./ui/separator";
 
 const appWindow = getCurrentWebviewWindow();
 
@@ -107,6 +108,11 @@ export default function AdsbDecoderView() {
                             ? aircraft.adsbState.callsign
                             : aircraft.icaoAddress.toString(16)}
                         </p>
+                        <div className="flex gap-2">
+                          <p>{aircraft.adsbState.altitude || "-----"} feet</p>
+                          <span>·</span>
+                          <p>{aircraft.adsbState.speed || "---"} knots</p>
+                        </div>
                       </HoverCardContent>
                     </HoverCard>
                   </Marker>
