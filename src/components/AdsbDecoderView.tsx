@@ -312,7 +312,7 @@ function AircraftData({
                       : "Magnetic"}
                     ):
                   </b>{" "}
-                  {aircraft.adsbState.heading}°
+                  {aircraft.adsbState.heading.toFixed(2)}°
                 </span>
               </p>
             )}
