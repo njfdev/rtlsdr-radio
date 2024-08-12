@@ -15,7 +15,7 @@ import {
   ResizableHandle,
 } from "./ui/resizable";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { useState } from "react";
+import { MouseEventHandler, useState } from "react";
 import Map, {
   AttributionControl,
   FullscreenControl,
@@ -24,8 +24,23 @@ import Map, {
   ScaleControl,
 } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Plane } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import {
+  ArrowLeft,
+  Compass,
+  Gauge,
+  Globe,
+  Mountain,
+  MoveLeft,
+  MoveVertical,
+  Plane,
+} from "lucide-react";
 import airplaneIcon from "../../public/airplane-icon.svg";
 import Image from "next/image";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
@@ -37,6 +52,9 @@ export default function AdsbDecoderView() {
   const [modesState, setModesState] = useState<ModesState | undefined>(
     undefined
   );
+  const [currentAircraftIcao, setCurrentAircraftIcao] = useState<
+    number | undefined
+  >(undefined);
 
   const start_decoding = async () => {
     await invoke<string>("start_adsb_decoding", {
@@ -142,9 +160,27 @@ export default function AdsbDecoderView() {
               <CardTitle>Aircraft</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 overflow-y-auto grow pb-3 px-3">
-              {modesState?.aircraft.map((aircraft: AircraftState) => (
-                <AircraftDataPreview aircraft={aircraft} />
-              ))}
+              {modesState?.aircraft.map((aircraft: AircraftState) => {
+                if (!currentAircraftIcao) {
+                  return (
+                    <AircraftDataPreview
+                      aircraft={aircraft}
+                      key={aircraft.icaoAddress}
+                      onClick={() => {
+                        setCurrentAircraftIcao(aircraft.icaoAddress);
+                      }}
+                    />
+                  );
+                } else if (currentAircraftIcao == aircraft.icaoAddress) {
+                  return (
+                    <AircraftData
+                      key={aircraft.icaoAddress + "-full-details"}
+                      aircraft={aircraft}
+                      onClickBack={() => setCurrentAircraftIcao(undefined)}
+                    />
+                  );
+                }
+              })}
             </CardContent>
           </Card>
         </ResizablePanel>
@@ -153,9 +189,15 @@ export default function AdsbDecoderView() {
   );
 }
 
-function AircraftDataPreview({ aircraft }: { aircraft: AircraftState }) {
+function AircraftDataPreview({
+  aircraft,
+  onClick,
+}: {
+  aircraft: AircraftState;
+  onClick: MouseEventHandler<HTMLDivElement>;
+}) {
   return (
-    <Card className="p-4 *:p-0">
+    <Card className="p-4 *:p-0 hover:cursor-pointer" onClick={onClick}>
       <CardHeader>
         <CardTitle className="text-xl flex gap-2">
           <Image
@@ -184,28 +226,92 @@ function AircraftDataPreview({ aircraft }: { aircraft: AircraftState }) {
   );
 }
 
-function AircraftData({ aircraft }: { aircraft: AircraftState }) {
+function AircraftData({
+  aircraft,
+  onClickBack,
+}: {
+  aircraft: AircraftState;
+  onClickBack: MouseEventHandler<HTMLParagraphElement>;
+}) {
   return (
-    <div key={aircraft.icaoAddress}>
-      <h3>ICAO Address: {aircraft.icaoAddress.toString(16)}</h3>
-      {aircraft.adsbState && (
-        <>
-          <p>ADS-B Data</p>
-          <ul className="indent-4">
-            {aircraft.adsbState.callsign && (
-              <li>Callsign: {aircraft.adsbState.callsign}</li>
-            )}
+    <Card className="p-6 *:p-0">
+      <CardHeader>
+        <CardDescription
+          onClick={onClickBack}
+          className="-mt-3 flex gap-1 align-middle items-center hover:cursor-pointer"
+        >
+          <MoveLeft scale={0.5} /> Back
+        </CardDescription>
+        <CardTitle>
+          {aircraft.adsbState?.callsign ||
+            `ICAO Address: ${aircraft.icaoAddress.toString(16)}`}
+        </CardTitle>
+        {aircraft.adsbState?.callsign && (
+          <CardDescription>
+            ICAO Address: {aircraft.icaoAddress.toString(16)}
+          </CardDescription>
+        )}
+      </CardHeader>
+      <CardContent className="mt-3">
+        {aircraft.adsbState && (
+          <>
             {aircraft.adsbState.altitude && (
-              <li>
-                Altitude ({aircraft.adsbState.altitudeSource?.toString()}
-                ): {aircraft.adsbState.altitude} feet
-              </li>
+              <p className="flex gap-1">
+                <Mountain />
+                <span>
+                  <b>
+                    Altitude ({aircraft.adsbState.altitudeSource?.toString()}
+                    ):
+                  </b>{" "}
+                  {aircraft.adsbState.altitude} feet
+                </span>
+              </p>
+            )}
+            {aircraft.adsbState.speed && (
+              <>
+                <p className="flex gap-1">
+                  <Gauge />
+                  <span>
+                    <b>
+                      {aircraft.adsbState.velocityType == "GroundSpeed"
+                        ? "Ground"
+                        : aircraft.adsbState.velocityType?.AirSpeed ==
+                          AirspeedType.IAS
+                        ? "Indicated"
+                        : "True"}{" "}
+                      Speed:
+                    </b>{" "}
+                    {aircraft.adsbState.speed} knots
+                  </span>
+                </p>
+              </>
             )}
             {aircraft.adsbState.latitude && (
-              <>
-                <li>Latitude: {aircraft.adsbState.latitude}°</li>
-                <li>Longitude: {aircraft.adsbState.longitude}°</li>
-              </>
+              <p className="flex gap-1">
+                <Globe />
+                <span>
+                  {/* We round the lat and long to 5 decimal places (which is a precision of about 1.1 meters). Planes
+                      are only accurate to around 1 meter, so any more decimal places is extra (and garbage) information. */}
+                  <b>Position:</b> {aircraft.adsbState.latitude.toFixed(5)}°,{" "}
+                  {aircraft.adsbState.longitude?.toFixed(5)}°
+                </span>
+              </p>
+            )}
+
+            {aircraft.adsbState.heading && (
+              <p className="flex gap-1">
+                <Compass />
+                <span>
+                  <b>
+                    Heading (
+                    {aircraft.adsbState.velocityType == "GroundSpeed"
+                      ? "GNSS"
+                      : "Magnetic"}
+                    ):
+                  </b>{" "}
+                  {aircraft.adsbState.heading}°
+                </span>
+              </p>
             )}
             {aircraft.adsbState.preferredVerticalVelocitySource &&
               (() => {
@@ -214,66 +320,32 @@ function AircraftData({ aircraft }: { aircraft: AircraftState }) {
                   AltitudeType.GNSS
                     ? aircraft.adsbState.gnssVerticalVelocity
                     : aircraft.adsbState?.barometerVerticalVelocity;
-
-                let secondaryVerticalVelocitySource =
-                  aircraft.adsbState.preferredVerticalVelocitySource ==
-                  AltitudeType.GNSS
-                    ? AltitudeType.Barometer
-                    : AltitudeType.GNSS;
-                let secondaryVerticalVelocity =
-                  aircraft.adsbState?.preferredVerticalVelocitySource !=
-                  AltitudeType.GNSS
-                    ? aircraft.adsbState.gnssVerticalVelocity
-                    : aircraft.adsbState?.barometerVerticalVelocity;
                 return (
-                  <>
-                    <li>
-                      Vertical Velocity (
-                      {aircraft.adsbState.preferredVerticalVelocitySource.toString()}
-                      ): {mainVerticalVelocity} ft/min
-                    </li>
-                    <ul className="indent-8">
-                      <li>
-                        Vertical Velocity (
-                        {secondaryVerticalVelocitySource.toString()}
-                        ): {secondaryVerticalVelocity} ft/min
-                      </li>
-                    </ul>
-                  </>
+                  <p className="flex gap-1">
+                    <MoveVertical />
+                    <span>
+                      <b>
+                        Vertical Speed (
+                        {aircraft.adsbState.preferredVerticalVelocitySource.toString()}
+                        ):
+                      </b>{" "}
+                      {mainVerticalVelocity} ft/min
+                    </span>
+                  </p>
                 );
               })()}
-
-            {aircraft.adsbState.heading && (
-              <>
-                <li>
-                  Heading (
-                  {aircraft.adsbState.velocityType == "GroundSpeed"
-                    ? "GNSS"
-                    : "Magnetic"}
-                  ): {aircraft.adsbState.heading}°
-                </li>
-              </>
-            )}
-            {aircraft.adsbState.speed && (
-              <>
-                <li>
-                  {aircraft.adsbState.velocityType == "GroundSpeed"
-                    ? "Ground"
-                    : aircraft.adsbState.velocityType?.AirSpeed ==
-                      AirspeedType.IAS
-                    ? "Indicated"
-                    : "True"}{" "}
-                  Speed ({aircraft.adsbState.speedCategory}):{" "}
-                  {aircraft.adsbState.speed} knots
-                </li>
-              </>
-            )}
             {aircraft.adsbState.wakeVortexCat && (
-              <li>Wake Vortex Category: {aircraft.adsbState.wakeVortexCat}</li>
+              <p className="flex gap-1">
+                <Plane />{" "}
+                <span>
+                  <b>Wake Vortex Category:</b>{" "}
+                  {aircraft.adsbState.wakeVortexCat}
+                </span>
+              </p>
             )}
-          </ul>
-        </>
-      )}
-    </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
