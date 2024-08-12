@@ -188,9 +188,8 @@ fn calc_globally_unambiguous_lat_long(
     let lat_even = lat_even_zone_size * ((lat_zone_index % 60.0) + lat_even_cpr);
     let lat_odd = lat_odd_zone_size * ((lat_zone_index % 59.0) + lat_odd_cpr);
 
-    let lon_zones = calculate_lon_zones(lat_even);
     // if lat even and odd are in different zones, then return err
-    if lon_zones != calculate_lon_zones(lat_odd) {
+    if calculate_lon_zones(lat_even) != calculate_lon_zones(lat_odd) {
         return Err(());
     }
 
@@ -201,9 +200,12 @@ fn calc_globally_unambiguous_lat_long(
         lat_odd
     };
 
+    let even_lon_zones = calculate_lon_zones(final_lat);
+
     // now calculate longitude
-    let m = ((lon_even_cpr * (lon_zones - 1.0)) - (lon_odd_cpr * lon_zones) + 0.5).floor();
-    let n = 1.0_f64.max(calculate_lon_zones(final_lat - most_recent_format as f64));
+    let m =
+        ((lon_even_cpr * (even_lon_zones - 1.0)) - (lon_odd_cpr * even_lon_zones) + 0.5).floor();
+    let n = 1.0_f64.max(calculate_lon_zones(final_lat) - most_recent_format as f64);
     let d_lon = 360.0 / n;
 
     let mut final_lon = d_lon
