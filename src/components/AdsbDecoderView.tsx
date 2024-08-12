@@ -74,6 +74,12 @@ export default function AdsbDecoderView({
     number | undefined
   >(undefined);
 
+  // initialize at geographic center of the US
+  const [mapCenter, setMapCenter] = useState<[number, number]>([
+    39.8283, -98.5795,
+  ]);
+  const [mapZoom, setMapZoom] = useState(4);
+
   const start_decoding = async () => {
     setAdsbStatus(AdsbStatus.Starting);
     await setIsSdrInUse(true);
@@ -146,11 +152,12 @@ export default function AdsbDecoderView({
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel>
           <Map
-            defaultCenter={
-              // initialize at geographic center of the US
-              [39.8283, -98.5795]
-            }
-            defaultZoom={4}
+            center={mapCenter}
+            zoom={mapZoom}
+            onBoundsChanged={(newBounds) => {
+              setMapCenter(newBounds.center);
+              setMapZoom(newBounds.zoom);
+            }}
           >
             <ZoomControl />
             {modesState?.aircraft.map((aircraft) => {
@@ -227,6 +234,18 @@ export default function AdsbDecoderView({
                       key={aircraft.icaoAddress}
                       onClick={() => {
                         setCurrentAircraftIcao(aircraft.icaoAddress);
+                        // zoom into aircraft when clicking details if available
+                        if (
+                          aircraft.adsbState?.latitude &&
+                          aircraft.adsbState.longitude &&
+                          aircraft.adsbState.heading
+                        ) {
+                          setMapCenter([
+                            aircraft.adsbState?.latitude,
+                            aircraft.adsbState?.longitude,
+                          ]);
+                          setMapZoom(10);
+                        }
                       }}
                     />
                   );
