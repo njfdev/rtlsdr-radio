@@ -133,116 +133,107 @@ export default function AdsbDecoderView() {
               <CardTitle>Aircraft</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4 overflow-y-auto h-full">
-              {modesState?.aircraft.map((aircraft: AircraftState) => {
-                return (
-                  <div key={aircraft.icaoAddress}>
-                    <h3>ICAO Address: {aircraft.icaoAddress.toString(16)}</h3>
-                    {aircraft.adsbState && (
-                      <>
-                        <p>ADS-B Data</p>
-                        <ul className="indent-4">
-                          {aircraft.adsbState.callsign && (
-                            <li>Callsign: {aircraft.adsbState.callsign}</li>
-                          )}
-                          {aircraft.adsbState.altitude && (
-                            <li>
-                              Altitude (
-                              {aircraft.adsbState.altitudeSource?.toString()}
-                              ): {aircraft.adsbState.altitude} feet
-                            </li>
-                          )}
-                          {aircraft.adsbState.latitude && (
-                            <>
-                              <li>Latitude: {aircraft.adsbState.latitude}°</li>
-                              <li>
-                                Longitude: {aircraft.adsbState.longitude}°
-                              </li>
-                            </>
-                          )}
-                          {aircraft.adsbState.preferredVerticalVelocitySource &&
-                            (() => {
-                              let mainVerticalVelocity =
-                                aircraft.adsbState
-                                  ?.preferredVerticalVelocitySource ==
-                                AltitudeType.GNSS
-                                  ? aircraft.adsbState.gnssVerticalVelocity
-                                  : aircraft.adsbState
-                                      ?.barometerVerticalVelocity;
-
-                              let secondaryVerticalVelocitySource =
-                                aircraft.adsbState
-                                  .preferredVerticalVelocitySource ==
-                                AltitudeType.GNSS
-                                  ? AltitudeType.Barometer
-                                  : AltitudeType.GNSS;
-                              let secondaryVerticalVelocity =
-                                aircraft.adsbState
-                                  ?.preferredVerticalVelocitySource !=
-                                AltitudeType.GNSS
-                                  ? aircraft.adsbState.gnssVerticalVelocity
-                                  : aircraft.adsbState
-                                      ?.barometerVerticalVelocity;
-                              return (
-                                <>
-                                  <li>
-                                    Vertical Velocity (
-                                    {aircraft.adsbState.preferredVerticalVelocitySource.toString()}
-                                    ): {mainVerticalVelocity} ft/min
-                                  </li>
-                                  <ul className="indent-8">
-                                    <li>
-                                      Vertical Velocity (
-                                      {secondaryVerticalVelocitySource.toString()}
-                                      ): {secondaryVerticalVelocity} ft/min
-                                    </li>
-                                  </ul>
-                                </>
-                              );
-                            })()}
-
-                          {aircraft.adsbState.heading && (
-                            <>
-                              <li>
-                                Heading (
-                                {aircraft.adsbState.velocityType ==
-                                "GroundSpeed"
-                                  ? "GNSS"
-                                  : "Magnetic"}
-                                ): {aircraft.adsbState.heading}°
-                              </li>
-                            </>
-                          )}
-                          {aircraft.adsbState.speed && (
-                            <>
-                              <li>
-                                {aircraft.adsbState.velocityType ==
-                                "GroundSpeed"
-                                  ? "Ground"
-                                  : aircraft.adsbState.velocityType?.AirSpeed ==
-                                    AirspeedType.IAS
-                                  ? "Indicated"
-                                  : "True"}{" "}
-                                Speed ({aircraft.adsbState.speedCategory}):{" "}
-                                {aircraft.adsbState.speed} knots
-                              </li>
-                            </>
-                          )}
-                          {aircraft.adsbState.wakeVortexCat && (
-                            <li>
-                              Wake Vortex Category:{" "}
-                              {aircraft.adsbState.wakeVortexCat}
-                            </li>
-                          )}
-                        </ul>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
+              {modesState?.aircraft.map((aircraft: AircraftState) => (
+                <AircraftData aircraft={aircraft} />
+              ))}
             </CardContent>
           </Card>
         </ResizablePanel>
       </ResizablePanelGroup>
+    </div>
+  );
+}
+
+function AircraftData({ aircraft }: { aircraft: AircraftState }) {
+  return (
+    <div key={aircraft.icaoAddress}>
+      <h3>ICAO Address: {aircraft.icaoAddress.toString(16)}</h3>
+      {aircraft.adsbState && (
+        <>
+          <p>ADS-B Data</p>
+          <ul className="indent-4">
+            {aircraft.adsbState.callsign && (
+              <li>Callsign: {aircraft.adsbState.callsign}</li>
+            )}
+            {aircraft.adsbState.altitude && (
+              <li>
+                Altitude ({aircraft.adsbState.altitudeSource?.toString()}
+                ): {aircraft.adsbState.altitude} feet
+              </li>
+            )}
+            {aircraft.adsbState.latitude && (
+              <>
+                <li>Latitude: {aircraft.adsbState.latitude}°</li>
+                <li>Longitude: {aircraft.adsbState.longitude}°</li>
+              </>
+            )}
+            {aircraft.adsbState.preferredVerticalVelocitySource &&
+              (() => {
+                let mainVerticalVelocity =
+                  aircraft.adsbState?.preferredVerticalVelocitySource ==
+                  AltitudeType.GNSS
+                    ? aircraft.adsbState.gnssVerticalVelocity
+                    : aircraft.adsbState?.barometerVerticalVelocity;
+
+                let secondaryVerticalVelocitySource =
+                  aircraft.adsbState.preferredVerticalVelocitySource ==
+                  AltitudeType.GNSS
+                    ? AltitudeType.Barometer
+                    : AltitudeType.GNSS;
+                let secondaryVerticalVelocity =
+                  aircraft.adsbState?.preferredVerticalVelocitySource !=
+                  AltitudeType.GNSS
+                    ? aircraft.adsbState.gnssVerticalVelocity
+                    : aircraft.adsbState?.barometerVerticalVelocity;
+                return (
+                  <>
+                    <li>
+                      Vertical Velocity (
+                      {aircraft.adsbState.preferredVerticalVelocitySource.toString()}
+                      ): {mainVerticalVelocity} ft/min
+                    </li>
+                    <ul className="indent-8">
+                      <li>
+                        Vertical Velocity (
+                        {secondaryVerticalVelocitySource.toString()}
+                        ): {secondaryVerticalVelocity} ft/min
+                      </li>
+                    </ul>
+                  </>
+                );
+              })()}
+
+            {aircraft.adsbState.heading && (
+              <>
+                <li>
+                  Heading (
+                  {aircraft.adsbState.velocityType == "GroundSpeed"
+                    ? "GNSS"
+                    : "Magnetic"}
+                  ): {aircraft.adsbState.heading}°
+                </li>
+              </>
+            )}
+            {aircraft.adsbState.speed && (
+              <>
+                <li>
+                  {aircraft.adsbState.velocityType == "GroundSpeed"
+                    ? "Ground"
+                    : aircraft.adsbState.velocityType?.AirSpeed ==
+                      AirspeedType.IAS
+                    ? "Indicated"
+                    : "True"}{" "}
+                  Speed ({aircraft.adsbState.speedCategory}):{" "}
+                  {aircraft.adsbState.speed} knots
+                </li>
+              </>
+            )}
+            {aircraft.adsbState.wakeVortexCat && (
+              <li>Wake Vortex Category: {aircraft.adsbState.wakeVortexCat}</li>
+            )}
+          </ul>
+        </>
+      )}
     </div>
   );
 }
