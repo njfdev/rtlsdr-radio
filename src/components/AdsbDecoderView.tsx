@@ -137,19 +137,50 @@ export default function AdsbDecoderView() {
           defaultSize={25}
           className="grow h-full overflow-hidden"
         >
-          <Card className="w-full h-full rounded-none border-x-0 border-b-0 overflow-hidden">
+          <Card className="w-full h-full rounded-none border-x-0 border-b-0 overflow-hidden flex flex-col">
             <CardHeader>
               <CardTitle>Aircraft</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4 overflow-y-auto h-full">
+            <CardContent className="flex flex-col gap-3 overflow-y-auto grow pb-3 px-3">
               {modesState?.aircraft.map((aircraft: AircraftState) => (
-                <AircraftData aircraft={aircraft} />
+                <AircraftDataPreview aircraft={aircraft} />
               ))}
             </CardContent>
           </Card>
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
+  );
+}
+
+function AircraftDataPreview({ aircraft }: { aircraft: AircraftState }) {
+  return (
+    <Card className="p-4 *:p-0">
+      <CardHeader>
+        <CardTitle className="text-xl flex gap-2">
+          <Image
+            src={airplaneIcon}
+            className="w-[1.75rem] hover:cursor-pointer"
+            alt={`Icon of airplane with callsign ${aircraft.adsbState?.callsign}`}
+            style={{
+              // offset 90 degrees because icon is facing east
+              rotate: `${(aircraft.adsbState?.heading || 0) - 90}deg`,
+            }}
+          />
+          {aircraft.adsbState?.callsign ||
+            `ICAO: ${aircraft.icaoAddress.toString(16)}`}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="mt-1 flex w-full">
+        <p className="grow basis-0">
+          {aircraft.adsbState?.altitude || "-----"} feet
+        </p>
+        <b>·</b>
+        <p className="grow basis-0 text-end">
+          {aircraft.adsbState?.speed || "---"} knots
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 
