@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use crate::modes::*;
 use radiorust::{
@@ -9,7 +9,7 @@ use radiorust::{
     signal::Signal,
 };
 use tauri::{async_runtime::block_on, AppHandle, Emitter};
-use tokio::spawn;
+use tokio::{spawn, sync::Mutex};
 use types::ModeSState;
 
 /// A custom radiorust block that saves the input stream to a wav file at the specified path. You can enabled the pass_along argument to pass along samples, so it can be between blocks.
@@ -29,10 +29,9 @@ where
         let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
         let (sender, sender_connector) = new_sender::<Signal<Complex<Flt>>>();
 
-        let mut processing_buf_pool = ChunkBufPool::<u16>::new();
         let mut buf_pool = ChunkBufPool::<Complex<Flt>>::new();
 
-        let mut modes_state = ModeSState::new();
+        let mut modes_state = Arc::new(Mutex::new(ModeSState::new()));
 
         // used just for testing
         // #[cfg(debug_assertions)]
@@ -95,51 +94,62 @@ where
                         sample_rate,
                         chunk: input_chunk,
                     } => {
-                        let mut processing_chunk =
-                            processing_buf_pool.get_with_capacity(input_chunk.len());
+                        let input_chunk_clone = input_chunk.clone();
+                        let modes_state_clone = modes_state.clone();
+                        let app_clone = app.clone();
+                        spawn(async move {
+                            let mut processing_buf_pool = ChunkBufPool::<u16>::new();
 
-                        for sample in input_chunk.iter() {
-                            let abs_sample = Complex {
-                                re: if sample.re.to_f32().unwrap() > 0.0 {
-                                    sample.re
-                                } else {
-                                    -sample.re
-                                },
-                                im: if sample.im.to_f32().unwrap() > 0.0 {
-                                    sample.im
-                                } else {
-                                    -sample.im
-                                },
-                            };
-                            let value = AdsbDecode::calc_magnitude(&abs_sample);
-                            let u8_value = (value * (65536.0)).round() as u16;
+                            let mut processing_chunk =
+                                processing_buf_pool.get_with_capacity(input_chunk.len());
 
-                            processing_chunk.push(u8_value);
-                        }
+                            for sample in input_chunk.iter() {
+                                let abs_sample = Complex {
+                                    re: if sample.re.to_f32().unwrap() > 0.0 {
+                                        sample.re
+                                    } else {
+                                        -sample.re
+                                    },
+                                    im: if sample.im.to_f32().unwrap() > 0.0 {
+                                        sample.im
+                                    } else {
+                                        -sample.im
+                                    },
+                                };
+                                let value = AdsbDecode::calc_magnitude(&abs_sample);
+                                let u8_value = (value * (65536.0)).round() as u16;
 
-                        detect_modes_signal(processing_chunk.to_vec(), &mut modes_state).await;
+                                processing_chunk.push(u8_value);
+                            }
 
-                        // filter out aircraft seen over 60 seconds ago
-                        modes_state.aircraft = modes_state
-                            .aircraft
-                            .clone()
-                            .into_iter()
-                            .filter(|a| {
-                                a.last_message_timestamp.elapsed().unwrap()
-                                    < Duration::from_secs(60)
-                            })
-                            .collect();
+                            let mut modes_state_mut = modes_state_clone.lock().await;
 
-                        // send update of data (whether new or not)
-                        app.emit("modes_state", modes_state.clone()).unwrap();
+                            detect_modes_signal(processing_chunk.to_vec(), &mut modes_state_mut)
+                                .await;
+
+                            // filter out aircraft seen over 60 seconds ago
+                            modes_state_mut.aircraft = modes_state_mut
+                                .aircraft
+                                .clone()
+                                .into_iter()
+                                .filter(|a| {
+                                    a.last_message_timestamp.elapsed().unwrap()
+                                        < Duration::from_secs(60)
+                                })
+                                .collect();
+
+                            // send update of data (whether new or not)
+                            app_clone
+                                .emit("modes_state", modes_state_mut.clone())
+                                .unwrap();
+                        });
 
                         if pass_along {
-                            let mut output_chunk = buf_pool.get_with_capacity(input_chunk.len());
+                            let mut output_chunk =
+                                buf_pool.get_with_capacity(input_chunk_clone.len());
 
-                            for value in processing_chunk.iter() {
-                                output_chunk.push(Complex::from(
-                                    Flt::from(((*value) as f32) / 65536.0).unwrap(),
-                                ));
+                            for value in input_chunk_clone.iter() {
+                                output_chunk.push(value.clone());
                             }
 
                             let Ok(()) = sender
