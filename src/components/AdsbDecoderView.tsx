@@ -46,6 +46,7 @@ import airplaneIcon from "../../public/airplane-icon.svg";
 import Image from "next/image";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
 import { Separator } from "./ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 enum AdsbStatus {
   Starting = "starting",
@@ -355,6 +356,19 @@ function AircraftData({
         >
           <MoveLeft scale={0.5} /> Back
         </CardDescription>
+        {aircraft.icaoDetails?.url_photo && (
+          <div className="relative w-full max-w-[24rem] aspect-video">
+            <Image
+              className="w-full"
+              src={aircraft.icaoDetails.url_photo.replace(
+                "https://",
+                "http://"
+              )}
+              fill={true}
+              alt={`Image of aircraft with ICAO address ${aircraft.icaoAddress}`}
+            />
+          </div>
+        )}
         <CardTitle>
           {aircraft.adsbState?.callsign ||
             `ICAO Address: ${aircraft.icaoAddress.toString(16)}`}
@@ -366,98 +380,125 @@ function AircraftData({
         )}
       </CardHeader>
       <CardContent className="mt-3">
-        {aircraft.adsbState && (
-          <>
-            {aircraft.adsbState.altitude && (
-              <p className="flex gap-1">
-                <Mountain />
-                <span>
-                  <b>
-                    Altitude ({aircraft.adsbState.altitudeSource?.toString()}
-                    ):
-                  </b>{" "}
-                  {aircraft.adsbState.altitude} feet
-                </span>
-              </p>
-            )}
-            {aircraft.adsbState.speed && (
+        <Tabs defaultValue="flight-details">
+          <TabsList>
+            <TabsTrigger value="flight-details">Flight Details</TabsTrigger>
+            <TabsTrigger value="aircraft-details">Aircraft Details</TabsTrigger>
+          </TabsList>
+          <TabsContent value="flight-details">
+            {aircraft.adsbState && (
               <>
-                <p className="flex gap-1">
-                  <Gauge />
-                  <span>
-                    <b>
-                      {aircraft.adsbState.velocityType == "GroundSpeed"
-                        ? "Ground"
-                        : aircraft.adsbState.velocityType?.AirSpeed ==
-                          AirspeedType.IAS
-                        ? "Indicated"
-                        : "True"}{" "}
-                      Speed:
-                    </b>{" "}
-                    {aircraft.adsbState.speed} knots
-                  </span>
-                </p>
-              </>
-            )}
-            {aircraft.adsbState.latitude && (
-              <p className="flex gap-1">
-                <Globe />
-                <span>
-                  {/* We round the lat and long to 5 decimal places (which is a precision of about 1.1 meters). Planes
-                      are only accurate to around 1 meter, so any more decimal places is extra (and garbage) information. */}
-                  <b>Position:</b> {aircraft.adsbState.latitude.toFixed(5)}°,{" "}
-                  {aircraft.adsbState.longitude?.toFixed(5)}°
-                </span>
-              </p>
-            )}
-
-            {aircraft.adsbState.heading && (
-              <p className="flex gap-1">
-                <Compass />
-                <span>
-                  <b>
-                    Heading (
-                    {aircraft.adsbState.velocityType == "GroundSpeed"
-                      ? "GNSS"
-                      : "Magnetic"}
-                    ):
-                  </b>{" "}
-                  {aircraft.adsbState.heading.toFixed(2)}°
-                </span>
-              </p>
-            )}
-            {aircraft.adsbState.preferredVerticalVelocitySource &&
-              (() => {
-                let mainVerticalVelocity =
-                  aircraft.adsbState?.preferredVerticalVelocitySource ==
-                  AltitudeType.GNSS
-                    ? aircraft.adsbState.gnssVerticalVelocity
-                    : aircraft.adsbState?.barometerVerticalVelocity;
-                return (
+                {aircraft.adsbState.altitude && (
                   <p className="flex gap-1">
-                    <MoveVertical />
+                    <Mountain />
                     <span>
                       <b>
-                        Vertical Speed (
-                        {aircraft.adsbState.preferredVerticalVelocitySource.toString()}
+                        Altitude (
+                        {aircraft.adsbState.altitudeSource?.toString()}
                         ):
                       </b>{" "}
-                      {mainVerticalVelocity} ft/min
+                      {aircraft.adsbState.altitude} feet
                     </span>
                   </p>
-                );
-              })()}
-            {aircraft.adsbState.wakeVortexCat && (
-              <p className="flex gap-1">
-                <Plane />{" "}
-                <span>
-                  <b>Wake Vortex Category:</b>{" "}
-                  {aircraft.adsbState.wakeVortexCat}
-                </span>
-              </p>
+                )}
+                {aircraft.adsbState.speed && (
+                  <>
+                    <p className="flex gap-1">
+                      <Gauge />
+                      <span>
+                        <b>
+                          {aircraft.adsbState.velocityType == "GroundSpeed"
+                            ? "Ground"
+                            : aircraft.adsbState.velocityType?.AirSpeed ==
+                              AirspeedType.IAS
+                            ? "Indicated"
+                            : "True"}{" "}
+                          Speed:
+                        </b>{" "}
+                        {aircraft.adsbState.speed} knots
+                      </span>
+                    </p>
+                  </>
+                )}
+                {aircraft.adsbState.latitude && (
+                  <p className="flex gap-1">
+                    <Globe />
+                    <span>
+                      {/* We round the lat and long to 5 decimal places (which is a precision of about 1.1 meters). Planes
+                      are only accurate to around 1 meter, so any more decimal places is extra (and garbage) information. */}
+                      <b>Position:</b> {aircraft.adsbState.latitude.toFixed(5)}
+                      °, {aircraft.adsbState.longitude?.toFixed(5)}°
+                    </span>
+                  </p>
+                )}
+
+                {aircraft.adsbState.heading && (
+                  <p className="flex gap-1">
+                    <Compass />
+                    <span>
+                      <b>
+                        Heading (
+                        {aircraft.adsbState.velocityType == "GroundSpeed"
+                          ? "GNSS"
+                          : "Magnetic"}
+                        ):
+                      </b>{" "}
+                      {aircraft.adsbState.heading.toFixed(2)}°
+                    </span>
+                  </p>
+                )}
+                {aircraft.adsbState.preferredVerticalVelocitySource &&
+                  (() => {
+                    let mainVerticalVelocity =
+                      aircraft.adsbState?.preferredVerticalVelocitySource ==
+                      AltitudeType.GNSS
+                        ? aircraft.adsbState.gnssVerticalVelocity
+                        : aircraft.adsbState?.barometerVerticalVelocity;
+                    return (
+                      <p className="flex gap-1">
+                        <MoveVertical />
+                        <span>
+                          <b>
+                            Vertical Speed (
+                            {aircraft.adsbState.preferredVerticalVelocitySource.toString()}
+                            ):
+                          </b>{" "}
+                          {mainVerticalVelocity} ft/min
+                        </span>
+                      </p>
+                    );
+                  })()}
+                {aircraft.adsbState.wakeVortexCat && (
+                  <p className="flex gap-1">
+                    <Plane />{" "}
+                    <span>
+                      <b>Wake Vortex Category:</b>{" "}
+                      {aircraft.adsbState.wakeVortexCat}
+                    </span>
+                  </p>
+                )}
+              </>
             )}
-          </>
-        )}
+          </TabsContent>
+          <TabsContent value="aircraft-details">
+            <p>
+              <b>Plane Model:</b> {aircraft.icaoDetails?.manufacturer}{" "}
+              {aircraft.icaoDetails?.type}
+            </p>
+            <p>
+              <b>Registered Owner:</b>{" "}
+              {aircraft.icaoDetails?.registered_owner || "Unknown"}
+            </p>
+            <p>
+              <b>Registration Country:</b>{" "}
+              {aircraft.icaoDetails?.registered_owner_country_name || "Unknown"}
+            </p>
+            <p>
+              <b>Registration Code:</b>{" "}
+              {aircraft.icaoDetails?.registration || "Unknown"}
+            </p>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
