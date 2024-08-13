@@ -237,6 +237,16 @@ export default function AdsbDecoderView({
           <Card className="w-full h-full rounded-none border-x-0 border-b-0 overflow-hidden flex flex-col">
             <CardHeader>
               <CardTitle>Aircraft</CardTitle>
+              <CardDescription>
+                {modesState?.aircraft.filter((aircraft, index, array) => {
+                  return (
+                    aircraft.adsbState?.latitude &&
+                    aircraft.adsbState.longitude &&
+                    aircraft.adsbState.heading
+                  );
+                }).length || 0}
+                /{modesState?.aircraft.length || 0} displayed on the map.
+              </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 overflow-y-auto grow pb-3 px-3">
               {modesState?.aircraft.map((aircraft: AircraftState) => {
