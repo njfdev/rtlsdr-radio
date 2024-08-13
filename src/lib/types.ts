@@ -90,11 +90,26 @@ export interface ModesState {
 
 export interface AircraftState {
   icaoAddress: number;
+  icaoDetails?: AircraftIcaoDetails;
   lastMessageTimestamp: {
     secs_since_epoch: number;
     nanos_since_epoch: number;
   };
   adsbState?: AdsbState;
+}
+
+export interface AircraftIcaoDetails {
+  type: string;
+  icao_type: string;
+  manufacturer: string;
+  mode_s: string;
+  registration: string;
+  registered_owner_country_iso_name: string;
+  registered_owner_country_name: string;
+  registered_owner_operator_flag_code?: string;
+  registered_owner: string;
+  url_photo?: string;
+  url_photo_thumbnail?: string;
 }
 
 export interface AdsbState {

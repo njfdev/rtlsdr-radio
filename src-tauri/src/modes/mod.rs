@@ -176,7 +176,7 @@ pub async fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
             // fetch ICAO information for this new aircraft from ADS-B DB
             let icao_data_result = get_icao_details(new_aircraft.icao_address.clone()).await;
             if icao_data_result.is_ok() {
-                println!("{:?}", icao_data_result.unwrap());
+                new_aircraft.icao_details = Some(icao_data_result.unwrap());
             }
 
             cur_aircraft = Some(new_aircraft);

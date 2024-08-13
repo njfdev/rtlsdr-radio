@@ -1,10 +1,10 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 // these are all the expected types for type safety of the ADS-B DB API
 
 pub const API_VERSION: u8 = 0;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AircraftIcaoDetails {
     // the r# is used the escape the "type" reserved keyword in Rust
     pub r#type: String,
