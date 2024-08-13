@@ -40,6 +40,7 @@ import {
   MoveLeft,
   MoveVertical,
   Plane,
+  Timer,
 } from "lucide-react";
 import airplaneIcon from "../../public/airplane-icon.svg";
 import Image from "next/image";
@@ -73,6 +74,8 @@ export default function AdsbDecoderView({
   const [currentAircraftIcao, setCurrentAircraftIcao] = useState<
     number | undefined
   >(undefined);
+  const [currentMillisecondsSinceEpoch, setCurrentMillisecondsSinceEpoch] =
+    useState(new Date().getTime());
 
   // initialize at geographic center of the US
   const [mapCenter, setMapCenter] = useState<[number, number]>([
@@ -117,6 +120,16 @@ export default function AdsbDecoderView({
       stop_decoding();
     }
   }, [shouldStop]);
+
+  useEffect(() => {
+    const updateTimeSinceEpoch = () => {
+      setCurrentMillisecondsSinceEpoch(new Date().getTime());
+    };
+
+    // update milliseconds every 100 milliseconds
+    const intervalId = setInterval(updateTimeSinceEpoch, 100);
+    return () => clearInterval(intervalId);
+  });
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -276,7 +289,7 @@ function AircraftDataPreview({
 }) {
   return (
     <Card className="p-4 *:p-0 hover:cursor-pointer" onClick={onClick}>
-      <CardHeader>
+      <CardHeader className="flex justify-between">
         <CardTitle className="text-xl flex gap-2">
           <Image
             src={airplaneIcon}
@@ -291,14 +304,26 @@ function AircraftDataPreview({
             `ICAO: ${aircraft.icaoAddress.toString(16)}`}
         </CardTitle>
       </CardHeader>
-      <CardContent className="mt-1 flex w-full">
-        <p className="grow basis-0">
-          {aircraft.adsbState?.altitude || "-----"} feet
-        </p>
-        <b>·</b>
-        <p className="grow basis-0 text-end">
-          {aircraft.adsbState?.speed || "---"} knots
-        </p>
+      <CardContent className="mt-1 w-full flex flex-col gap-1">
+        <div className="flex">
+          <p className="grow basis-0">
+            {aircraft.adsbState?.altitude || "-----"} feet
+          </p>
+          <b>·</b>
+          <p className="grow basis-0 text-end">
+            {aircraft.adsbState?.speed || "---"} knots
+          </p>
+        </div>
+
+        <div className="flex gap-1">
+          <Timer />
+          <span>
+            Last seen{" "}
+            {Math.round(new Date().getTime() / 1000) -
+              aircraft.lastMessageTimestamp.secs_since_epoch}{" "}
+            seconds ago
+          </span>
+        </div>
       </CardContent>
     </Card>
   );

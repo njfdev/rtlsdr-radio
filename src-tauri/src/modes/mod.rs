@@ -2,6 +2,8 @@ pub mod adsb;
 pub mod crc;
 pub mod types;
 
+use std::time::SystemTime;
+
 use adsb::decode_adsb_msg;
 use crc::perform_modes_crc;
 use types::*;
@@ -169,6 +171,9 @@ pub fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
             modes_state.aircraft.push(AircraftState::new(icao_address));
             let new_aircraft = modes_state.aircraft.last_mut().unwrap();
             cur_aircraft = Some(new_aircraft);
+        } else {
+            // if we already know the airplane, update the timestamp since last message
+            cur_aircraft.as_mut().unwrap().last_message_timestamp = SystemTime::now();
         }
 
         // the ADS-B message is bytes 5-11 (4-10 as indexes)

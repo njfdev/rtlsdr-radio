@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 // Mode S
 pub const MODES_LONG_MSG_BITS: usize = 112;
 pub const MODES_SHORT_MSG_BITS: usize = 56;
@@ -21,6 +23,7 @@ impl ModeSState {
 #[serde(rename_all = "camelCase")]
 pub struct AircraftState {
     pub icao_address: u32,
+    pub last_message_timestamp: SystemTime,
     pub adsb_state: AdsbState,
 }
 
@@ -28,6 +31,7 @@ impl AircraftState {
     pub fn new(icao_address: u32) -> Self {
         Self {
             icao_address,
+            last_message_timestamp: SystemTime::now(),
             adsb_state: AdsbState::new(),
         }
     }

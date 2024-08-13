@@ -90,6 +90,10 @@ export interface ModesState {
 
 export interface AircraftState {
   icaoAddress: number;
+  lastMessageTimestamp: {
+    secs_since_epoch: number;
+    nanos_since_epoch: number;
+  };
   adsbState?: AdsbState;
 }
 
