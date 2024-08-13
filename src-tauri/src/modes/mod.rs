@@ -1,14 +1,16 @@
 pub mod adsb;
+pub mod adsb_db;
 pub mod crc;
 pub mod types;
 
 use std::time::SystemTime;
 
 use adsb::decode_adsb_msg;
+use adsb_db::get_icao_details;
 use crc::perform_modes_crc;
 use types::*;
 
-pub fn detect_modes_signal(m: Vec<u16>, modes_state: &mut ModeSState) {
+pub async fn detect_modes_signal(m: Vec<u16>, modes_state: &mut ModeSState) {
     /* Go through each sample, and see if it and the following 9 samples match the start of the Mode S preamble.
      *
      * The Mode S preamble is made of impulses with a width of 0.5 microseconds, and each sample is 0.5 microseconds
@@ -132,13 +134,13 @@ pub fn detect_modes_signal(m: Vec<u16>, modes_state: &mut ModeSState) {
 
             if result.is_ok() {
                 let fixed_msg = result.unwrap();
-                decode_modes_msg(fixed_msg, modes_state);
+                decode_modes_msg(fixed_msg, modes_state).await;
             }
         }
     }
 }
 
-pub fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
+pub async fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
     let msg_type = msg[0] >> 3;
     // TODO: process this and send to frontend
     let _ca = msg[0] & 0b111; // responder capabilities
@@ -170,6 +172,13 @@ pub fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
         if cur_aircraft.is_none() {
             modes_state.aircraft.push(AircraftState::new(icao_address));
             let new_aircraft = modes_state.aircraft.last_mut().unwrap();
+
+            // fetch ICAO information for this new aircraft from ADS-B DB
+            let icao_data_result = get_icao_details(new_aircraft.icao_address.clone()).await;
+            if icao_data_result.is_ok() {
+                println!("{:?}", icao_data_result.unwrap());
+            }
+
             cur_aircraft = Some(new_aircraft);
         } else {
             // if we already know the airplane, update the timestamp since last message
