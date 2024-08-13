@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::modes::*;
 use radiorust::{
     flow::{new_receiver, new_sender, ReceiverConnector, SenderConnector},
@@ -116,6 +118,17 @@ where
                         }
 
                         detect_modes_signal(processing_chunk.to_vec(), &mut modes_state);
+
+                        // filter out aircraft seen over 60 seconds ago
+                        modes_state.aircraft = modes_state
+                            .aircraft
+                            .clone()
+                            .into_iter()
+                            .filter(|a| {
+                                a.last_message_timestamp.elapsed().unwrap()
+                                    < Duration::from_secs(60)
+                            })
+                            .collect();
 
                         // send update of data (whether new or not)
                         app.emit("modes_state", modes_state.clone()).unwrap();
