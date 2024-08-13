@@ -137,7 +137,7 @@ pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
             final_altitude = Some(length::metres::to_feet(encoded_alt as f64).round() as i32);
         }
     }
-    adsb_state.altitude = Some(final_altitude.unwrap().clone());
+    adsb_state.altitude = final_altitude.clone();
     adsb_state.altitude_source = Some(altitude_source.clone());
 
     println!(
