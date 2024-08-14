@@ -121,6 +121,16 @@ export default function AdsbDecoderView({
     }
   }, [shouldStop]);
 
+  // if the details of an aircraft that disappears is open, go back to the main list
+  useEffect(() => {
+    if (
+      modesState?.aircraft.find((a) => a.icaoAddress == currentAircraftIcao) ==
+      undefined
+    ) {
+      setCurrentAircraftIcao(undefined);
+    }
+  });
+
   useEffect(() => {
     const updateTimeSinceEpoch = () => {
       setCurrentMillisecondsSinceEpoch(new Date().getTime());
