@@ -6,9 +6,9 @@ use airborne_pos::*;
 use airborne_vel::*;
 use aircraft_ident::*;
 
-use super::AdsbState;
+use super::{AdsbState, AircraftState};
 
-pub fn decode_adsb_msg(me: &[u8], adsb_state: &mut AdsbState) {
+pub async fn decode_adsb_msg(me: &[u8], aircraft: &mut AircraftState) {
     let type_code = me[0] >> 3;
 
     println!(
@@ -22,7 +22,7 @@ pub fn decode_adsb_msg(me: &[u8], adsb_state: &mut AdsbState) {
         // Aircraft identification
         1..=4 => {
             println!("Mode S msg Type: Aircraft identification");
-            decode_aircraft_ident(me, adsb_state);
+            decode_aircraft_ident(me, aircraft).await;
         }
         // Surface position
         5..=8 => {
@@ -31,17 +31,17 @@ pub fn decode_adsb_msg(me: &[u8], adsb_state: &mut AdsbState) {
         // Airborne position (barometric altitude)
         9..=18 => {
             println!("Mode S msg Type: Airborne position (barometric altitude)");
-            decode_aircraft_pos(me, adsb_state);
+            decode_aircraft_pos(me, &mut aircraft.adsb_state);
         }
         // Airborne velocities
         19 => {
             println!("Mode S msg Type: Airborne velocity");
-            decode_airborne_vel(me, adsb_state);
+            decode_airborne_vel(me, &mut aircraft.adsb_state);
         }
         // Airborne position (GNSS height)
         20..=22 => {
             println!("Mode S msg Type: Airborne position (GNSS height)");
-            decode_aircraft_pos(me, adsb_state);
+            decode_aircraft_pos(me, &mut aircraft.adsb_state);
         }
         // Reserved
         23..=27 => {

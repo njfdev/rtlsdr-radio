@@ -31,3 +31,48 @@ pub enum ApiIcaoLookupResponse {
     KnownAircraft { response: AircraftIcaoResponse },
     UnknownAircraft { response: String },
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Airline {
+    pub name: String,
+    pub icao: String,
+    pub iata: Option<String>,
+    pub country: String,
+    pub country_iso: String,
+    pub callsign: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Airport {
+    pub country_iso_name: String,
+    pub country_name: String,
+    pub elevation: u32,
+    pub iata_code: String,
+    pub icao_code: String,
+    pub latitude: f64,
+    pub longitude: f64,
+    pub municipality: String,
+    pub name: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct FlightRoute {
+    pub callsign: String,
+    pub callsign_icao: Option<String>,
+    pub callsign_iata: Option<String>,
+    pub airline: Option<Airline>,
+    pub origin: Airport,
+    pub destination: Airport,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct CallsignResponse {
+    pub flightroute: FlightRoute,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(untagged)]
+pub enum ApiCallsignLookupResponse {
+    KnownCallsign { response: CallsignResponse },
+    UnknownCallsign { response: String },
+}

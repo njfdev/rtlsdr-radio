@@ -188,7 +188,7 @@ pub async fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
         // the ADS-B message is bytes 5-11 (4-10 as indexes)
         let me: &[u8] = &msg[4..=10];
 
-        decode_adsb_msg(me, &mut cur_aircraft.unwrap().adsb_state);
+        decode_adsb_msg(me, &mut cur_aircraft.unwrap()).await;
     }
 
     println!("-------------------------\n");

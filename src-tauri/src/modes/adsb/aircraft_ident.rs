@@ -1,4 +1,4 @@
-use crate::modes::types::*;
+use crate::modes::{adsb_db::get_flight_route, types::*};
 
 // Indexed by [TC-1][CA]
 const WAKE_VORTEX_CATEGORY_TABLE: [[&str; 8]; 4] = [
@@ -38,7 +38,7 @@ const WAKE_VORTEX_CATEGORY_TABLE: [[&str; 8]; 4] = [
     ],
 ];
 
-pub fn decode_aircraft_ident(me: &[u8], adsb_state: &mut AdsbState) {
+pub async fn decode_aircraft_ident(me: &[u8], aircraft: &mut AircraftState) {
     let tc = me[0] >> 3;
     let ca = me[0] & 0b111;
     let wake_vortex_category = *(WAKE_VORTEX_CATEGORY_TABLE.get(tc as usize - 1).unwrap())
@@ -51,10 +51,19 @@ pub fn decode_aircraft_ident(me: &[u8], adsb_state: &mut AdsbState) {
         .map(|char_byte| AIS_CHARSET.as_bytes()[char_byte as usize] as char)
         .collect();
 
+    if aircraft.adsb_state.callsign.is_none() {
+        // fetch flight route information for this new callsign
+        let flight_route_result = get_flight_route(callsign.clone()).await;
+        if flight_route_result.is_ok() {
+            println!("Flight Route: {:?}", flight_route_result.clone().unwrap());
+            aircraft.flight_route = Some(flight_route_result.unwrap());
+        }
+    }
+
     println!("Callsign: {}", callsign);
-    adsb_state.callsign = Some(callsign);
+    aircraft.adsb_state.callsign = Some(callsign);
     println!("Wake Vortex Category: {}", wake_vortex_category);
-    adsb_state.wake_vortex_cat = Some(wake_vortex_category.to_owned());
+    aircraft.adsb_state.wake_vortex_cat = Some(wake_vortex_category.to_owned());
 }
 
 fn extract_each_6_bits(data: Vec<u8>) -> Vec<u8> {

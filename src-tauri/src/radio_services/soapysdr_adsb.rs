@@ -6,6 +6,7 @@ use std::{
     time::Duration,
 };
 
+use blocks::{chunks, Rechunker};
 use radiorust::{blocks::io::rf, prelude::*};
 use soapysdr::Direction;
 use tauri::{async_runtime, AppHandle, Emitter};
@@ -84,9 +85,12 @@ impl AdsbDecoderState {
                         let sdr_rx = rf::soapysdr::SoapySdrRx::new(rx_stream, sample_rate);
                         sdr_rx.activate().await.unwrap();
 
+                        let rechunker = Rechunker::new((sample_rate / 4.0).round() as usize);
+                        rechunker.feed_from(&sdr_rx);
+
                         // add buffer to discard samples that take long than 1 second to be processed by ADS-B decode (to prevent slowdowns)
                         let buffer = blocks::Buffer::new(0.0, 0.0, 0.0, 0.1);
-                        buffer.feed_from(&sdr_rx);
+                        buffer.feed_from(&rechunker);
 
                         let adsb_decode = AdsbDecode::new(app.clone(), false);
                         adsb_decode.feed_from(&buffer);

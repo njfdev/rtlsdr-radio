@@ -96,6 +96,7 @@ export interface AircraftState {
     nanos_since_epoch: number;
   };
   adsbState?: AdsbState;
+  flightRouter?: FlightRoute;
 }
 
 export interface AircraftIcaoDetails {
@@ -110,6 +111,37 @@ export interface AircraftIcaoDetails {
   registered_owner: string;
   url_photo?: string;
   url_photo_thumbnail?: string;
+}
+
+export interface FlightRoute {
+  callsign: string;
+  callsign_icao?: string;
+  callsign_iata?: string;
+  airline?: Airline;
+  origin: Airport;
+  midpoint?: Airport;
+  destination?: Airport;
+}
+
+export interface Airline {
+  name: string;
+  icao: string;
+  iata?: string;
+  country: string;
+  country_iso: string;
+  callsign?: string;
+}
+
+export interface Airport {
+  country_iso_name: string;
+  country_name: string;
+  elevation: number;
+  iata_code: string;
+  icao_code: string;
+  latitude: number;
+  longitude: number;
+  municipality: string;
+  name: string;
 }
 
 export interface AdsbState {

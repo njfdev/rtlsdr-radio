@@ -31,7 +31,7 @@ where
 
         let mut buf_pool = ChunkBufPool::<Complex<Flt>>::new();
 
-        let mut modes_state = Arc::new(Mutex::new(ModeSState::new()));
+        let modes_state = Arc::new(Mutex::new(ModeSState::new()));
 
         // used just for testing
         // #[cfg(debug_assertions)]

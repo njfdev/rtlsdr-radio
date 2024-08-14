@@ -116,7 +116,6 @@ export default function AdsbDecoderView({
   });
 
   useEffect(() => {
-    console.log(shouldStop);
     if (shouldStop) {
       stop_decoding();
     }
