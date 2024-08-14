@@ -368,7 +368,7 @@ function AircraftData({
         {aircraft.icaoDetails?.url_photo && (
           <div className="relative w-full max-w-[24rem] aspect-video">
             <Image
-              className="w-full"
+              className="w-full object-cover"
               src={aircraft.icaoDetails.url_photo.replace(
                 "https://",
                 "http://"
