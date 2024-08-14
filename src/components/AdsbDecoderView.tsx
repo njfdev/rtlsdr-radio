@@ -392,12 +392,9 @@ function AircraftData({
         <Tabs defaultValue="flight-details">
           <TabsList>
             <TabsTrigger value="flight-details">Flight Details</TabsTrigger>
-            <TabsTrigger value="flight-route" disabled={!aircraft.flightRoute}>
-              Flight Route
-            </TabsTrigger>
             <TabsTrigger
               value="aircraft-details"
-              disabled={!aircraft.icaoDetails}
+              disabled={!aircraft.icaoDetails && !aircraft.flightRoute}
             >
               Aircraft Details
             </TabsTrigger>
@@ -497,36 +494,6 @@ function AircraftData({
               </>
             )}
           </TabsContent>
-          {aircraft.flightRoute && (
-            <TabsContent value="flight-route">
-              {aircraft.flightRoute.airline && (
-                <>
-                  <p>
-                    <b>Airline:</b> {aircraft.flightRoute.airline.name}
-                  </p>
-                  <p>
-                    <b>Airline Country:</b>{" "}
-                    {aircraft.flightRoute.airline.country}
-                  </p>
-                  <p>
-                    <b>Airline Call Sign:</b>{" "}
-                    {aircraft.flightRoute.airline.callsign}
-                  </p>
-                </>
-              )}
-              <br />
-              <p>
-                <b>Origin:</b> {aircraft.flightRoute.origin.name} in{" "}
-                {aircraft.flightRoute.origin.municipality},{" "}
-                {aircraft.flightRoute.origin.country_name}
-              </p>
-              <p>
-                <b>Destination:</b> {aircraft.flightRoute.destination.name} in{" "}
-                {aircraft.flightRoute.destination.municipality},{" "}
-                {aircraft.flightRoute.destination.country_name}
-              </p>
-            </TabsContent>
-          )}
           <TabsContent value="aircraft-details">
             <p>
               <b>Plane Model:</b> {aircraft.icaoDetails?.manufacturer}{" "}
@@ -544,6 +511,20 @@ function AircraftData({
               <b>Registration Code:</b>{" "}
               {aircraft.icaoDetails?.registration || "Unknown"}
             </p>
+            {aircraft.flightRoute?.airline && (
+              <>
+                <p>
+                  <b>Airline:</b> {aircraft.flightRoute.airline.name}
+                </p>
+                <p>
+                  <b>Airline Country:</b> {aircraft.flightRoute.airline.country}
+                </p>
+                <p>
+                  <b>Airline Call Sign:</b>{" "}
+                  {aircraft.flightRoute.airline.callsign}
+                </p>
+              </>
+            )}
           </TabsContent>
         </Tabs>
       </CardContent>
