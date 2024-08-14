@@ -96,7 +96,7 @@ export interface AircraftState {
     nanos_since_epoch: number;
   };
   adsbState?: AdsbState;
-  flightRouter?: FlightRoute;
+  flightRoute?: FlightRoute;
 }
 
 export interface AircraftIcaoDetails {
@@ -120,7 +120,7 @@ export interface FlightRoute {
   airline?: Airline;
   origin: Airport;
   midpoint?: Airport;
-  destination?: Airport;
+  destination: Airport;
 }
 
 export interface Airline {
