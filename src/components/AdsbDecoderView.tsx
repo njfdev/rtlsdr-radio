@@ -297,7 +297,7 @@ function AircraftDataPreview({
 
   useEffect(() => {
     const updateTimeSinceEpoch = () => {
-      setCurrentMillisecondsSinceEpoch(new Date().getTime());
+      setCurrentMillisecondsSinceEpoch(new Date().getUTCMilliseconds());
     };
 
     // update milliseconds every 100 milliseconds
@@ -337,8 +337,12 @@ function AircraftDataPreview({
           <Timer />
           <span>
             Last seen{" "}
-            {currentMillisecondsSinceEpoch -
-              aircraft.lastMessageTimestamp.nanos_since_epoch / 1000}{" "}
+            {Math.max(
+              (currentMillisecondsSinceEpoch -
+                aircraft.lastMessageTimestamp.nanos_since_epoch / 1_000_000) /
+                1000,
+              0
+            ).toFixed(0)}{" "}
             seconds ago
           </span>
         </div>
