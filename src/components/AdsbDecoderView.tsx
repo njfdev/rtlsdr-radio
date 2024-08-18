@@ -292,19 +292,6 @@ function AircraftDataPreview({
   aircraft: AircraftState;
   onClick: MouseEventHandler<HTMLDivElement>;
 }) {
-  const [currentMillisecondsSinceEpoch, setCurrentMillisecondsSinceEpoch] =
-    useState(new Date().getTime());
-
-  useEffect(() => {
-    const updateTimeSinceEpoch = () => {
-      setCurrentMillisecondsSinceEpoch(new Date().getUTCMilliseconds());
-    };
-
-    // update milliseconds every 100 milliseconds
-    const intervalId = setInterval(updateTimeSinceEpoch, 100);
-    return () => clearInterval(intervalId);
-  });
-
   return (
     <Card className="p-4 *:p-0 hover:cursor-pointer" onClick={onClick}>
       <CardHeader className="flex justify-between">
@@ -337,11 +324,11 @@ function AircraftDataPreview({
           <Timer />
           <span>
             Last seen{" "}
-            {Math.max(
-              (currentMillisecondsSinceEpoch -
-                aircraft.lastMessageTimestamp.nanos_since_epoch / 1_000_000) /
-                1000,
-              0
+            {Math.abs(
+              (new Date().getTime() -
+                aircraft.lastMessageTimestamp.secs_since_epoch * 1000 +
+                aircraft.lastMessageTimestamp.nanos_since_epoch / 1000000) /
+                1000
             ).toFixed(0)}{" "}
             seconds ago
           </span>
@@ -370,7 +357,7 @@ function AircraftData({
         {aircraft.icaoDetails?.url_photo && (
           <div className="relative w-full max-w-[24rem] aspect-video">
             <img
-              className="w-full object-cover"
+              className="w-full h-full object-cover"
               src={aircraft.icaoDetails.url_photo.replace(
                 "https://",
                 "http://"
