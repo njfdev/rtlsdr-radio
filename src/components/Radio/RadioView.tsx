@@ -11,7 +11,7 @@ import { areStationsEqual } from "@/lib/stationsStorage";
 const appWindow = getCurrentWebviewWindow();
 
 const isNrsc5Available =
-  process.env.NEXT_PUBLIC_EXCLUDE_SIDECAR == "true" ? false : true;
+  import.meta.env.VITE_EXCLUDE_SIDECAR == "true" ? false : true;
 
 export default function RadioView({
   currentStation,

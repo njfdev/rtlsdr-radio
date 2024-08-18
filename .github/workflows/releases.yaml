@@ -26,7 +26,7 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
     env:
-      NEXT_PUBLIC_EXCLUDE_SIDECAR: true # excludes nrsc5 sidecar and disables HD Radio in the app (due to building issues)
+      VITE_EXCLUDE_SIDECAR: true # excludes nrsc5 sidecar and disables HD Radio in the app (due to building issues)
       TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
@@ -119,7 +119,7 @@ jobs:
 #            base_image: https://dietpi.com/downloads/images/DietPi_RPi-ARMv7-Bookworm.img.xz
 #
 #    env:
-#      NEXT_PUBLIC_EXCLUDE_SIDECAR: true # excludes nrsc5 sidecar and disables HD Radio in the app (due to building issues)
+#      VITE_EXCLUDE_SIDECAR: true # excludes nrsc5 sidecar and disables HD Radio in the app (due to building issues)
 #      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
 #      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 #

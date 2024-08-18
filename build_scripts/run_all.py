@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 # handle building nrsc5
-if (not os.getenv("NEXT_PUBLIC_EXCLUDE_SIDECAR") == "true"):
+if (not os.getenv("VITE_EXCLUDE_SIDECAR") == "true"):
     if "win32" in sys.platform:
         cwd = os.getcwd().replace("\\", "/")
 
