@@ -41,7 +41,7 @@ import {
   Plane,
   Timer,
 } from "lucide-react";
-import airplaneIcon from "../../public/airplane-icon.svg";
+import airplaneIcon from "@/assets/airplane-icon.svg";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
