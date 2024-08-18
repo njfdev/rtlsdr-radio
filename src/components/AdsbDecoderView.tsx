@@ -43,7 +43,6 @@ import {
   Timer,
 } from "lucide-react";
 import airplaneIcon from "../../public/airplane-icon.svg";
-import Image from "next/image";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
 import { Separator } from "./ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -200,7 +199,7 @@ export default function AdsbDecoderView({
                   >
                     <HoverCard>
                       <HoverCardTrigger>
-                        <Image
+                        <img
                           src={airplaneIcon}
                           className="w-[28px] hover:cursor-pointer"
                           alt={`Icon of airplane with callsign ${aircraft.adsbState.callsign}`}
@@ -311,7 +310,7 @@ function AircraftDataPreview({
     <Card className="p-4 *:p-0 hover:cursor-pointer" onClick={onClick}>
       <CardHeader className="flex justify-between">
         <CardTitle className="text-xl flex gap-2">
-          <Image
+          <img
             src={airplaneIcon}
             className="w-[1.75rem] hover:cursor-pointer"
             alt={`Icon of airplane with callsign ${aircraft.adsbState?.callsign}`}
@@ -367,13 +366,12 @@ function AircraftData({
         </CardDescription>
         {aircraft.icaoDetails?.url_photo && (
           <div className="relative w-full max-w-[24rem] aspect-video">
-            <Image
+            <img
               className="w-full object-cover"
               src={aircraft.icaoDetails.url_photo.replace(
                 "https://",
                 "http://"
               )}
-              fill={true}
               alt={`Image of aircraft with ICAO address ${aircraft.icaoAddress}`}
             />
           </div>

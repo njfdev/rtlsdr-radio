@@ -3,7 +3,7 @@
     "beforeBuildCommand": "python3 build_scripts/run_all.py && yarn build",
     "beforeDevCommand": "python3 build_scripts/run_all.py && yarn dev",
     "frontendDist": "../out",
-    "devUrl": "http://localhost:3000"
+    "devUrl": "http://localhost:5173"
   },
   "bundle": {
     "active": true,

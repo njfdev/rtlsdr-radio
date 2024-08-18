@@ -9,7 +9,6 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import SaveStationsMenu from "@/components/Radio/SavedStationsMenu";
 import { areStationsEqual } from "@/lib/stationsStorage";
-import Link from "next/link";
 const appWindow = getCurrentWebviewWindow();
 
 const isNrsc5Available =
@@ -119,13 +118,13 @@ export default function RadioView({
               <div className="max-w-[32rem] text-center my-8 text-gray-400">
                 HD Radio is disabled in the precompiled version of RTL-SDR
                 Radio. Please{" "}
-                <Link
+                <a
                   className="text-blue-400 hover:underline"
                   href="https://github.com/njfdev/rtlsdr-radio#compiling-from-source"
                   target="_blank"
                 >
                   build from source
-                </Link>{" "}
+                </a>{" "}
                 to enable HD Radio features.
               </div>
             )}

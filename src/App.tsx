@@ -1,5 +1,3 @@
-"use client";
-
 import AdsbDecoderView from "@/components/AdsbDecoderView";
 import RadioView from "@/components/Radio/RadioView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +7,7 @@ import { useEffect, useState } from "react";
 
 const appWindow = getCurrentWebviewWindow();
 
-export default function Home() {
+export default function App() {
   const [isSdrInUse, setIsSdrInUse] = useState(false);
   const [shouldStopAdsb, setShouldStopAdsb] = useState(false);
   const [requestedStation, setRequestedStation] = useState<undefined | Station>(
