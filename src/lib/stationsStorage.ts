@@ -1,9 +1,4 @@
-import {
-  Station,
-  StationDetails,
-  StationSortOption,
-  StationType,
-} from "./types";
+import { Station, StationDetails, StationSortOption } from "./types";
 
 const stationsStorageName = "savedStations";
 
@@ -127,10 +122,12 @@ export function stationSortComparison(
       if (a.isFavorite && !b.isFavorite) return -1;
       if (!a.isFavorite && b.isFavorite) return 1;
       return a.frequency - b.frequency;
+    // @ts-expect-error
     case StationSortOption.AlphaDes:
       let tmp_b = b;
       b = a;
       a = tmp_b;
+    // fallthrough
     case StationSortOption.AlphaAsc:
       if (a.title < b.title) return -1;
       if (a.title > b.title) return 1;

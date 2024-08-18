@@ -110,7 +110,7 @@ export default function SavedStationsMenu({
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {Object.entries(StationSortOption).map((sortString, index) => {
+                {Object.entries(StationSortOption).map((sortString, _index) => {
                   return (
                     <SelectItem
                       key={`saved-stations-sort-option-${sortString[0]}`}

@@ -79,7 +79,7 @@ export default function App() {
         </TabsContent>
         <TabsContent value="adsb" className="grow w-full overflow-hidden">
           <AdsbDecoderView
-            isSdrInUse={isSdrInUse}
+            //isSdrInUse={isSdrInUse}
             setIsSdrInUse={setIsSdrInUse}
             shouldStop={shouldStopAdsb}
             setShouldStop={setShouldStopAdsb}

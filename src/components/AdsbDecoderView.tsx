@@ -22,7 +22,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { Map, Marker, Overlay, ZoomControl } from "pigeon-maps";
+import { Map, Overlay, ZoomControl } from "pigeon-maps";
 import {
   Card,
   CardContent,
@@ -31,7 +31,6 @@ import {
   CardTitle,
 } from "./ui/card";
 import {
-  ArrowLeft,
   Compass,
   Gauge,
   Globe,
@@ -44,7 +43,6 @@ import {
 } from "lucide-react";
 import airplaneIcon from "../../public/airplane-icon.svg";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
-import { Separator } from "./ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 enum AdsbStatus {
@@ -57,12 +55,12 @@ enum AdsbStatus {
 const appWindow = getCurrentWebviewWindow();
 
 export default function AdsbDecoderView({
-  isSdrInUse,
+  //isSdrInUse,
   setIsSdrInUse,
   shouldStop,
   setShouldStop,
 }: {
-  isSdrInUse: boolean;
+  //isSdrInUse: boolean;
   setIsSdrInUse: Dispatch<SetStateAction<boolean>>;
   shouldStop: boolean;
   setShouldStop: Dispatch<SetStateAction<boolean>>;
@@ -74,8 +72,6 @@ export default function AdsbDecoderView({
   const [currentAircraftIcao, setCurrentAircraftIcao] = useState<
     number | undefined
   >(undefined);
-  const [currentMillisecondsSinceEpoch, setCurrentMillisecondsSinceEpoch] =
-    useState(new Date().getTime());
 
   // initialize at geographic center of the US
   const [mapCenter, setMapCenter] = useState<[number, number]>([
@@ -128,16 +124,6 @@ export default function AdsbDecoderView({
     ) {
       setCurrentAircraftIcao(undefined);
     }
-  });
-
-  useEffect(() => {
-    const updateTimeSinceEpoch = () => {
-      setCurrentMillisecondsSinceEpoch(new Date().getTime());
-    };
-
-    // update milliseconds every 100 milliseconds
-    const intervalId = setInterval(updateTimeSinceEpoch, 100);
-    return () => clearInterval(intervalId);
   });
 
   return (
@@ -247,7 +233,7 @@ export default function AdsbDecoderView({
             <CardHeader>
               <CardTitle>Aircraft</CardTitle>
               <CardDescription>
-                {modesState?.aircraft.filter((aircraft, index, array) => {
+                {modesState?.aircraft.filter((aircraft, _index, _array) => {
                   return (
                     aircraft.adsbState?.latitude &&
                     aircraft.adsbState.longitude &&
@@ -306,6 +292,19 @@ function AircraftDataPreview({
   aircraft: AircraftState;
   onClick: MouseEventHandler<HTMLDivElement>;
 }) {
+  const [currentMillisecondsSinceEpoch, setCurrentMillisecondsSinceEpoch] =
+    useState(new Date().getTime());
+
+  useEffect(() => {
+    const updateTimeSinceEpoch = () => {
+      setCurrentMillisecondsSinceEpoch(new Date().getTime());
+    };
+
+    // update milliseconds every 100 milliseconds
+    const intervalId = setInterval(updateTimeSinceEpoch, 100);
+    return () => clearInterval(intervalId);
+  });
+
   return (
     <Card className="p-4 *:p-0 hover:cursor-pointer" onClick={onClick}>
       <CardHeader className="flex justify-between">
@@ -338,8 +337,8 @@ function AircraftDataPreview({
           <Timer />
           <span>
             Last seen{" "}
-            {Math.round(new Date().getTime() / 1000) -
-              aircraft.lastMessageTimestamp.secs_since_epoch}{" "}
+            {currentMillisecondsSinceEpoch -
+              aircraft.lastMessageTimestamp.nanos_since_epoch / 1000}{" "}
             seconds ago
           </span>
         </div>

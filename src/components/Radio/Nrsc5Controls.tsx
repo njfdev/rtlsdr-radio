@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Loader2 } from "lucide-react";
@@ -25,12 +25,7 @@ import {
   removeStation,
   saveStation,
 } from "@/lib/stationsStorage";
-import {
-  Station,
-  StationDetails,
-  StationSavingState,
-  StationType,
-} from "@/lib/types";
+import { Station, StationDetails, StationType } from "@/lib/types";
 const appWindow = getCurrentWebviewWindow();
 
 enum Nrsc5Status {

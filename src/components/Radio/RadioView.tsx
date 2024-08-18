@@ -2,9 +2,8 @@
 
 import Nrsc5Controls from "@/components/Radio/Nrsc5Controls";
 import RtlSdrControls from "@/components/Radio/RtlSdrControls";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Station, StationDetails, StationType, StreamType } from "@/lib/types";
+import { Station, StationType, StreamType } from "@/lib/types";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import SaveStationsMenu from "@/components/Radio/SavedStationsMenu";

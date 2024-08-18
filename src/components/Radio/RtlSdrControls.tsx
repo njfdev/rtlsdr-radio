@@ -35,7 +35,6 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
-import { Badge } from "../ui/badge";
 const appWindow = getCurrentWebviewWindow();
 
 enum RtlSdrStatus {
