@@ -20,6 +20,7 @@ import {
   MouseEventHandler,
   SetStateAction,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import {
@@ -48,6 +49,7 @@ import Map, {
   Marker,
   NavigationControl,
 } from "react-map-gl/maplibre";
+import type { MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 enum AdsbStatus {
@@ -77,6 +79,7 @@ export default function AdsbDecoderView({
   const [currentAircraftIcao, setCurrentAircraftIcao] = useState<
     number | undefined
   >(undefined);
+  const mapRef = useRef<MapRef>(null);
 
   const start_decoding = async () => {
     setAdsbStatus(AdsbStatus.Starting);
@@ -159,6 +162,7 @@ export default function AdsbDecoderView({
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel>
           <Map
+            ref={mapRef}
             initialViewState={{
               latitude: 39.8283,
               longitude: -98.5795,
@@ -207,10 +211,6 @@ export default function AdsbDecoderView({
                 },
               ],
             }}
-            /*onBoundsChanged={(newBounds) => {
-              setMapCenter(newBounds.center);
-              setMapZoom(newBounds.zoom);
-            }}*/
           >
             <FullscreenControl />
             <NavigationControl />
@@ -224,7 +224,7 @@ export default function AdsbDecoderView({
                   <Marker
                     latitude={aircraft.adsbState.latitude}
                     longitude={aircraft.adsbState.longitude}
-                    offset={[14, 14]}
+                    anchor="center"
                     key={aircraft.icaoAddress + "-airplane-icon"}
                   >
                     <HoverCard>
@@ -302,13 +302,13 @@ export default function AdsbDecoderView({
                           aircraft.adsbState.longitude &&
                           aircraft.adsbState.heading
                         ) {
-                          // TODO: UPDATE
-                          /*
-                          setMapCenter([
-                            aircraft.adsbState?.latitude,
-                            aircraft.adsbState?.longitude,
-                          ]);
-                          setMapZoom(10);*/
+                          mapRef.current?.flyTo({
+                            center: [
+                              aircraft.adsbState?.longitude,
+                              aircraft.adsbState?.latitude,
+                            ],
+                            zoom: 10,
+                          });
                         }
                       }}
                     />
