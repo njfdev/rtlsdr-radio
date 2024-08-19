@@ -166,7 +166,7 @@ export default function AdsbDecoderView({
             initialViewState={{
               latitude: 39.8283,
               longitude: -98.5795,
-              zoom: 3.6,
+              zoom: 3.2,
             }}
             mapStyle={{
               version: 8,
