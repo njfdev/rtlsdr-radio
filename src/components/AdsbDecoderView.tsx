@@ -74,12 +74,6 @@ export default function AdsbDecoderView({
     number | undefined
   >(undefined);
 
-  // initialize at geographic center of the US
-  const [mapCenter, setMapCenter] = useState<[number, number]>([
-    39.8283, -98.5795,
-  ]);
-  const [mapZoom, setMapZoom] = useState(4);
-
   const start_decoding = async () => {
     setAdsbStatus(AdsbStatus.Starting);
     await setIsSdrInUse(true);
@@ -162,9 +156,9 @@ export default function AdsbDecoderView({
         <ResizablePanel>
           <Map
             initialViewState={{
-              latitude: mapCenter[0],
-              longitude: mapCenter[1],
-              zoom: mapZoom,
+              latitude: 39.8283,
+              longitude: -98.5795,
+              zoom: 4,
             }}
             mapStyle={{
               version: 8,
@@ -172,10 +166,15 @@ export default function AdsbDecoderView({
                 "raster-tiles": {
                   type: "raster",
                   tiles: [
-                    "/ArcGis/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}.png",
+                    "https://mt0.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
+                    "https://mt1.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
+                    "https://mt2.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
+                    "https://mt3.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
                   ],
                   tileSize: 256,
-                  attribution: "",
+                  minzoom: 1,
+                  maxzoom: 20,
+                  attribution: `Map data @${new Date().getFullYear()} Google`,
                 },
               },
               layers: [
@@ -183,8 +182,6 @@ export default function AdsbDecoderView({
                   id: "simple-tiles",
                   type: "raster",
                   source: "raster-tiles",
-                  minzoom: 0,
-                  maxzoom: 19,
                 },
               ],
             }}
@@ -281,11 +278,13 @@ export default function AdsbDecoderView({
                           aircraft.adsbState.longitude &&
                           aircraft.adsbState.heading
                         ) {
+                          // TODO: UPDATE
+                          /*
                           setMapCenter([
                             aircraft.adsbState?.latitude,
                             aircraft.adsbState?.longitude,
                           ]);
-                          setMapZoom(10);
+                          setMapZoom(10);*/
                         }
                       }}
                     />
