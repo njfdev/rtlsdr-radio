@@ -158,30 +158,48 @@ export default function AdsbDecoderView({
             initialViewState={{
               latitude: 39.8283,
               longitude: -98.5795,
-              zoom: 4,
+              zoom: 3.6,
             }}
             mapStyle={{
               version: 8,
               sources: {
-                "raster-tiles": {
+                "satellite-tiles": {
                   type: "raster",
                   tiles: [
-                    "https://mt0.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
-                    "https://mt1.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
-                    "https://mt2.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
-                    "https://mt3.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
+                    "https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+                    "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+                    "https://mt2.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+                    "https://mt3.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
                   ],
                   tileSize: 256,
-                  minzoom: 1,
+                  minzoom: 0,
+                  maxzoom: 20,
+                  attribution: `Map data @${new Date().getFullYear()} Google`,
+                },
+                "labels-lines-tiles": {
+                  type: "raster",
+                  tiles: [
+                    "https://mt0.google.com/vt/lyrs=h&x={x}&y={y}&z={z}",
+                    "https://mt1.google.com/vt/lyrs=h&x={x}&y={y}&z={z}",
+                    "https://mt2.google.com/vt/lyrs=h&x={x}&y={y}&z={z}",
+                    "https://mt3.google.com/vt/lyrs=h&x={x}&y={y}&z={z}",
+                  ],
+                  tileSize: 256,
+                  minzoom: 0,
                   maxzoom: 20,
                   attribution: `Map data @${new Date().getFullYear()} Google`,
                 },
               },
               layers: [
                 {
-                  id: "simple-tiles",
+                  id: "satellite-tiles",
                   type: "raster",
-                  source: "raster-tiles",
+                  source: "satellite-tiles",
+                },
+                {
+                  id: "labels-lines-tiles",
+                  type: "raster",
+                  source: "labels-lines-tiles",
                 },
               ],
             }}
