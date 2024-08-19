@@ -43,7 +43,11 @@ import {
 import airplaneIcon from "@/assets/airplane-icon.svg";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import Map, { Marker } from "react-map-gl/maplibre";
+import Map, {
+  FullscreenControl,
+  Marker,
+  NavigationControl,
+} from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 enum AdsbStatus {
@@ -208,6 +212,8 @@ export default function AdsbDecoderView({
               setMapZoom(newBounds.zoom);
             }}*/
           >
+            <FullscreenControl />
+            <NavigationControl />
             {modesState?.aircraft.map((aircraft) => {
               if (
                 aircraft.adsbState?.longitude &&
