@@ -5042,6 +5042,7 @@ name = "rtlsdr_radio"
 version = "0.5.0-beta.1"
 dependencies = [
  "biquad",
+ "chrono",
  "cpal 0.15.3",
  "crc",
  "fundsp",
