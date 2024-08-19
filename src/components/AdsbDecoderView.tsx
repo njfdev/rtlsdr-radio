@@ -126,7 +126,7 @@ export default function AdsbDecoderView({
     ) {
       setCurrentAircraftIcao(undefined);
     }
-  });
+  }, [modesState, currentAircraftIcao]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -497,7 +497,7 @@ function AircraftData({
                 )}
                 {aircraft.adsbState.preferredVerticalVelocitySource &&
                   (() => {
-                    let mainVerticalVelocity =
+                    const mainVerticalVelocity =
                       aircraft.adsbState?.preferredVerticalVelocitySource ==
                       AltitudeType.GNSS
                         ? aircraft.adsbState.gnssVerticalVelocity
