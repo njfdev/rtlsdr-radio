@@ -1,5 +1,6 @@
 pub mod adsb;
 pub mod adsb_db;
+pub mod arla;
 pub mod crc;
 pub mod types;
 
