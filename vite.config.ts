@@ -24,6 +24,12 @@ export default defineConfig({
           port: 1430,
         }
       : undefined,
+    proxy: {
+      "/ArcGis": {
+        target: "https://services.arcgisonline.com",
+        changeOrigin: true,
+      },
+    },
   },
   // to access the Tauri environment variables set by the CLI with information about the current target
   envPrefix: [

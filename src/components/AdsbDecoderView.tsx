@@ -22,7 +22,6 @@ import {
   useEffect,
   useState,
 } from "react";
-import { Map, Overlay, ZoomControl } from "pigeon-maps";
 import {
   Card,
   CardContent,
@@ -44,6 +43,8 @@ import {
 import airplaneIcon from "@/assets/airplane-icon.svg";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import Map, { Marker } from "react-map-gl/maplibre";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 enum AdsbStatus {
   Starting = "starting",
@@ -160,14 +161,38 @@ export default function AdsbDecoderView({
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel>
           <Map
-            center={mapCenter}
-            zoom={mapZoom}
-            onBoundsChanged={(newBounds) => {
+            initialViewState={{
+              latitude: mapCenter[0],
+              longitude: mapCenter[1],
+              zoom: mapZoom,
+            }}
+            mapStyle={{
+              version: 8,
+              sources: {
+                "raster-tiles": {
+                  type: "raster",
+                  tiles: [
+                    "/ArcGis/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}.png",
+                  ],
+                  tileSize: 256,
+                  attribution: "",
+                },
+              },
+              layers: [
+                {
+                  id: "simple-tiles",
+                  type: "raster",
+                  source: "raster-tiles",
+                  minzoom: 0,
+                  maxzoom: 19,
+                },
+              ],
+            }}
+            /*onBoundsChanged={(newBounds) => {
               setMapCenter(newBounds.center);
               setMapZoom(newBounds.zoom);
-            }}
+            }}*/
           >
-            <ZoomControl />
             {modesState?.aircraft.map((aircraft) => {
               if (
                 aircraft.adsbState?.longitude &&
@@ -175,11 +200,9 @@ export default function AdsbDecoderView({
                 aircraft.adsbState.heading
               ) {
                 return (
-                  <Overlay
-                    anchor={[
-                      aircraft.adsbState.latitude,
-                      aircraft.adsbState.longitude,
-                    ]}
+                  <Marker
+                    latitude={aircraft.adsbState.latitude}
+                    longitude={aircraft.adsbState.longitude}
                     offset={[14, 14]}
                     key={aircraft.icaoAddress + "-airplane-icon"}
                   >
@@ -216,7 +239,7 @@ export default function AdsbDecoderView({
                         </div>
                       </HoverCardContent>
                     </HoverCard>
-                  </Overlay>
+                  </Marker>
                 );
               }
             })}
