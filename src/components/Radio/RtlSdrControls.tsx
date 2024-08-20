@@ -61,7 +61,7 @@ export default function RtlSdrControls({
   setIsInUse: Dispatch<SetStateAction<boolean>>;
   streamType: StreamType;
 }) {
-  let currentStationType =
+  const currentStationType =
     streamType == StreamType.FM ? StationType.FMRadio : StationType.AMRadio;
 
   const [status, setStatus] = useState(RtlSdrStatus.Stopped);
@@ -150,14 +150,14 @@ export default function RtlSdrControls({
   const start_stream = async () => {
     setIsInUse(true);
     setStatus(RtlSdrStatus.Starting);
-    await invoke<string>("start_stream", {
-      streamSettings,
-    });
-    setError("");
     setCurrentStation({
       type: currentStationType,
       frequency: streamSettings.freq,
       channel: undefined,
+    });
+    setError("");
+    await invoke<string>("start_stream", {
+      streamSettings,
     });
 
     // If no RBDS data after 10 seconds, alert user
@@ -177,7 +177,7 @@ export default function RtlSdrControls({
   };
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
-    let fixed_payload = event.payload.replace("fm_", "").replace("am_", "");
+    const fixed_payload = event.payload.replace("fm_", "").replace("am_", "");
 
     setStatus(
       RtlSdrStatus[
@@ -196,7 +196,7 @@ export default function RtlSdrControls({
   });
 
   appWindow.listen("rtlsdr_rbds", async (event: { payload: string }) => {
-    let parsed_data = JSON.parse(event.payload);
+    const parsed_data = JSON.parse(event.payload);
     setRbdsData((old) => ({ ...old, ...parsed_data }));
   });
 
@@ -323,7 +323,7 @@ export default function RtlSdrControls({
                 stationTitle += ` - ${rbdsData.program_type}`;
               }
 
-              let stationData: StationDetails = {
+              const stationData: StationDetails = {
                 type: currentStationType,
                 title: stationTitle,
                 frequency: streamSettings.freq,
@@ -524,11 +524,10 @@ export default function RtlSdrControls({
                                 case rbdsData.tp == false &&
                                   rbdsData.ta == true:
                                   return "This radio station does not carry traffic announcements, but it carries EON information about a station that does.";
-                                case rbdsData.tp == false &&
+                                case rbdsData.tp == true &&
                                   rbdsData.ta == false:
                                   return "This radio station carries traffic announcements, but none are ongoing presently.";
-                                case rbdsData.tp == false &&
-                                  rbdsData.ta == false:
+                                case rbdsData.tp == true && rbdsData.ta == true:
                                   return "There is an ongoing traffic announcement.";
                               }
                             }

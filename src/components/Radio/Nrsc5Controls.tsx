@@ -328,7 +328,7 @@ export default function Nrsc5Controls({
             className="w-full"
             variant={isSaved ? "secondary" : "default"}
             onClick={async () => {
-              let stationData: StationDetails = {
+              const stationData: StationDetails = {
                 type: StationType.HDRadio,
                 title:
                   streamDetails.stationName ||
