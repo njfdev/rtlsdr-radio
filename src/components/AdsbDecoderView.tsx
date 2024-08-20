@@ -133,35 +133,6 @@ export default function AdsbDecoderView({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="px-4 pb-4 flex flex-col gap-1">
-        <h1 className="font-bold text-2xl">ADS-B Decoder</h1>
-        <Button
-          className="w-max"
-          variant={adsbStatus == AdsbStatus.Running ? "secondary" : "default"}
-          disabled={
-            adsbStatus == AdsbStatus.Starting ||
-            adsbStatus == AdsbStatus.Stopping
-          }
-          onClick={() =>
-            adsbStatus == AdsbStatus.Stopped
-              ? start_decoding()
-              : stop_decoding()
-          }
-        >
-          {adsbStatus == AdsbStatus.Stopped ? (
-            "Start Decoding"
-          ) : adsbStatus == AdsbStatus.Running ? (
-            "Stop Decoding"
-          ) : (
-            <>
-              <Loader2 className="animate-spin mr-2" />{" "}
-              {adsbStatus == AdsbStatus.Starting
-                ? "Starting..."
-                : "Stopping..."}
-            </>
-          )}
-        </Button>
-      </div>
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel>
           <Map
@@ -273,22 +244,55 @@ export default function AdsbDecoderView({
         <ResizableHandle />
 
         <ResizablePanel
-          defaultSize={25}
+          defaultSize={33}
           className="grow h-full overflow-hidden"
         >
           <Card className="w-full h-full rounded-none border-x-0 border-b-0 overflow-hidden flex flex-col">
             <CardHeader>
-              <CardTitle>Aircraft</CardTitle>
-              <CardDescription>
-                {modesState?.aircraft.filter((aircraft, _index, _array) => {
-                  return (
-                    aircraft.adsbState?.latitude &&
-                    aircraft.adsbState.longitude &&
-                    aircraft.adsbState.heading
-                  );
-                }).length || 0}
-                /{modesState?.aircraft.length || 0} displayed on the map.
-              </CardDescription>
+              <div className="flex justify-between w-full align-middle items-center">
+                <div>
+                  <CardTitle>Aircraft</CardTitle>
+                  <CardDescription>
+                    {modesState?.aircraft.filter((aircraft, _index, _array) => {
+                      return (
+                        aircraft.adsbState?.latitude &&
+                        aircraft.adsbState.longitude &&
+                        aircraft.adsbState.heading
+                      );
+                    }).length || 0}
+                    /{modesState?.aircraft.length || 0} displayed on the map.
+                  </CardDescription>
+                </div>
+
+                <Button
+                  className="w-max"
+                  variant={
+                    adsbStatus == AdsbStatus.Running ? "secondary" : "default"
+                  }
+                  disabled={
+                    adsbStatus == AdsbStatus.Starting ||
+                    adsbStatus == AdsbStatus.Stopping
+                  }
+                  onClick={() =>
+                    adsbStatus == AdsbStatus.Stopped
+                      ? start_decoding()
+                      : stop_decoding()
+                  }
+                >
+                  {adsbStatus == AdsbStatus.Stopped ? (
+                    "Start Decoding"
+                  ) : adsbStatus == AdsbStatus.Running ? (
+                    "Stop Decoding"
+                  ) : (
+                    <>
+                      <Loader2 className="animate-spin mr-2" />{" "}
+                      {adsbStatus == AdsbStatus.Starting
+                        ? "Starting..."
+                        : "Stopping..."}
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 overflow-y-auto grow pb-3 px-3">
               {modesState?.aircraft.map((aircraft: AircraftState) => {

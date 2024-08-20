@@ -40,7 +40,7 @@ where
 
         // used just for testing
         #[cfg(debug_assertions)]
-        let mut is_first_run = true;
+        let mut is_first_run = false;
 
         spawn(async move {
             loop {
