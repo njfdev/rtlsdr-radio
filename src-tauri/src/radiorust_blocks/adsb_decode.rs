@@ -10,6 +10,7 @@ use radiorust::{
 };
 use tauri::{
     async_runtime::{self, block_on},
+    ipc::Channel,
     AppHandle, Emitter,
 };
 use tokio::{spawn, sync::Mutex};
@@ -28,13 +29,14 @@ impl<Flt> AdsbDecode<Flt>
 where
     Flt: Float + Into<f64>,
 {
-    pub fn new(app: AppHandle, pass_along: bool) -> Self {
+    pub fn new(app: AppHandle, modes_channel: Channel<ModeSState>, pass_along: bool) -> Self {
         let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
         let (sender, sender_connector) = new_sender::<Signal<Complex<Flt>>>();
 
         let mut buf_pool = ChunkBufPool::<Complex<Flt>>::new();
 
         let modes_state = Arc::new(Mutex::new(ModeSState::new()));
+        let modes_channel_arc = Arc::new(Mutex::new(modes_channel));
 
         // used just for testing
         #[cfg(debug_assertions)]
@@ -45,7 +47,9 @@ where
                 #[cfg(debug_assertions)]
                 if is_first_run {
                     let mut modes_state_mut = modes_state.lock().await;
-                    decode_test_modes(app.clone(), &mut modes_state_mut).await;
+                    let mut modes_channel_mut = modes_channel_arc.lock().await;
+                    decode_test_modes(app.clone(), &mut modes_channel_mut, &mut modes_state_mut)
+                        .await;
                     is_first_run = false;
                 }
 
@@ -59,7 +63,7 @@ where
                     } => {
                         let input_chunk_clone = input_chunk.clone();
                         let modes_state_clone = modes_state.clone();
-                        let app_clone = app.clone();
+                        let modes_channel_clone = modes_channel_arc.clone();
                         spawn(async move {
                             let mut processing_buf_pool = ChunkBufPool::<u16>::new();
 
@@ -102,9 +106,8 @@ where
                                 .collect();
 
                             // send update of data (whether new or not)
-                            app_clone
-                                .emit("modes_state", modes_state_mut.clone())
-                                .unwrap();
+                            let mut modes_channel_mut = modes_channel_clone.lock().await;
+                            modes_channel_mut.send(modes_state_mut.clone()).unwrap();
                         });
 
                         if pass_along {
@@ -148,7 +151,11 @@ where
 }
 
 #[cfg(debug_assertions)]
-async fn decode_test_modes(app: AppHandle, modes_state: &mut ModeSState) {
+async fn decode_test_modes(
+    app: AppHandle,
+    modes_channel: &mut Channel<ModeSState>,
+    modes_state: &mut ModeSState,
+) {
     let example_messages = [
                   "1000110110101100010000101101111101011000101001010010001110110101001001001111110111111011100000000100111111011101",
                   "1000110110101100010000101101111110011001000100001111011000110011101110000100000001001100010011011000101010110011",
@@ -193,6 +200,6 @@ async fn decode_test_modes(app: AppHandle, modes_state: &mut ModeSState) {
             .collect();
         println!("{}", vec_to_string_vec.join(""));
         decode_modes_msg(message_vec, modes_state).await;
-        app.emit("modes_state", modes_state.clone()).unwrap();
+        modes_channel.send(modes_state.clone()).unwrap();
     }
 }

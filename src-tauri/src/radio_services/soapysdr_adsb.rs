@@ -9,10 +9,10 @@ use std::{
 use blocks::{chunks, Rechunker};
 use radiorust::{blocks::io::rf, prelude::*};
 use soapysdr::Direction;
-use tauri::{async_runtime, AppHandle, Emitter};
+use tauri::{async_runtime, ipc::Channel, AppHandle, Emitter};
 use tokio::{self, time};
 
-use crate::radiorust_blocks::adsb_decode::AdsbDecode;
+use crate::{modes::types::ModeSState, radiorust_blocks::adsb_decode::AdsbDecode};
 
 pub struct AdsbDecoderState(Arc<Mutex<AdsbDecoderData>>);
 pub struct AdsbDecoderData {
@@ -32,7 +32,12 @@ impl AdsbDecoderState {
     }
 
     // TODO: use these stream settings and allow users to modify ADS-B decode settings
-    pub fn start_decoding(&self, app: AppHandle, _stream_settings: StreamSettings) {
+    pub fn start_decoding(
+        &self,
+        app: AppHandle,
+        _stream_settings: StreamSettings,
+        modes_channel: Channel<ModeSState>,
+    ) {
         let adbs_decoder_state = self.0.clone();
         let adbs_decoder_state_clone = adbs_decoder_state.clone();
 
@@ -92,7 +97,7 @@ impl AdsbDecoderState {
                         let buffer = blocks::Buffer::new(0.0, 0.0, 0.0, 0.1);
                         buffer.feed_from(&rechunker);
 
-                        let adsb_decode = AdsbDecode::new(app.clone(), false);
+                        let adsb_decode = AdsbDecode::new(app.clone(), modes_channel, false);
                         adsb_decode.feed_from(&buffer);
 
                         // let wavwriter = WavWriterBlock::new(

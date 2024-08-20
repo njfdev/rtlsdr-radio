@@ -6,6 +6,7 @@ mod radio_services;
 mod radiorust_blocks;
 mod utils;
 
+use modes::types::ModeSState;
 use radio_services::{
     nrsc5::Nrsc5State,
     soapysdr_adsb::{self, AdsbDecoderState},
@@ -15,7 +16,7 @@ use std::{
     env,
     sync::{Arc, Mutex},
 };
-use tauri::{async_runtime::block_on, AppHandle, State};
+use tauri::{async_runtime::block_on, ipc::Channel, AppHandle, State};
 use utils::utils::setup_dependencies;
 
 struct AppState {
@@ -97,6 +98,7 @@ fn start_adsb_decoding(
     app: AppHandle,
     state: State<AppState>,
     stream_settings: soapysdr_adsb::StreamSettings,
+    modes_channel: Channel<ModeSState>,
 ) {
     if state.adsb_state.lock().unwrap().is_running() {
         return;
@@ -105,7 +107,7 @@ fn start_adsb_decoding(
         .adsb_state
         .lock()
         .unwrap()
-        .start_decoding(app, stream_settings);
+        .start_decoding(app, stream_settings, modes_channel);
 }
 
 #[tauri::command]

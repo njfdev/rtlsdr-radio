@@ -1,6 +1,6 @@
 "use client";
 
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 import {
   AdsbDecodeSettings,
   AircraftState,
@@ -83,6 +83,11 @@ export default function AdsbDecoderView({
   >(undefined);
   const mapRef = useRef<MapRef>(null);
 
+  const modesChannel = new Channel<ModesState>();
+  modesChannel.onmessage = (message) => {
+    setModesState(message);
+  };
+
   const start_decoding = async () => {
     setAdsbStatus(AdsbStatus.Starting);
     await setIsSdrInUse(true);
@@ -90,6 +95,7 @@ export default function AdsbDecoderView({
       streamSettings: {
         gain: 20.0,
       } as AdsbDecodeSettings,
+      modesChannel,
     });
   };
   const stop_decoding = async () => {
@@ -98,10 +104,6 @@ export default function AdsbDecoderView({
     setIsSdrInUse(false);
     setShouldStop(false);
   };
-
-  appWindow.listen("modes_state", (event: { payload: ModesState }) => {
-    setModesState(event.payload);
-  });
 
   appWindow.listen("adsb_status", (event: { payload: string }) => {
     setAdsbStatus(
