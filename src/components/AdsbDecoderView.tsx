@@ -131,6 +131,21 @@ export default function AdsbDecoderView({
     }
   }, [modesState, currentAircraftIcao]);
 
+  const focusOnAircraft = (aircraft: AircraftState) => {
+    setCurrentAircraftIcao(aircraft.icaoAddress);
+    // zoom into aircraft when clicking details if available
+    if (
+      aircraft.adsbState?.latitude &&
+      aircraft.adsbState.longitude &&
+      aircraft.adsbState.heading
+    ) {
+      mapRef.current?.flyTo({
+        center: [aircraft.adsbState?.longitude, aircraft.adsbState?.latitude],
+        zoom: 10,
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <ResizablePanelGroup direction="horizontal">
@@ -216,9 +231,7 @@ export default function AdsbDecoderView({
                             // offset 90 degrees because icon is facing east
                             rotate: `${aircraft.adsbState.heading - 90}deg`,
                           }}
-                          onClick={() => {
-                            setCurrentAircraftIcao(aircraft.icaoAddress);
-                          }}
+                          onClick={() => focusOnAircraft(aircraft)}
                         />
                       </HoverCardTrigger>
                       <HoverCardContent side="top" className="w-max p-2">
@@ -306,23 +319,7 @@ export default function AdsbDecoderView({
                     <AircraftDataPreview
                       aircraft={aircraft}
                       key={aircraft.icaoAddress}
-                      onClick={() => {
-                        setCurrentAircraftIcao(aircraft.icaoAddress);
-                        // zoom into aircraft when clicking details if available
-                        if (
-                          aircraft.adsbState?.latitude &&
-                          aircraft.adsbState.longitude &&
-                          aircraft.adsbState.heading
-                        ) {
-                          mapRef.current?.flyTo({
-                            center: [
-                              aircraft.adsbState?.longitude,
-                              aircraft.adsbState?.latitude,
-                            ],
-                            zoom: 10,
-                          });
-                        }
-                      }}
+                      onClick={() => focusOnAircraft(aircraft)}
                     />
                   );
                 } else if (currentAircraftIcao == aircraft.icaoAddress) {
