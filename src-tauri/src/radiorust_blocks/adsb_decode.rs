@@ -13,7 +13,7 @@ use tauri::{
     ipc::Channel,
     AppHandle, Emitter,
 };
-use tokio::{spawn, sync::Mutex};
+use tokio::{spawn, sync::Mutex, time::Instant};
 use types::ModeSState;
 
 /// A custom radiorust block that saves the input stream to a wav file at the specified path. You can enabled the pass_along argument to pass along samples, so it can be between blocks.
@@ -65,6 +65,8 @@ where
                         let modes_state_clone = modes_state.clone();
                         let modes_channel_clone = modes_channel_arc.clone();
                         spawn(async move {
+                            let start = Instant::now();
+
                             let mut processing_buf_pool = ChunkBufPool::<u16>::new();
 
                             let mut processing_chunk =
@@ -108,6 +110,10 @@ where
                             // send update of data (whether new or not)
                             let mut modes_channel_mut = modes_channel_clone.lock().await;
                             modes_channel_mut.send(modes_state_mut.clone()).unwrap();
+
+                            let duration = start.elapsed();
+
+                            println!("Time taken to process ADS-B: {:?}", duration);
                         });
 
                         if pass_along {
