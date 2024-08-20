@@ -4,11 +4,12 @@ use serde::{Deserialize, Serialize};
 pub const API_VERSION: u8 = 0;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(rename_all(deserialize = "SCREAMING_SNAKE_CASE"))]
 pub enum RegistrantType {
     Individual,
     Partnership,
-    Corporatation,
+    #[serde(rename(deserialize = "CORPORATATION"))]
+    Corporation,
     CoOwned,
     Government,
     Llc,
@@ -17,7 +18,7 @@ pub enum RegistrantType {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(rename_all(deserialize = "SCREAMING_SNAKE_CASE"))]
 pub enum Region {
     Eastern,
     Southwestern,
@@ -32,7 +33,7 @@ pub enum Region {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(rename_all(deserialize = "SCREAMING_SNAKE_CASE"))]
 pub enum AircraftType {
     Glider,
     Balloon,
@@ -48,7 +49,7 @@ pub enum AircraftType {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(rename_all(deserialize = "SCREAMING_SNAKE_CASE"))]
 pub enum EngineType {
     None,
     Reciprocating,
@@ -65,7 +66,7 @@ pub enum EngineType {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(rename_all(deserialize = "SCREAMING_SNAKE_CASE"))]
 pub enum AircraftCategory {
     Land,
     Sea,
@@ -73,7 +74,7 @@ pub enum AircraftCategory {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(rename_all(deserialize = "SCREAMING_SNAKE_CASE"))]
 pub enum BuilderCertification {
     TypeCertified,
     NotTypeCertified,
@@ -82,13 +83,13 @@ pub enum BuilderCertification {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum AircraftWeightClass {
-    #[serde(rename = "CLASS_1")]
+    #[serde(rename(deserialize = "CLASS_1"))]
     Class1,
-    #[serde(rename = "CLASS_2")]
+    #[serde(rename(deserialize = "CLASS_2"))]
     Class2,
-    #[serde(rename = "CLASS_3")]
+    #[serde(rename(deserialize = "CLASS_3"))]
     Class3,
-    #[serde(rename = "CLASS_4")]
+    #[serde(rename(deserialize = "CLASS_4"))]
     Class4,
 }
 

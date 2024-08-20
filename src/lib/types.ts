@@ -97,6 +97,7 @@ export interface AircraftState {
   };
   adsbState?: AdsbState;
   flightRoute?: FlightRoute;
+  registration?: RegistrationObject;
 }
 
 export interface AircraftIcaoDetails {
@@ -160,4 +161,140 @@ export interface AdsbState {
   speedCategory?: SpeedCategory;
   velocityType?: "GroundSpeed" | { AirSpeed: AirspeedType };
   wakeVortexCat?: string;
+}
+
+export enum RegistrantType {
+  Individual,
+  Partnership,
+  Corporation,
+  CoOwned,
+  Government,
+  Llc,
+  NonCitizenCorporation,
+  NonCitizenCoOwned,
+}
+
+export enum Region {
+  Eastern,
+  Southwestern,
+  Central,
+  WesternPacific,
+  Alaskan,
+  Southern,
+  European,
+  GreatLakes,
+  NewEngland,
+  NorthwestMountain,
+}
+
+export enum AircraftType {
+  Glider,
+  Balloon,
+  Blimp,
+  FixedWingSingleEngine,
+  FixedWingMultiEngine,
+  Rotorcraft,
+  WeightShiftControl,
+  PoweredParachute,
+  Gyroplane,
+  HybridLift,
+  Other,
+}
+
+export enum EngineType {
+  None,
+  Reciprocating,
+  TurboProp,
+  TurboShaft,
+  TurboJet,
+  TurboFan,
+  Ramjet,
+  TwoCycle,
+  FourCycle,
+  Unknown,
+  Electric,
+  Rotary,
+}
+
+export enum AircraftCategory {
+  Land,
+  Sea,
+  Amphibian,
+}
+
+export enum BuilderCertification {
+  TypeCertified,
+  NotTypeCertified,
+  LightSport,
+}
+
+export enum AircraftWeightClass {
+  Class1,
+  Class2,
+  Class3,
+  Class4,
+}
+
+export interface AircraftModelObject {
+  code: string;
+  mfr: string;
+  model: string;
+  aircraft_type: AircraftType;
+  engine_type: EngineType;
+  aircraft_cat_code: AircraftCategory;
+  builder_cert_code: BuilderCertification;
+  engine_count: number;
+  seat_count: number;
+  weight_class: AircraftWeightClass;
+  avg_cruising_speed?: number;
+  tc_data_sheet?: string;
+  tc_data_holder?: string;
+}
+
+export interface EngineModelObject {
+  code: string;
+  mfr: string;
+  model: string;
+  type: EngineType;
+  horsepower?: number;
+  lbs_of_thrust?: number;
+}
+
+export interface RegistrationObject {
+  n_number: string;
+  serial_number: string;
+  mft_mdl_code: string;
+  eng_mfr_mdl: string;
+  year_mfr?: number;
+  registrant_type?: RegistrantType;
+  registrant_name?: string;
+  registrant_street?: string;
+  registrant_street2?: string;
+  registrant_city?: string;
+  registrant_state?: string;
+  registrant_zip_code?: string;
+  registrant_region?: Region;
+  registrant_county_code?: number;
+  registrant_country_code?: string;
+  last_action_date: Date;
+  cert_issue_date?: Date;
+  cert_details: string;
+  aircraft_type: AircraftType;
+  engine_type: EngineType;
+  status_code: string;
+  mode_s_code: number;
+  fractional_ownership: boolean;
+  air_worth_date?: Date;
+  other_registrant_name_1?: string;
+  other_registrant_name_2?: string;
+  other_registrant_name_3?: string;
+  other_registrant_name_4?: string;
+  other_registrant_name_5?: string;
+  expiration_date: Date;
+  unique_id: number;
+  kit_mfr?: string;
+  kit_model?: string;
+  mode_s_code_hex: string;
+  aircraft_info: AircraftModelObject;
+  engine_info: EngineModelObject;
 }

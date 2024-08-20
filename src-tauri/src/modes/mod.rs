@@ -187,9 +187,6 @@ pub async fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
             println!("Fetching Registration Result");
             if registration_result.is_ok() {
                 new_aircraft.registration = Some(registration_result.unwrap());
-                println!("{:#?}", new_aircraft.registration);
-            } else {
-                println!("{}", registration_result.unwrap_err());
             }
 
             cur_aircraft = Some(new_aircraft);

@@ -100,6 +100,7 @@ export default function AdsbDecoderView({
 
   appWindow.listen("modes_state", (event: { payload: ModesState }) => {
     setModesState(event.payload);
+    console.log(event.payload);
   });
 
   appWindow.listen("adsb_status", (event: { payload: string }) => {
