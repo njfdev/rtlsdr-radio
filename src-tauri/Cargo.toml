@@ -34,6 +34,7 @@ unit-conversions = "0.1.16"
 reqwest = { version = "0.11.18", features = ["json"] }
 tauri-bundler = "2.0.1-rc.2"
 chrono = { version = "0.4.31", features = ["serde"] }
+souvlaki = "0.7.0"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

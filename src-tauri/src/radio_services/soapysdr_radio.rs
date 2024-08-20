@@ -1,4 +1,3 @@
-
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -12,7 +11,8 @@ use radiorust::{
     prelude::*,
 };
 use soapysdr::Direction;
-use tauri::{async_runtime, AppHandle, Emitter};
+use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, MediaPlayback, PlatformConfig};
+use tauri::{async_runtime, AppHandle, Emitter, Manager};
 use tokio::{self, time};
 
 use crate::radiorust_blocks::{
@@ -70,6 +70,49 @@ impl RtlSdrState {
                 tokio::runtime::Runtime::new()
                     .unwrap()
                     .block_on(async move {
+                        // setup media controls
+                        #[cfg(not(target_os = "windows"))]
+                        let hwnd = None;
+
+                        #[cfg(target_os = "windows")]
+                        let hwnd = {
+                            use raw_window_handle::windows::WindowsHandle;
+
+                            let handle: WindowsHandle = unimplemented!();
+                            Some(handle.hwnd)
+                        };
+
+                        let config = PlatformConfig {
+                            dbus_name: "dev.njf.RTL_SDR_Radio",
+                            display_name: "RTL-SDR Radio",
+                            hwnd,
+                        };
+
+                        let mut controls = MediaControls::new(config).unwrap();
+
+                        // The closure must be Send and have a static lifetime.
+                        controls
+                            .attach(|event: MediaControlEvent| {
+                                println!("Event received: {:?}", event)
+                            })
+                            .unwrap();
+                        let resource_dir = app.path().resource_dir().unwrap();
+                        let icon_url = format!(
+                            "file://{}/resources/AppIcon.png",
+                            resource_dir.as_os_str().to_str().unwrap()
+                        );
+                        println!("Icon URL: {}", icon_url);
+                        controls.set_metadata(MediaMetadata {
+                            title: Some(if stream_settings.stream_type == StreamType::FM {
+                                "FM Radio"
+                            } else {
+                                "AM Radio"
+                            }),
+                            cover_url: Some(icon_url.as_str()),
+                            ..Default::default()
+                        });
+                        controls.set_playback(MediaPlayback::Playing { progress: None });
+
                         // connect to SDR
                         let rtlsdr_dev_result = soapysdr::Device::new("driver=rtlsdr");
 

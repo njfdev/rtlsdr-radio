@@ -34,7 +34,8 @@
     "resources": {
       "../build/lib/*": "resources/lib/",
       "../build/lib/SoapySDR/modules0.8/*": "resources/lib/SoapySDR/modules0.8",
-      "../build/lib/pkgconfig/*": "resources/lib/pkgconfig"
+      "../build/lib/pkgconfig/*": "resources/lib/pkgconfig",
+      "../designs/Second Icon Attempt.png": "resources/AppIcon.png"
     },
     "shortDescription": "",
     "linux": {
