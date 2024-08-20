@@ -6,6 +6,7 @@ import {
   AircraftState,
   AirspeedType,
   AltitudeType,
+  EngineType,
   ModesState,
 } from "@/lib/types";
 import { Button } from "./ui/button";
@@ -51,7 +52,7 @@ import Map, {
 } from "react-map-gl/maplibre";
 import type { MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { titleCapitalization } from "@/lib/utils";
+import { formatZipCode, snakeToTitle, titleCapitalization } from "@/lib/utils";
 
 enum AdsbStatus {
   Starting = "starting",
@@ -96,12 +97,10 @@ export default function AdsbDecoderView({
     await invoke<string>("stop_adsb_decoding", {});
     setIsSdrInUse(false);
     setShouldStop(false);
-    setModesState(undefined);
   };
 
   appWindow.listen("modes_state", (event: { payload: ModesState }) => {
     setModesState(event.payload);
-    console.log(event.payload);
   });
 
   appWindow.listen("adsb_status", (event: { payload: string }) => {
@@ -430,7 +429,11 @@ function AircraftData({
             <TabsTrigger value="flight-details">Flight Details</TabsTrigger>
             <TabsTrigger
               value="aircraft-details"
-              disabled={!aircraft.icaoDetails && !aircraft.registration}
+              disabled={
+                !aircraft.icaoDetails &&
+                !aircraft.registration &&
+                !aircraft.flightRoute
+              }
             >
               Aircraft Details
             </TabsTrigger>
@@ -541,11 +544,120 @@ function AircraftData({
                           `${aircraft.registration.aircraft_info.mfr} ${aircraft.registration.aircraft_info.model}`
                         )
                       : "Unknown"
-                  }`}
+                  }`}{" "}
+              {aircraft.registration?.aircraft_type && (
+                <>
+                  (
+                  {snakeToTitle(aircraft.registration.aircraft_type.toString())}
+                  )
+                </>
+              )}
             </p>
+            {aircraft.registration && (
+              <>
+                <p>
+                  <b>Weight Class: </b>
+                  {(() => {
+                    switch (
+                      aircraft.registration.aircraft_info.weight_class.toString()
+                    ) {
+                      case "Class1":
+                        return "Up to 12,499 lbs";
+                      case "Class2":
+                        return "12,500 lbs to 19,999 lbs";
+                      case "Class3":
+                        return "20,000 lbs and over";
+                      case "Class4":
+                        return "Unmanned aerial vehicle (UAV) up to 55 lbs";
+                    }
+                  })()}
+                </p>
+                {aircraft.registration.aircraft_info.avg_cruising_speed && (
+                  <p>
+                    <b>Average Cruising Speed: </b>
+                    {aircraft.registration.aircraft_info.avg_cruising_speed} mph
+                  </p>
+                )}
+                <p>
+                  <b>Number of Seats: </b>
+                  {aircraft.registration.aircraft_info.seat_count}
+                </p>
+                <p>
+                  <b>Number of Engines: </b>
+                  {aircraft.registration.aircraft_info.engine_count}
+                </p>
+                {aircraft.registration.engine_info && (
+                  <>
+                    <p>
+                      <b>Engine Model: </b>
+                      {aircraft.registration.engine_info.mfr}{" "}
+                      {aircraft.registration.engine_info.model}{" "}
+                      {aircraft.registration.engine_type.toString() !=
+                        "Unknown" && (
+                        <>
+                          (
+                          {snakeToTitle(
+                            aircraft.registration.engine_type.toString()
+                          )}
+                          )
+                        </>
+                      )}
+                    </p>
+                  </>
+                )}
+                {aircraft.registration.engine_info.horsepower && (
+                  <p>
+                    <b>Engine Horsepower: </b>
+                    {aircraft.registration.engine_info.horsepower}
+                  </p>
+                )}
+                {aircraft.registration.engine_info.lbs_of_thrust && (
+                  <p>
+                    <b>Engine Pounds of Thrust: </b>
+                    {aircraft.registration.engine_info.lbs_of_thrust} lbs
+                  </p>
+                )}
+                {aircraft.registration.air_worth_date && (
+                  <p>
+                    <b>Date of Air Worthiness Test: </b>
+                    {new Date(
+                      aircraft.registration.air_worth_date
+                    ).toLocaleDateString()}
+                  </p>
+                )}
+                {aircraft.registration.cert_issue_date && (
+                  <p>
+                    <b>Date Certified: </b>
+                    {new Date(
+                      aircraft.registration.cert_issue_date
+                    ).toLocaleDateString()}
+                  </p>
+                )}
+                <p>
+                  <b>Certification Expiration: </b>
+                  {new Date(
+                    aircraft.registration.expiration_date
+                  ).toLocaleDateString()}
+                </p>
+              </>
+            )}
             <p>
               <b>Registered Owner:</b>{" "}
-              {aircraft.icaoDetails?.registered_owner || "Unknown"}
+              {aircraft.icaoDetails
+                ? aircraft.icaoDetails?.registered_owner
+                : titleCapitalization(
+                    aircraft.registration?.registrant_name || "Unknown"
+                  )}{" "}
+              {aircraft.registration && (
+                <>
+                  (
+                  {snakeToTitle(
+                    aircraft.registration.registrant_type?.toString() ||
+                      "Unknown"
+                  )}
+                  )
+                </>
+              )}
             </p>
             <p>
               <b>Registration Country:</b>{" "}
@@ -553,8 +665,28 @@ function AircraftData({
             </p>
             <p>
               <b>Registration Code:</b>{" "}
-              {aircraft.icaoDetails?.registration || "Unknown"}
+              {aircraft.icaoDetails
+                ? aircraft.icaoDetails?.registration
+                : aircraft.registration?.n_number
+                ? `N${aircraft.registration?.n_number}`
+                : "Unknown"}
             </p>
+            {aircraft.registration?.registrant_street &&
+              aircraft.registration.registrant_city &&
+              aircraft.registration.registrant_state &&
+              aircraft.registration.registrant_zip_code &&
+              aircraft.registration.registrant_country_code == "US" && (
+                <p>
+                  <b>Registrant Address:</b>{" "}
+                  {`${titleCapitalization(
+                    aircraft.registration.registrant_street
+                  )}, ${titleCapitalization(
+                    aircraft.registration.registrant_city
+                  )}, ${aircraft.registration.registrant_state} ${formatZipCode(
+                    aircraft.registration.registrant_zip_code
+                  )}`}
+                </p>
+              )}
             {aircraft.flightRoute?.airline && (
               <>
                 <p>
