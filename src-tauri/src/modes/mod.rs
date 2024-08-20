@@ -8,6 +8,7 @@ use std::time::SystemTime;
 
 use adsb::decode_adsb_msg;
 use adsb_db::get_icao_details;
+use arla::get_aircraft_registration;
 use crc::perform_modes_crc;
 use types::*;
 
@@ -178,6 +179,17 @@ pub async fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
             let icao_data_result = get_icao_details(new_aircraft.icao_address.clone()).await;
             if icao_data_result.is_ok() {
                 new_aircraft.icao_details = Some(icao_data_result.unwrap());
+            }
+
+            // fetch Registration information for this new aircraft from arla
+            let registration_result =
+                get_aircraft_registration(new_aircraft.icao_address.clone()).await;
+            println!("Fetching Registration Result");
+            if registration_result.is_ok() {
+                new_aircraft.registration = Some(registration_result.unwrap());
+                println!("{:#?}", new_aircraft.registration);
+            } else {
+                println!("{}", registration_result.unwrap_err());
             }
 
             cur_aircraft = Some(new_aircraft);

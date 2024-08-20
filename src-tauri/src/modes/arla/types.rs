@@ -81,11 +81,14 @@ pub enum BuilderCertification {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AircraftWeightClass {
+    #[serde(rename = "CLASS_1")]
     Class1,
+    #[serde(rename = "CLASS_2")]
     Class2,
+    #[serde(rename = "CLASS_3")]
     Class3,
+    #[serde(rename = "CLASS_4")]
     Class4,
 }
 
@@ -120,7 +123,7 @@ pub struct RegistrationObject {
     pub n_number: String,
     pub serial_number: String,
     pub mft_mdl_code: String,
-    pub eng_mft_mdl: String,
+    pub eng_mfr_mdl: String,
     pub year_mfr: Option<u16>,
     pub registrant_type: Option<RegistrantType>,
     pub registrant_name: Option<String>,
@@ -148,7 +151,7 @@ pub struct RegistrationObject {
     pub other_registrant_name_5: Option<String>,
     pub expiration_date: DateTime<Utc>,
     pub unique_id: u32,
-    pub kit_mdr: Option<String>,
+    pub kit_mfr: Option<String>,
     pub kit_model: Option<String>,
     pub mode_s_code_hex: String,
     pub aircraft_info: AircraftModelObject,

@@ -1,6 +1,9 @@
 use std::time::SystemTime;
 
-use super::adsb_db::types::{AircraftIcaoDetails, FlightRoute};
+use super::{
+    adsb_db::types::{AircraftIcaoDetails, FlightRoute},
+    arla::types::RegistrationObject,
+};
 
 // Mode S
 pub const MODES_LONG_MSG_BITS: usize = 112;
@@ -29,6 +32,7 @@ pub struct AircraftState {
     pub last_message_timestamp: SystemTime,
     pub adsb_state: AdsbState,
     pub flight_route: Option<FlightRoute>,
+    pub registration: Option<RegistrationObject>,
 }
 
 impl AircraftState {
@@ -39,6 +43,7 @@ impl AircraftState {
             last_message_timestamp: SystemTime::now(),
             adsb_state: AdsbState::new(),
             flight_route: None,
+            registration: None,
         }
     }
 }
