@@ -11,7 +11,7 @@ export async function saveStation(station: StationDetails) {
     oldStations = "[]";
   }
 
-  let parsedStations: [StationDetails] = JSON.parse(oldStations);
+  const parsedStations: [StationDetails] = JSON.parse(oldStations);
 
   parsedStations.push(station);
 
@@ -23,13 +23,13 @@ export async function saveStation(station: StationDetails) {
 }
 
 export function isStationSaved(station: Station) {
-  let stations = localStorage.getItem(stationsStorageName);
+  const stations = localStorage.getItem(stationsStorageName);
 
   if (!stations) return false;
 
-  let parsedStations: [StationDetails] = JSON.parse(stations);
+  const parsedStations: [StationDetails] = JSON.parse(stations);
 
-  let filteredStations = parsedStations.filter((e_station) => {
+  const filteredStations = parsedStations.filter((e_station) => {
     return (
       e_station.type == station.type &&
       e_station.frequency == station.frequency &&
@@ -43,11 +43,11 @@ export function isStationSaved(station: Station) {
 export async function removeStation(station: StationDetails) {
   if (!isStationSaved(station)) return;
 
-  let stations: [StationDetails] = JSON.parse(
+  const stations: [StationDetails] = JSON.parse(
     localStorage.getItem(stationsStorageName)!
   );
 
-  let updatedStations = stations.filter((e_station) => {
+  const updatedStations = stations.filter((e_station) => {
     return !(
       e_station.type == station.type &&
       e_station.frequency == station.frequency &&
@@ -63,11 +63,11 @@ export async function removeStation(station: StationDetails) {
 }
 
 export async function getSavedStations(): Promise<StationDetails[]> {
-  let stations = localStorage.getItem(stationsStorageName);
+  const stations = localStorage.getItem(stationsStorageName);
 
   if (!stations) return [];
 
-  let parsedStations: [StationDetails] = JSON.parse(stations);
+  const parsedStations: [StationDetails] = JSON.parse(stations);
 
   return parsedStations;
 }
@@ -78,11 +78,11 @@ export async function updateStation(
 ) {
   if (!isStationSaved(oldStation)) await saveStation(newStation);
 
-  let stations: [StationDetails] = JSON.parse(
+  const stations: [StationDetails] = JSON.parse(
     localStorage.getItem(stationsStorageName)!
   );
 
-  let filteredStations = stations.filter((station) => {
+  const filteredStations = stations.filter((station) => {
     return (
       station.type == oldStation.type &&
       station.frequency == oldStation.frequency &&
@@ -122,11 +122,12 @@ export function stationSortComparison(
       if (a.isFavorite && !b.isFavorite) return -1;
       if (!a.isFavorite && b.isFavorite) return 1;
       return a.frequency - b.frequency;
-    // @ts-expect-error
-    case StationSortOption.AlphaDes:
-      let tmp_b = b;
+    // @ts-expect-error This should fallthrough to the AlphaAsc case
+    case StationSortOption.AlphaDes: {
+      const tmp_b = b;
       b = a;
       a = tmp_b;
+    }
     // fallthrough
     case StationSortOption.AlphaAsc:
       if (a.title < b.title) return -1;

@@ -151,7 +151,11 @@ export interface AdsbState {
   barometerVerticalVelocity?: number;
   callsign?: string;
   // this is an internal state, so we don't really care about its contents
-  cprPosition?: any;
+  cprPosition?: {
+    cpr_lat: number;
+    cpr_lon: number;
+    cpr_format: number;
+  };
   gnssVerticalVelocity?: number;
   heading?: number;
   latitude?: number;

@@ -78,7 +78,7 @@ export default function SavedStationsMenu({
     if (!stations) {
       setSortedStations(undefined);
     } else {
-      let updatedStations = [...stations]?.sort((a, b) => {
+      const updatedStations = [...stations]?.sort((a, b) => {
         return stationSortComparison(a, b, sortOption);
       });
       setSortedStations(updatedStations);

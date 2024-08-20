@@ -6,7 +6,6 @@ import {
   AircraftState,
   AirspeedType,
   AltitudeType,
-  EngineType,
   ModesState,
 } from "@/lib/types";
 import { Button } from "./ui/button";
