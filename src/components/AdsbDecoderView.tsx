@@ -51,6 +51,7 @@ import Map, {
 } from "react-map-gl/maplibre";
 import type { MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { titleCapitalization } from "@/lib/utils";
 
 enum AdsbStatus {
   Starting = "starting",
@@ -429,7 +430,7 @@ function AircraftData({
             <TabsTrigger value="flight-details">Flight Details</TabsTrigger>
             <TabsTrigger
               value="aircraft-details"
-              disabled={!aircraft.icaoDetails && !aircraft.flightRoute}
+              disabled={!aircraft.icaoDetails && !aircraft.registration}
             >
               Aircraft Details
             </TabsTrigger>
@@ -531,8 +532,16 @@ function AircraftData({
           </TabsContent>
           <TabsContent value="aircraft-details">
             <p>
-              <b>Plane Model:</b> {aircraft.icaoDetails?.manufacturer}{" "}
-              {aircraft.icaoDetails?.type}
+              <b>Plane Model:</b>{" "}
+              {aircraft.icaoDetails
+                ? `${aircraft.icaoDetails?.manufacturer} ${aircraft.icaoDetails?.type}`
+                : `${
+                    aircraft.registration?.aircraft_info
+                      ? titleCapitalization(
+                          `${aircraft.registration.aircraft_info.mfr} ${aircraft.registration.aircraft_info.model}`
+                        )
+                      : "Unknown"
+                  }`}
             </p>
             <p>
               <b>Registered Owner:</b>{" "}
