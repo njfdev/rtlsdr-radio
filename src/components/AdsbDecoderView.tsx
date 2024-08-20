@@ -207,6 +207,7 @@ export default function AdsbDecoderView({
                   >
                     <HoverCard>
                       <HoverCardTrigger>
+                        {/*
                         <img
                           src={airplaneIcon}
                           className="w-[28px] hover:cursor-pointer"
@@ -218,6 +219,13 @@ export default function AdsbDecoderView({
                           onClick={() => {
                             setCurrentAircraftIcao(aircraft.icaoAddress);
                           }}
+                        />
+                       */}
+                        <Plane
+                          fill="white"
+                          stroke="black"
+                          strokeWidth={1}
+                          className="w-[32px] h-[32px]"
                         />
                       </HoverCardTrigger>
                       <HoverCardContent side="top" className="w-max p-2">
