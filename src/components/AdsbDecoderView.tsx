@@ -142,6 +142,10 @@ export default function AdsbDecoderView({
               longitude: -98.5795,
               zoom: 3.2,
             }}
+            // Disables changing pitch
+            maxPitch={0}
+            // Disables rotating map
+            dragRotate={false}
             mapStyle={{
               version: 8,
               sources: {
