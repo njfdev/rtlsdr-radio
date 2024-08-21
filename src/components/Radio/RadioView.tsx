@@ -134,7 +134,6 @@ export default function RadioView({
               setCurrentStation={setCurrentStation}
               requestedStation={requestedStation}
               setRequestedStation={setRequestedStation}
-              isInUse={isSdrInUse}
               setIsInUse={setIsSdrInUse}
               streamType={StreamType.FM}
             />
@@ -145,7 +144,6 @@ export default function RadioView({
               setCurrentStation={setCurrentStation}
               requestedStation={requestedStation}
               setRequestedStation={setRequestedStation}
-              isInUse={isSdrInUse}
               setIsInUse={setIsSdrInUse}
               streamType={StreamType.AM}
             />

@@ -50,7 +50,6 @@ export default function RtlSdrControls({
   setCurrentStation,
   requestedStation,
   setRequestedStation,
-  isInUse,
   setIsInUse,
   streamType,
 }: {
@@ -58,7 +57,6 @@ export default function RtlSdrControls({
   setCurrentStation: Dispatch<SetStateAction<Station | undefined>>;
   requestedStation: Station | undefined;
   setRequestedStation: Dispatch<SetStateAction<Station | undefined>>;
-  isInUse: boolean;
   setIsInUse: Dispatch<SetStateAction<boolean>>;
   streamType: StreamType;
 }) {
