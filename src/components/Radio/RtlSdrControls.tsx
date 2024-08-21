@@ -36,6 +36,10 @@ import {
 } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
 import { emit } from "@tauri-apps/api/event";
+import {
+  getSecondsListenedTo,
+  increaseListeningDuration,
+} from "@/lib/statsStorage";
 const appWindow = getCurrentWebviewWindow();
 
 enum RtlSdrStatus {
@@ -82,6 +86,7 @@ export default function RtlSdrControls({
   const [error, setError] = useState("");
   const [rbdsData, setRbdsData] = useState<RbdsData>({});
   const [has10SecondsElapsed, set10SecondsElapsed] = useState(false);
+  const [totalSecondsListened, setTotalSecondsListened] = useState(0);
   let counterId: NodeJS.Timeout | undefined;
 
   const [isSaved, setIsSaved] = useState(
@@ -90,6 +95,37 @@ export default function RtlSdrControls({
       frequency: streamSettings.freq,
     })
   );
+
+  useEffect(() => {
+    (async () => {
+      setTotalSecondsListened(await getSecondsListenedTo());
+    })();
+  }, []);
+
+  const [listeningIntervalId, setListeningIntervalId] = useState<
+    NodeJS.Timeout | undefined
+  >(undefined);
+  const secondsBetweenIncrease = 5;
+  useEffect(() => {
+    if (listeningIntervalId === undefined && status == RtlSdrStatus.Running) {
+      setListeningIntervalId(
+        setInterval(async () => {
+          if (status == RtlSdrStatus.Running) {
+            console.log("A", status);
+            setTotalSecondsListened(
+              await increaseListeningDuration(secondsBetweenIncrease)
+            );
+          }
+        }, secondsBetweenIncrease * 1000)
+      );
+    } else if (
+      listeningIntervalId !== undefined &&
+      status != RtlSdrStatus.Running
+    ) {
+      clearInterval(listeningIntervalId);
+      setListeningIntervalId(undefined);
+    }
+  }, [status, listeningIntervalId]);
 
   useEffect(() => {
     if (status == RtlSdrStatus.Running) {
@@ -375,12 +411,15 @@ export default function RtlSdrControls({
             {isSaved ? "Remove " : "Save "} Station
           </Button>
         )}
+        {streamType == StreamType.AM && (
+          <HoursListenedToRadioView listenedForSeconds={totalSecondsListened} />
+        )}
       </form>
       {streamType == StreamType.FM && (
-        <>
+        <div className="max-w-[24rem] w-[24rem]">
           <Tabs
             defaultValue="radioInfo"
-            className={`transition-all max-w-[24rem] w-[24rem] ${
+            className={`transition-all w-full ${
               status == RtlSdrStatus.Stopped ? "opacity-75" : ""
             }`}
             style={{ gridColumn: 0, gridRow: 0 }}
@@ -589,8 +628,38 @@ export default function RtlSdrControls({
               </Card>
             )}
           </Tabs>
-        </>
+          <HoursListenedToRadioView
+            className="mt-2"
+            listenedForSeconds={totalSecondsListened}
+          />
+        </div>
       )}
+    </div>
+  );
+}
+
+function HoursListenedToRadioView({
+  className,
+  listenedForSeconds,
+}: {
+  className?: string;
+  listenedForSeconds: number;
+}) {
+  let unit = "minute";
+  let value = Math.floor(listenedForSeconds / 60);
+
+  if (value >= 60) {
+    unit = "hour";
+    value = Math.floor(value / 60);
+  }
+
+  if (value != 1) {
+    unit += "s";
+  }
+
+  return (
+    <div className={`text-muted-foreground ${className}`}>
+      You have listened to radio for {value} {unit}.
     </div>
   );
 }
