@@ -94,7 +94,7 @@ export default function RtlSdrControls({
   );
 
   useEffect(() => {
-    if (status != RtlSdrStatus.Stopped && status != RtlSdrStatus.Pausing) {
+    if (status == RtlSdrStatus.Running) {
       emit("radio_update_settings", streamSettings);
       setIsProcessingRequest(true);
       const newStation: Station = {
@@ -137,11 +137,13 @@ export default function RtlSdrControls({
         requestedStation.type == currentStationType &&
         !areStationsEqual(requestedStation, currentStation)
       ) {
-        await setIsProcessingRequest(true);
-        if (isInUse) {
-          console.log("stopping stream");
-          await stop_stream();
-        }
+        setIsProcessingRequest(true);
+
+        console.log(
+          isProcessingRequest,
+          requestedStation.type.toString(),
+          status
+        );
 
         setIsInUse(true);
         setStreamSettings((old) => ({
@@ -160,6 +162,7 @@ export default function RtlSdrControls({
       status == RtlSdrStatus.Stopped
     ) {
       (async () => {
+        console.log("Starting Stream");
         await start_stream();
         setIsProcessingRequest(false);
       })();
