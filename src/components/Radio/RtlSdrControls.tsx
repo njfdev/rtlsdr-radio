@@ -144,15 +144,27 @@ export default function RtlSdrControls({
         }
 
         setIsInUse(true);
-        await setStreamSettings((old) => ({
+        setStreamSettings((old) => ({
           ...old,
           freq: requestedStation.frequency,
         }));
-        await start_stream();
-        setIsProcessingRequest(false);
       }
     })();
   });
+
+  useEffect(() => {
+    if (
+      isProcessingRequest &&
+      requestedStation?.type == currentStationType &&
+      !areStationsEqual(requestedStation, currentStation) &&
+      status == RtlSdrStatus.Stopped
+    ) {
+      (async () => {
+        await start_stream();
+        setIsProcessingRequest(false);
+      })();
+    }
+  }, [isProcessingRequest, streamSettings]);
 
   useEffect(() => {
     if (
