@@ -12,7 +12,7 @@ use radiorust::{
 };
 use soapysdr::Direction;
 use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, MediaPlayback, PlatformConfig};
-use tauri::{async_runtime, AppHandle, Emitter, Manager};
+use tauri::{async_runtime, AppHandle, Emitter, Listener, Manager};
 use tokio::{self, sync, time};
 
 use crate::radiorust_blocks::{
@@ -304,6 +304,23 @@ impl RtlSdrState {
                         // output the stream
                         let playback = AudioPlayer::new(stream_settings.sample_rate, None).unwrap();
                         playback.feed_from(&buffer);
+
+                        app.listen("radio_update_settings", move |event| {
+                            if let Ok(new_settings) =
+                                serde_json::from_str::<StreamSettings>(&event.payload())
+                            {
+                                if volume.get() != new_settings.volume {
+                                    volume.set(new_settings.volume);
+                                }
+                                let sdr_freq = new_settings.freq * freq_mul;
+                                if rtlsdr_dev.frequency(Direction::Rx, 0).unwrap() != sdr_freq {
+                                    // set center frequency
+                                    rtlsdr_dev
+                                        .set_frequency(Direction::Rx, 0, sdr_freq, "")
+                                        .expect("Failed to set frequency");
+                                }
+                            }
+                        });
 
                         let prefix: &str;
 

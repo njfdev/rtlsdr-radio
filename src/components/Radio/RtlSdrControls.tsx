@@ -35,6 +35,7 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
+import { emit } from "@tauri-apps/api/event";
 const appWindow = getCurrentWebviewWindow();
 
 enum RtlSdrStatus {
@@ -91,6 +92,13 @@ export default function RtlSdrControls({
       frequency: streamSettings.freq,
     })
   );
+
+  useEffect(() => {
+    if (status != RtlSdrStatus.Stopped && status != RtlSdrStatus.Pausing) {
+      emit("radio_update_settings", streamSettings);
+      console.log("new settings", streamSettings);
+    }
+  }, [streamSettings]);
 
   useEffect(() => {
     localStorage.setItem(
