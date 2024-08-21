@@ -48,6 +48,15 @@ export default defineConfig({
     minify: !process.env.TAURI_DEBUG ? "esbuild" : false,
     // produce sourcemaps for debug builds
     sourcemap: !!process.env.TAURI_DEBUG,
+    rollupOptions: {
+      onwarn(warning, defaultHandler) {
+        if (warning.code === "SOURCEMAP_ERROR") {
+          return;
+        }
+
+        defaultHandler(warning);
+      },
+    },
   },
   base: "./",
 });
