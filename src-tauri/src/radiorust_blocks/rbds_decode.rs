@@ -213,7 +213,10 @@ impl<Flt> RbdsDecode<Flt>
 where
     Flt: Float + Into<f64> + Into<f32>,
 {
-    pub fn new(app: AppHandle) -> Self {
+    pub fn new<F>(app: AppHandle, radiotext_callback: F) -> Self
+    where
+        F: Fn(String) + Send + Sync + 'static,
+    {
         let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
 
         // setup Wav file writer
@@ -336,6 +339,7 @@ where
                                         rbds_process_bits(
                                             &mut decoded_bits,
                                             &mut rbds_decode_state,
+                                            &radiotext_callback,
                                             app.clone(),
                                             true,
                                         );
@@ -374,6 +378,7 @@ where
                         rbds_process_bits(
                             &mut decoded_bits,
                             &mut rbds_decode_state,
+                            &radiotext_callback,
                             app.clone(),
                             false,
                         );
@@ -604,7 +609,14 @@ impl RbdsState {
     }
 }
 
-fn process_rbds_group(group_data: Vec<(u32, String)>, rbds_state: &mut RbdsState, app: AppHandle) {
+fn process_rbds_group<F>(
+    group_data: Vec<(u32, String)>,
+    rbds_state: &mut RbdsState,
+    radiotext_callback: &F,
+    app: AppHandle,
+) where
+    F: Fn(String),
+{
     // group info
     let mut pi: u16 = 0; // program identification code
     let mut gtype: u8 = 0; // group type
@@ -763,12 +775,18 @@ fn process_rbds_group(group_data: Vec<(u32, String)>, rbds_state: &mut RbdsState
                 rbds_state.radio_text = String::from(" ".repeat(64));
             }
 
+            let previous_radio_text = rbds_state.radio_text.clone();
+
             rbds_state
                 .radio_text
                 .replace_range(char_starting_index..char_ending_index, &radio_text_segment);
 
             // send rbds data to UI
             send_rbds_data("radio_text", rbds_state.radio_text.clone(), app.clone());
+            // update radiotext callback if nothing has changed
+            if previous_radio_text != rbds_state.radio_text {
+                radiotext_callback(rbds_state.radio_text.clone());
+            }
         }
         // Open Data Application Identification (3A) and Open Data (3B)
         0b0011 => {
@@ -837,12 +855,15 @@ fn process_rbds_group(group_data: Vec<(u32, String)>, rbds_state: &mut RbdsState
     send_rbds_data("pi", pi, app.clone());
 }
 
-fn rbds_process_bits(
+fn rbds_process_bits<F>(
     bit_stream: &mut Vec<u8>,
     rbds_decode_state: &mut RbdsDecodeState,
+    radiotext_callback: &F,
     app: AppHandle,
     bit_stream_ending: bool,
-) {
+) where
+    F: Fn(String),
+{
     for bit in bit_stream {
         rbds_decode_state.last_28_bits.push_back(*bit);
         rbds_decode_state.bits_since_last_block = rbds_decode_state.bits_since_last_block + 1;
@@ -907,6 +928,7 @@ fn rbds_process_bits(
                         process_rbds_group(
                             rbds_decode_state.current_block_group.clone(),
                             &mut rbds_decode_state.rbds_state,
+                            radiotext_callback,
                             app.clone(),
                         );
                         rbds_decode_state.current_block_group.clear();

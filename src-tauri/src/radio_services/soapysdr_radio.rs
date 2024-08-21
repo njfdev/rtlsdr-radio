@@ -121,13 +121,14 @@ impl RtlSdrState {
                             "file://{}/resources/AppIcon.png",
                             resource_dir.as_os_str().to_str().unwrap()
                         );
-                        println!("Icon URL: {}", icon_url);
-                        controls.set_metadata(MediaMetadata {
-                            title: Some(if stream_settings.stream_type == StreamType::FM {
+                        let radio_type_name =
+                            Some(if stream_settings.stream_type == StreamType::FM {
                                 "FM Radio"
                             } else {
                                 "AM Radio"
-                            }),
+                            });
+                        controls.set_metadata(MediaMetadata {
+                            title: radio_type_name,
                             cover_url: Some(icon_url.as_str()),
                             ..Default::default()
                         });
@@ -273,8 +274,17 @@ impl RtlSdrState {
                             });
                             rbds_lowpass_filter.feed_from(&rbds_downmixer);
 
+                            let controls_clone2 = controls_arc.clone();
                             // add rbds decoder to output FM stream
-                            let rdbs_decoder = RbdsDecode::<f32>::new(app.clone());
+                            let rdbs_decoder =
+                                RbdsDecode::<f32>::new(app.clone(), move |radiotext: String| {
+                                    controls_clone2.lock().unwrap().set_metadata(MediaMetadata {
+                                        title: Some(&radiotext),
+                                        artist: radio_type_name,
+                                        cover_url: Some(icon_url.as_str()),
+                                        ..Default::default()
+                                    });
+                                });
                             rdbs_decoder.feed_from(&rbds_lowpass_filter);
                         } else if stream_settings.stream_type == StreamType::AM {
                             let demodulator = AmDemod::<f32>::new();
