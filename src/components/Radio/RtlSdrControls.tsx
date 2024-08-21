@@ -97,6 +97,10 @@ export default function RtlSdrControls({
     if (status == RtlSdrStatus.Running) {
       emit("radio_update_settings", streamSettings);
       setIsProcessingRequest(true);
+      // If station is changed, reset RDBD date which is station specific
+      if (streamSettings.freq != currentStation?.frequency) {
+        setRbdsData({});
+      }
       const newStation: Station = {
         type: currentStationType,
         frequency: streamSettings.freq,

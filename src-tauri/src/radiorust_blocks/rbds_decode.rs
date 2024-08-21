@@ -583,6 +583,7 @@ fn send_rbds_data<T: serde::Serialize>(param_name: &str, data: T, app: AppHandle
 
 #[derive(Clone)]
 struct RbdsState {
+    pi: u16,
     service_name: String,
     radio_text: String,
     radio_text_ab_flag: bool, // if switches from previous value, then clear radio_text
@@ -593,6 +594,7 @@ struct RbdsState {
 impl RbdsState {
     pub fn new() -> Self {
         Self {
+            pi: 0,
             service_name: String::from(" ".repeat(8)),
             radio_text: String::from(" ".repeat(64)),
             radio_text_ab_flag: false,
@@ -644,6 +646,12 @@ fn process_rbds_group(group_data: Vec<(u32, String)>, rbds_state: &mut RbdsState
                 return;
             }
         }
+    }
+
+    if pi != rbds_state.pi {
+        // if the pi code changes (a new station), then reset the rbds_state which is station specific
+        *rbds_state = RbdsState::new();
+        rbds_state.pi = pi;
     }
 
     // process blocks based on group type
