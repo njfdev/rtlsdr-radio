@@ -48,6 +48,7 @@ export default defineConfig({
     minify: !process.env.TAURI_DEBUG ? "esbuild" : false,
     // produce sourcemaps for debug builds
     sourcemap: !!process.env.TAURI_DEBUG,
+    // ignores rollup sourcemap errors (build with rollup, not the app)
     rollupOptions: {
       onwarn(warning, defaultHandler) {
         if (warning.code === "SOURCEMAP_ERROR") {
@@ -57,6 +58,11 @@ export default defineConfig({
         defaultHandler(warning);
       },
     },
+    /* Increase warning threshold for chunk size because we
+     * have a desktop application, so large chunks won't really
+     * effect our performance.
+     */
+    chunkSizeWarningLimit: 1000,
   },
   base: "./",
 });
