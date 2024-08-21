@@ -96,7 +96,15 @@ export default function RtlSdrControls({
   useEffect(() => {
     if (status != RtlSdrStatus.Stopped && status != RtlSdrStatus.Pausing) {
       emit("radio_update_settings", streamSettings);
-      console.log("new settings", streamSettings);
+      setIsProcessingRequest(true);
+      const newStation: Station = {
+        type: currentStationType,
+        frequency: streamSettings.freq,
+        channel: undefined,
+      };
+      setCurrentStation(newStation);
+      setRequestedStation(newStation);
+      setIsProcessingRequest(false);
     }
   }, [streamSettings]);
 
