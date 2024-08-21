@@ -13,10 +13,11 @@ use radiorust::{
 use soapysdr::Direction;
 use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, MediaPlayback, PlatformConfig};
 use tauri::{async_runtime, AppHandle, Emitter, Manager};
-use tokio::{self, time};
+use tokio::{self, sync, time};
 
 use crate::radiorust_blocks::{
     am_demod::AmDemod,
+    pauseable::Pauseable,
     rbds_decode::{DownMixer, RbdsDecode},
 };
 
@@ -70,49 +71,6 @@ impl RtlSdrState {
                 tokio::runtime::Runtime::new()
                     .unwrap()
                     .block_on(async move {
-                        // setup media controls
-                        #[cfg(not(target_os = "windows"))]
-                        let hwnd = None;
-
-                        #[cfg(target_os = "windows")]
-                        let hwnd = {
-                            use raw_window_handle::windows::WindowsHandle;
-
-                            let handle: WindowsHandle = unimplemented!();
-                            Some(handle.hwnd)
-                        };
-
-                        let config = PlatformConfig {
-                            dbus_name: "dev.njf.RTL_SDR_Radio",
-                            display_name: "RTL-SDR Radio",
-                            hwnd,
-                        };
-
-                        let mut controls = MediaControls::new(config).unwrap();
-
-                        // The closure must be Send and have a static lifetime.
-                        controls
-                            .attach(|event: MediaControlEvent| {
-                                println!("Event received: {:?}", event)
-                            })
-                            .unwrap();
-                        let resource_dir = app.path().resource_dir().unwrap();
-                        let icon_url = format!(
-                            "file://{}/resources/AppIcon.png",
-                            resource_dir.as_os_str().to_str().unwrap()
-                        );
-                        println!("Icon URL: {}", icon_url);
-                        controls.set_metadata(MediaMetadata {
-                            title: Some(if stream_settings.stream_type == StreamType::FM {
-                                "FM Radio"
-                            } else {
-                                "AM Radio"
-                            }),
-                            cover_url: Some(icon_url.as_str()),
-                            ..Default::default()
-                        });
-                        controls.set_playback(MediaPlayback::Playing { progress: None });
-
                         // connect to SDR
                         let rtlsdr_dev_result = soapysdr::Device::new("driver=rtlsdr");
 
@@ -135,6 +93,84 @@ impl RtlSdrState {
                                     .take(),
                             );
                             return;
+                        }
+
+                        // setup media controls
+                        #[cfg(not(target_os = "windows"))]
+                        let hwnd = None;
+
+                        #[cfg(target_os = "windows")]
+                        let hwnd = {
+                            use raw_window_handle::windows::WindowsHandle;
+
+                            let handle: WindowsHandle = unimplemented!();
+                            Some(handle.hwnd)
+                        };
+
+                        let config = PlatformConfig {
+                            dbus_name: "dev.njf.RTL_SDR_Radio",
+                            display_name: "RTL-SDR Radio",
+                            hwnd,
+                        };
+
+                        let mut controls = MediaControls::new(config).unwrap();
+                        controls.set_playback(MediaPlayback::Playing { progress: None });
+
+                        let resource_dir = app.path().resource_dir().unwrap();
+                        let icon_url = format!(
+                            "file://{}/resources/AppIcon.png",
+                            resource_dir.as_os_str().to_str().unwrap()
+                        );
+                        println!("Icon URL: {}", icon_url);
+                        controls.set_metadata(MediaMetadata {
+                            title: Some(if stream_settings.stream_type == StreamType::FM {
+                                "FM Radio"
+                            } else {
+                                "AM Radio"
+                            }),
+                            cover_url: Some(icon_url.as_str()),
+                            ..Default::default()
+                        });
+
+                        let is_paused = Arc::new(Mutex::new(false));
+                        let is_paused_clone = is_paused.clone();
+
+                        let controls_arc = Arc::new(Mutex::new(controls));
+                        let controls_clone = controls_arc.clone();
+
+                        // The closure must be Send and have a static lifetime.
+                        {
+                            controls_arc
+                                .lock()
+                                .unwrap()
+                                .attach(move |event: MediaControlEvent| {
+                                    let mut is_paused_locked = is_paused_clone.lock().unwrap();
+                                    match event {
+                                        MediaControlEvent::Pause => {
+                                            *is_paused_locked = true;
+                                        }
+                                        MediaControlEvent::Play => {
+                                            *is_paused_locked = false;
+                                        }
+                                        MediaControlEvent::Toggle => {
+                                            *is_paused_locked =
+                                                if *is_paused_locked { false } else { true };
+                                        }
+                                        _ => {
+                                            println!("Unhandled Media Control: {:?}", event);
+                                        }
+                                    }
+                                    let mut locked_controls = controls_clone.lock().unwrap();
+                                    if *is_paused_locked {
+                                        locked_controls
+                                            .set_playback(MediaPlayback::Paused { progress: None });
+                                    } else {
+                                        locked_controls.set_playback(MediaPlayback::Playing {
+                                            progress: None,
+                                        });
+                                    }
+                                })
+                                .unwrap();
                         }
 
                         let rtlsdr_dev = rtlsdr_dev_result.unwrap();
@@ -246,13 +282,16 @@ impl RtlSdrState {
                             filter2.feed_from(&demodulator);
                         }
 
+                        let pauser = Pauseable::new(is_paused);
+                        pauser.feed_from(&filter2);
+
                         // downsample so the output device can play the audio
                         let downsample2 = blocks::Downsampler::<f32>::new(
                             4096,
                             stream_settings.sample_rate,
                             2.0 * (required_bandwidth / 10.0),
                         );
-                        downsample2.feed_from(&filter2);
+                        downsample2.feed_from(&pauser);
 
                         // add a volume block
                         let volume = blocks::GainControl::<f32>::new(stream_settings.volume);
