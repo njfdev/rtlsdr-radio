@@ -691,6 +691,7 @@ fn process_rbds_group(group_data: Vec<(u32, String)>, rbds_state: &mut RbdsState
                 .service_name
                 .is_char_boundary(char_starting_index)
                 || !rbds_state.service_name.is_char_boundary(char_ending_index)
+                || (rbds_state.service_name.len() != rbds_state.service_name.chars().count())
             {
                 rbds_state.service_name.clear();
                 rbds_state.service_name = String::from(" ".repeat(8));
@@ -748,6 +749,7 @@ fn process_rbds_group(group_data: Vec<(u32, String)>, rbds_state: &mut RbdsState
             // if indexes are not at char boundaries, assume error and reset string
             if !rbds_state.radio_text.is_char_boundary(char_starting_index)
                 || !rbds_state.radio_text.is_char_boundary(char_ending_index)
+                || (rbds_state.radio_text.len() != rbds_state.radio_text.chars().count())
             {
                 rbds_state.radio_text.clear();
                 rbds_state.radio_text = String::from(" ".repeat(64));
@@ -804,6 +806,7 @@ fn process_rbds_group(group_data: Vec<(u32, String)>, rbds_state: &mut RbdsState
                 // if indexes are not at char boundaries, assume error and reset string
                 if !rbds_state.pty_name.is_char_boundary(char_starting_index)
                     || !rbds_state.pty_name.is_char_boundary(char_ending_index)
+                    || (rbds_state.pty_name.len() != rbds_state.pty_name.chars().count())
                 {
                     rbds_state.pty_name.clear();
                     rbds_state.pty_name = String::from(" ".repeat(8));
