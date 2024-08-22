@@ -3,7 +3,9 @@
   "identifier": "migrated",
   "description": "permissions that were migrated from v1",
   "local": true,
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:path:default",
     "core:event:default",
@@ -25,6 +27,7 @@
     },
     "shell:allow-open",
     "shell:default",
-    "updater:default"
+    "updater:default",
+    "log:default"
   ]
 }

@@ -1,5 +1,7 @@
 use std::f32::consts::PI;
 
+use log::debug;
+
 use crate::modes::types::*;
 
 pub fn decode_airborne_vel(me: &[u8], adsb_state: &mut AdsbState) {
@@ -22,7 +24,7 @@ pub fn decode_airborne_vel(me: &[u8], adsb_state: &mut AdsbState) {
 
     if vertical_rate_raw != 0 {
         let vertical_rate = ((vertical_rate_raw as i32) - 1) * 64 * (vertical_rate_sign as i32);
-        println!(
+        debug!(
             "Vertical Velocity ({}): {} ft/min",
             if vertical_rate_source == AltitudeSource::GNSS {
                 "GNSS"
@@ -49,7 +51,7 @@ pub fn decode_airborne_vel(me: &[u8], adsb_state: &mut AdsbState) {
             let velocity_source_difference =
                 (velocity_source_difference_raw as i32 - 1) * 25 * velocity_source_difference_sign;
             let other_vertical_velocity_source = vertical_rate + velocity_source_difference;
-            println!(
+            debug!(
                 "Vertical Velocity ({}): {} ft/min",
                 if vertical_rate_source != AltitudeSource::GNSS {
                     "GNSS"
@@ -65,7 +67,7 @@ pub fn decode_airborne_vel(me: &[u8], adsb_state: &mut AdsbState) {
             }
         }
     } else {
-        println!("Vertical Velocity: N/A");
+        debug!("Vertical Velocity: N/A");
     }
 
     // subtype 1/3 -> subsonic, subtype 2/4 -> supersonic
@@ -114,11 +116,11 @@ pub fn decode_airborne_vel(me: &[u8], adsb_state: &mut AdsbState) {
                     * (360.0 / (2.0 * PI))
                     % 360.0;
 
-                println!("Heading: {:.2}°", angle);
+                debug!("Heading: {:.2}°", angle);
                 adsb_state.heading = Some(angle);
             }
 
-            print!(
+            let message_prefix = format!(
                 "Ground Speed ({}): ",
                 if subtype == 1 {
                     "subsonic"
@@ -130,20 +132,18 @@ pub fn decode_airborne_vel(me: &[u8], adsb_state: &mut AdsbState) {
                 let real_speed = ((ns_velocity_abs.unwrap() as f32).powi(2)
                     + (ew_velocity_abs.unwrap() as f32).powi(2))
                 .sqrt();
-                println!("{} knots", real_speed);
+                debug!("{}{} knots", message_prefix, real_speed);
                 adsb_state.speed = Some(real_speed.round() as u16);
-            } else {
-                println!()
             }
             if ns_velocity_abs.is_some() {
-                println!(
+                debug!(
                     "  {} knots {}",
                     ns_velocity_abs.unwrap(),
                     if ns_sign > 0 { "North" } else { "South" }
                 );
             }
             if ew_velocity_abs.is_some() {
-                println!(
+                debug!(
                     "  {} knots {}",
                     ew_velocity_abs.unwrap(),
                     if ew_sign > 0 { "East" } else { "West" }
@@ -178,7 +178,7 @@ pub fn decode_airborne_vel(me: &[u8], adsb_state: &mut AdsbState) {
                 airspeed = Some((airspeed_raw - 1) * speed_multiplier);
             }
 
-            println!(
+            debug!(
                 "Magnetic Heading: {}",
                 if is_magnetic_heading_included {
                     format!("{:.2}°", magnetic_heading.unwrap())
@@ -186,7 +186,7 @@ pub fn decode_airborne_vel(me: &[u8], adsb_state: &mut AdsbState) {
                     "N/A".to_string()
                 }
             );
-            println!(
+            debug!(
                 "{} Airspeed: {}",
                 if airspeed_type == AirspeedType::TAS {
                     "True"

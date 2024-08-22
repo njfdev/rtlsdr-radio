@@ -1,6 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use crate::modes::*;
+use log::debug;
 use radiorust::{
     flow::{new_receiver, new_sender, ReceiverConnector, SenderConnector},
     impl_block_trait,
@@ -113,7 +114,7 @@ where
 
                             let duration = start.elapsed();
 
-                            println!("Time taken to process ADS-B: {:?}", duration);
+                            debug!("Time taken to process ADS-B: {:?}", duration);
                         });
 
                         if pass_along {
@@ -204,7 +205,7 @@ async fn decode_test_modes(
             .iter_mut()
             .map(|byte| format!("{:08b}", byte))
             .collect();
-        println!("{}", vec_to_string_vec.join(""));
+        debug!("{}", vec_to_string_vec.join(""));
         decode_modes_msg(message_vec, modes_state).await;
         modes_channel.send(modes_state.clone()).unwrap();
     }

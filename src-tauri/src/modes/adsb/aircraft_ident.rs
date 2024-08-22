@@ -1,3 +1,5 @@
+use log::debug;
+
 use crate::modes::{adsb_db::get_flight_route, types::*};
 
 // Indexed by [TC-1][CA]
@@ -55,14 +57,14 @@ pub async fn decode_aircraft_ident(me: &[u8], aircraft: &mut AircraftState) {
         // fetch flight route information for this new callsign
         let flight_route_result = get_flight_route(callsign.clone()).await;
         if flight_route_result.is_ok() {
-            println!("Flight Route: {:?}", flight_route_result.clone().unwrap());
+            debug!("Flight Route: {:?}", flight_route_result.clone().unwrap());
             aircraft.flight_route = Some(flight_route_result.unwrap());
         }
     }
 
-    println!("Callsign: {}", callsign);
+    debug!("Callsign: {}", callsign);
     aircraft.adsb_state.callsign = Some(callsign);
-    println!("Wake Vortex Category: {}", wake_vortex_category);
+    debug!("Wake Vortex Category: {}", wake_vortex_category);
     aircraft.adsb_state.wake_vortex_cat = Some(wake_vortex_category.to_owned());
 }
 

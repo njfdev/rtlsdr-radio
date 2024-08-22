@@ -1,5 +1,6 @@
 use std::{collections::VecDeque, f64::consts::PI, ops::Range};
 
+use log::{debug, info};
 use serde_json::json;
 
 #[cfg(debug_assertions)]
@@ -316,7 +317,7 @@ where
                                     {
                                         // clock is within acceptable range
                                         is_clock_synced = true;
-                                        println!("Clock is synced!");
+                                        debug!("Clock is synced!");
                                     }
                                     samples_since_last_clock = 0.0;
                                 } else {
@@ -333,7 +334,7 @@ where
                                             samples_since_last_clock,
                                         );
                                         samples_since_last_clock = 0.0;
-                                        println!("\nLost clock sync!");
+                                        debug!("\nLost clock sync!");
 
                                         // make sure to process rbds data already received
                                         rbds_process_bits(
@@ -654,7 +655,7 @@ fn process_rbds_group<F>(
                 block4_data = data;
             }
             _ => {
-                println!("Unexpected Block");
+                debug!("Unexpected Block");
                 return;
             }
         }
@@ -797,10 +798,10 @@ fn process_rbds_group<F>(
                 match application_id {
                     // RadioText+
                     0x4BD7 => {
-                        println!("This Station Supports RadioText+");
+                        info!("This Station Supports RadioText+");
                     }
                     _ => {
-                        println!("Unhandled Open Data Application: {:04x}", application_id);
+                        debug!("Unhandled Open Data Application: {:04x}", application_id);
                     }
                 }
             }
@@ -913,7 +914,7 @@ fn rbds_process_bits<F>(
                     )
                 {
                     if is_error_corrected {
-                        println!("Error Corrected Block was Accepted!");
+                        debug!("Error Corrected Block was Accepted!");
                     }
                     rbds_decode_state
                         .current_block_group

@@ -7,6 +7,7 @@ use std::{
 };
 
 use blocks::{chunks, Rechunker};
+use log::error;
 use radiorust::{blocks::io::rf, prelude::*};
 use soapysdr::Direction;
 use tauri::{async_runtime, ipc::Channel, AppHandle, Emitter};
@@ -135,7 +136,7 @@ impl AdsbDecoderState {
             app.emit("adsb_status", Some("stopped"))
                 .expect("failed to emit event");
         } else {
-            println!("Could not acquire lock immediately");
+            error!("Could not acquire lock immediately");
             return;
         }
     }

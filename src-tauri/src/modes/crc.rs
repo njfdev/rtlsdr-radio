@@ -1,3 +1,5 @@
+use log::debug;
+
 use crate::modes::{get_message_length, types::*};
 
 // Precalculated values for ADS-B checksum for each bit of the 112 bits.
@@ -52,11 +54,11 @@ pub fn perform_modes_crc(msg: Vec<u8>) -> Result<Vec<u8>, ()> {
         return Err(());
     }
 
-    print!("Valid Mode S Message Demodulated: ");
+    let mut message = String::from("Valid Mode S Message Demodulated: ");
     for byte in msg.clone() {
-        print!("{:08b}", byte);
+        message.push_str(&format!("{:08b}", byte));
     }
-    println!();
+    debug!("{}", message);
 
     Ok(msg)
 }

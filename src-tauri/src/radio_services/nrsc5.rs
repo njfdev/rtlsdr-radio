@@ -1,4 +1,3 @@
-
 use core::time;
 use std::{
     sync::{
@@ -8,6 +7,7 @@ use std::{
     thread,
 };
 
+use log::{debug, error, info};
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_shell::{process::CommandEvent, ShellExt};
 
@@ -47,19 +47,19 @@ impl Nrsc5State {
                 while let Some(event) = rx.recv().await {
                     match event {
                         CommandEvent::Stdout(line) => {
-                            print!("{}", String::from_utf8(line).unwrap());
+                            debug!("{}", String::from_utf8(line).unwrap());
                         }
                         // for some reason all nrsc5 output is found under Stderr
                         CommandEvent::Stderr(line) => {
                             let string_output = String::from_utf8(line).unwrap();
-                            print!("{}", string_output);
+                            debug!("{}", string_output);
                             Nrsc5State::handle_nrsc5_output(app.clone(), string_output);
                         }
                         CommandEvent::Error(line) => {
-                            eprint!("Sidecar Error: {}", line);
+                            error!("Sidecar Error: {}", line);
                         }
                         CommandEvent::Terminated(payload) => {
-                            println!(
+                            info!(
                                 "Nrsc5 Terminated with exit code {}",
                                 payload.code.unwrap_or(-1)
                             );
@@ -97,7 +97,7 @@ impl Nrsc5State {
             app.emit("nrsc5_status", Some("stopped"))
                 .expect("failed to emit event");
         } else {
-            println!("Could not acquire lock immediately");
+            error!("Could not acquire lock immediately");
         }
     }
 

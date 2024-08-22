@@ -1,5 +1,6 @@
 use std::f64::consts::PI;
 
+use log::{debug, error};
 use unit_conversions::length;
 
 use crate::modes::types::*;
@@ -90,7 +91,7 @@ pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
             adsb_state.latitude = Some(lat.clone());
             adsb_state.longitude = Some(lon.clone());
         } else {
-            println!("Error in decoding Latitude and Longitude!");
+            error!("Error in decoding Latitude and Longitude!");
         }
 
         adsb_state.cpr_position = None;
@@ -107,10 +108,10 @@ pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
 
     */
     if adsb_state.latitude.is_some() {
-        println!("Latitude: {}°", adsb_state.latitude.unwrap());
+        debug!("Latitude: {}°", adsb_state.latitude.unwrap());
     }
     if adsb_state.longitude.is_some() {
-        println!("Longitude: {}°", adsb_state.longitude.unwrap());
+        debug!("Longitude: {}°", adsb_state.longitude.unwrap());
     }
 
     let mut final_altitude: Option<i32> = None;
@@ -140,7 +141,7 @@ pub fn decode_aircraft_pos(me: &[u8], adsb_state: &mut AdsbState) {
     adsb_state.altitude = final_altitude.clone();
     adsb_state.altitude_source = Some(altitude_source.clone());
 
-    println!(
+    debug!(
         "Altitude ({}): {}",
         if altitude_source == AltitudeSource::GNSS {
             "GNSS"

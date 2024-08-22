@@ -13,7 +13,7 @@ pub async fn get_aircraft_registration(icao_address: u32) -> Result<Registration
         return Err(response.unwrap_err().to_string());
     }
 
-    // println!("Raw data: {:?}", response.unwrap().text().await);
+    // debug!("Raw data: {:?}", response.unwrap().text().await);
     // return Err(String::from(""));
 
     let json_data = response

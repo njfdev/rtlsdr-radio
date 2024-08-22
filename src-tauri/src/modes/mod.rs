@@ -10,6 +10,7 @@ use adsb::decode_adsb_msg;
 use adsb_db::get_icao_details;
 use arla::get_aircraft_registration;
 use crc::perform_modes_crc;
+use log::debug;
 use types::*;
 
 pub async fn detect_modes_signal(m: Vec<u16>, modes_state: &mut ModeSState) {
@@ -147,7 +148,7 @@ pub async fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
     // TODO: process this and send to frontend
     let _ca = msg[0] & 0b111; // responder capabilities
 
-    println!(
+    debug!(
         "Existing Known ICAO Addresses: {:?}",
         modes_state
             .aircraft
@@ -157,14 +158,14 @@ pub async fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
             .collect::<Vec<String>>()
     );
 
-    println!("\n-------------------------");
+    debug!("\n-------------------------");
 
-    println!("Downlink Format: {}", msg_type);
+    debug!("Downlink Format: {}", msg_type);
 
     // extended squitter (a.k.a. ADS-B)
     if msg_type == 17 {
         let icao_address = ((msg[1] as u32) << 16) | ((msg[2] as u32) << 8) | msg[3] as u32;
-        println!("Decoded ICAO Address: {:#06x}", icao_address);
+        debug!("Decoded ICAO Address: {:#06x}", icao_address);
 
         // check if data from airplane with ICAO address has already been received, otherwise add entry
         let mut cur_aircraft = modes_state
@@ -184,7 +185,7 @@ pub async fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
             // fetch Registration information for this new aircraft from arla
             let registration_result =
                 get_aircraft_registration(new_aircraft.icao_address.clone()).await;
-            println!("Fetching Registration Result");
+            debug!("Fetching Registration Result");
             if registration_result.is_ok() {
                 new_aircraft.registration = Some(registration_result.unwrap());
             }
@@ -201,7 +202,7 @@ pub async fn decode_modes_msg(msg: Vec<u8>, modes_state: &mut ModeSState) {
         decode_adsb_msg(me, &mut cur_aircraft.unwrap()).await;
     }
 
-    println!("-------------------------\n");
+    debug!("-------------------------\n");
 }
 
 fn get_message_length(msg_type: u8) -> usize {

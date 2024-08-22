@@ -6,6 +6,7 @@ use std::{
     time::Duration,
 };
 
+use log::{debug, error};
 use radiorust::{
     blocks::io::{audio::cpal::AudioPlayer, rf},
     prelude::*,
@@ -158,7 +159,7 @@ impl RtlSdrState {
                                                 if *is_paused_locked { false } else { true };
                                         }
                                         _ => {
-                                            println!("Unhandled Media Control: {:?}", event);
+                                            debug!("Unhandled Media Control: {:?}", event);
                                         }
                                     }
                                     let mut locked_controls = controls_clone.lock().unwrap();
@@ -182,7 +183,7 @@ impl RtlSdrState {
 
                         // set center frequency
                         let sdr_freq = stream_settings.freq * freq_mul;
-                        println!("{}hz", sdr_freq);
+                        debug!("{}hz", sdr_freq);
                         rtlsdr_dev
                             .set_frequency(Direction::Rx, 0, sdr_freq, "")
                             .expect("Failed to set frequency");
@@ -364,7 +365,7 @@ impl RtlSdrState {
             app.emit("rtlsdr_status", Some("stopped"))
                 .expect("failed to emit event");
         } else {
-            println!("Could not acquire lock immediately");
+            error!("Could not acquire lock immediately");
             return;
         }
     }

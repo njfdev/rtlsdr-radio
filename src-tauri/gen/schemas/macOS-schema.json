@@ -2267,6 +2267,27 @@
           ]
         },
         {
+          "description": "log:default -> Allows the log command",
+          "type": "string",
+          "enum": [
+            "log:default"
+          ]
+        },
+        {
+          "description": "log:allow-log -> Enables the log command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "log:allow-log"
+          ]
+        },
+        {
+          "description": "log:deny-log -> Denies the log command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "log:deny-log"
+          ]
+        },
+        {
           "description": "shell:default -> This permission set configures which\nshell functionality is exposed by default.\n\n#### Granted Permissions\n\nIt allows to use the `open` functionality without any specific\nscope pre-configured. It will allow opening `http(s)://`,\n`tel:` and `mailto:` links.\n",
           "type": "string",
           "enum": [
