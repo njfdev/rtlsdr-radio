@@ -40,9 +40,9 @@ jobs:
           brew update
           brew install pkg-config cmake autoconf automake libtool git librtlsdr libao fftw soapyrtlsdr libusb
 
-      - name: Set Up Xcode CLI Tools
+      - name: Set Needed ENV Variables (MacOS Only)
+        if: matrix.platform == 'macos-latest' || matrix.platform == 'macos-13'
         run: |
-          sudo xcode-select --install
           export SDKROOT=$(xcrun --show-sdk-path)
           export MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion | awk -F '.' '{print $1 "." $2}')
 
