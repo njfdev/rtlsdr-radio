@@ -6,7 +6,7 @@ use std::{
     time::Duration,
 };
 
-use blocks::{chunks, Rechunker};
+use blocks::Rechunker;
 use log::error;
 use radiorust::{blocks::io::rf, prelude::*};
 use soapysdr::Direction;

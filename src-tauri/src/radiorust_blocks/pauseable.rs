@@ -1,12 +1,10 @@
 use std::sync::{Arc, Mutex};
 
-use biquad::{self, Biquad, Coefficients, DirectForm1, ToHertz, Type, Q_BUTTERWORTH_F64};
-
 use radiorust::{
     flow::{new_receiver, new_sender, ReceiverConnector, SenderConnector},
     impl_block_trait,
     numbers::Float,
-    prelude::{Chunk, ChunkBufPool, Complex},
+    prelude::{ChunkBufPool, Complex},
     signal::Signal,
 };
 use tokio::spawn;
@@ -73,9 +71,5 @@ where
             receiver_connector,
             sender_connector,
         }
-    }
-
-    fn calc_magnitude(c: Complex<Flt>) -> f64 {
-        (c.re.powi(2) + c.im.powi(2)).sqrt().into()
     }
 }

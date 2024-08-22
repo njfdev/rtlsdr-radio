@@ -9,11 +9,7 @@ use radiorust::{
     prelude::{ChunkBufPool, Complex},
     signal::Signal,
 };
-use tauri::{
-    async_runtime::{self, block_on},
-    ipc::Channel,
-    AppHandle, Emitter,
-};
+use tauri::{ipc::Channel, AppHandle};
 use tokio::{spawn, sync::Mutex, time::Instant};
 use types::ModeSState;
 
@@ -109,7 +105,7 @@ where
                                 .collect();
 
                             // send update of data (whether new or not)
-                            let mut modes_channel_mut = modes_channel_clone.lock().await;
+                            let modes_channel_mut = modes_channel_clone.lock().await;
                             modes_channel_mut.send(modes_state_mut.clone()).unwrap();
 
                             let duration = start.elapsed();
@@ -159,7 +155,7 @@ where
 
 #[cfg(debug_assertions)]
 async fn decode_test_modes(
-    app: AppHandle,
+    _app: AppHandle,
     modes_channel: &mut Channel<ModeSState>,
     modes_state: &mut ModeSState,
 ) {

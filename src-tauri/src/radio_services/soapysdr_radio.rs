@@ -14,7 +14,7 @@ use radiorust::{
 use soapysdr::Direction;
 use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, MediaPlayback, PlatformConfig};
 use tauri::{async_runtime, AppHandle, Emitter, Listener, Manager};
-use tokio::{self, sync, time};
+use tokio::{self, time};
 
 use crate::radiorust_blocks::{
     am_demod::AmDemod,
@@ -115,7 +115,7 @@ impl RtlSdrState {
                         };
 
                         let mut controls = MediaControls::new(config).unwrap();
-                        controls.set_playback(MediaPlayback::Playing { progress: None });
+                        let _ = controls.set_playback(MediaPlayback::Playing { progress: None });
 
                         let resource_dir = app.path().resource_dir().unwrap();
                         let icon_url = format!(
@@ -128,7 +128,7 @@ impl RtlSdrState {
                             } else {
                                 "AM Radio"
                             });
-                        controls.set_metadata(MediaMetadata {
+                        let _ = controls.set_metadata(MediaMetadata {
                             title: radio_type_name,
                             cover_url: Some(icon_url.as_str()),
                             ..Default::default()
@@ -164,12 +164,13 @@ impl RtlSdrState {
                                     }
                                     let mut locked_controls = controls_clone.lock().unwrap();
                                     if *is_paused_locked {
-                                        locked_controls
+                                        let _ = locked_controls
                                             .set_playback(MediaPlayback::Paused { progress: None });
                                     } else {
-                                        locked_controls.set_playback(MediaPlayback::Playing {
-                                            progress: None,
-                                        });
+                                        let _ =
+                                            locked_controls.set_playback(MediaPlayback::Playing {
+                                                progress: None,
+                                            });
                                     }
                                 })
                                 .unwrap();
@@ -279,12 +280,14 @@ impl RtlSdrState {
                             // add rbds decoder to output FM stream
                             let rdbs_decoder =
                                 RbdsDecode::<f32>::new(app.clone(), move |radiotext: String| {
-                                    controls_clone2.lock().unwrap().set_metadata(MediaMetadata {
-                                        title: Some(&radiotext),
-                                        artist: radio_type_name,
-                                        cover_url: Some(icon_url.as_str()),
-                                        ..Default::default()
-                                    });
+                                    let _ = controls_clone2.lock().unwrap().set_metadata(
+                                        MediaMetadata {
+                                            title: Some(&radiotext),
+                                            artist: radio_type_name,
+                                            cover_url: Some(icon_url.as_str()),
+                                            ..Default::default()
+                                        },
+                                    );
                                 });
                             rdbs_decoder.feed_from(&rbds_lowpass_filter);
                         } else if stream_settings.stream_type == StreamType::AM {

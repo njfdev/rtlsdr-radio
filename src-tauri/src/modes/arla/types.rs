@@ -162,6 +162,12 @@ pub struct RegistrationObject {
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
 pub enum ApiAircraftRegistrationLookup {
-    KnownRegistration { registration: RegistrationObject },
-    LookupError { error: String, message: String },
+    KnownRegistration {
+        registration: RegistrationObject,
+    },
+    LookupError {
+        #[allow(dead_code)]
+        error: String,
+        message: String,
+    },
 }
