@@ -1,6 +1,8 @@
 # RTL-SDR Radio
 
-RTL-SDR Radio is your one-stop shop for listening and decoding to the radio frequencies in the air! It is designed to be lightweight, easy-to-use, and minimalistic.
+Your one-stop shop for decoding/listening to radio frequencies!
+
+RTL-SDR Radio is designed to be lightweight, easy-to-use, cross-platform, and minimalistic. It is built to work out of the box with the incredibly cheap [RTL-SDR](https://www.rtl-sdr.com/) (Software Defined Radio). Support for more SDRs is planned.
 
 ## Features
 
