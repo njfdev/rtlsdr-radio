@@ -6,6 +6,10 @@ on:
     branches:
       - release
 
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   publish-tauri:
     permissions:
