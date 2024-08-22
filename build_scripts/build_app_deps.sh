@@ -8,6 +8,10 @@ if [[ "$OS" == "Linux" ]]; then
     LIB_EXT=".so"
 elif [[ "$OS" == "Darwin" ]]; then
     LIB_EXT=".dylib"
+
+    # I spent 1.5 hours figuring out that this ENV variable was messing
+    # up libusb build script on Apple Silicon.
+    unset IPHONEOS_DEPLOYMENT_TARGET
 elif [[ "$OS" == "CYGWIN"* || "$OS" == "MINGW"* || "$OS" == "MSYS"* ]]; then
     LIB_EXT=".dll"
 else
