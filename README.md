@@ -1,13 +1,14 @@
 # RTL-SDR Radio
 
-RTL-SDR Radio is your one-stop shop for listening to the radio frequencies in the air! It is designed to be lightweight, easy-to-use, and minimalistic.
+RTL-SDR Radio is your one-stop shop for listening and decoding to the radio frequencies in the air! It is designed to be lightweight, easy-to-use, and minimalistic.
 
 ## Features
 
-- Listen to FM Radio
+- 📡 Listen to FM Radio
   - Decoding RBDS (Radio Broadcast Data System)
-- Listen to AM Radio
-- Save Radio Stations to Listen to Later
+- 📻 Listen to AM Radio
+- ⭐️ Save Radio Stations to Listen to Later
+- ✈️ Decoding location and messages from airplanes (ADS-B)
 - 🔋 "Batteries Included" - No need to install anything else! Everything comes bundled within the app.
 
 ## Installation
