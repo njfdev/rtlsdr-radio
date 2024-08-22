@@ -8,6 +8,8 @@ if [[ "$OS" == "Linux" ]]; then
     LIB_EXT=".so"
 elif [[ "$OS" == "Darwin" ]]; then
     LIB_EXT=".dylib"
+    # this should help fix a possible build error for macOS
+    SDKROOT="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
 elif [[ "$OS" == "CYGWIN"* || "$OS" == "MINGW"* || "$OS" == "MSYS"* ]]; then
     LIB_EXT=".dll"
 else
