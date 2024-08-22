@@ -26,7 +26,7 @@
     "longDescription": "",
     "macOS": {
       "entitlements": null,
-      "exceptionDomain": "",
+      "exceptionDomain": "cdn.airport-data.com",
       "frameworks": [],
       "providerShortName": null,
       "signingIdentity": null
