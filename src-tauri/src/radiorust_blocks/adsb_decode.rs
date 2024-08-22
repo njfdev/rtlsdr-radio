@@ -9,7 +9,7 @@ use radiorust::{
     prelude::{ChunkBufPool, Complex},
     signal::Signal,
 };
-use tauri::{ipc::Channel, AppHandle};
+use tauri::ipc::Channel;
 use tokio::{spawn, sync::Mutex, time::Instant};
 use types::ModeSState;
 
@@ -26,7 +26,7 @@ impl<Flt> AdsbDecode<Flt>
 where
     Flt: Float + Into<f64>,
 {
-    pub fn new(app: AppHandle, modes_channel: Channel<ModeSState>, pass_along: bool) -> Self {
+    pub fn new(modes_channel: Channel<ModeSState>, pass_along: bool) -> Self {
         let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
         let (sender, sender_connector) = new_sender::<Signal<Complex<Flt>>>();
 
@@ -45,8 +45,7 @@ where
                 if is_first_run {
                     let mut modes_state_mut = modes_state.lock().await;
                     let mut modes_channel_mut = modes_channel_arc.lock().await;
-                    decode_test_modes(app.clone(), &mut modes_channel_mut, &mut modes_state_mut)
-                        .await;
+                    decode_test_modes(&mut modes_channel_mut, &mut modes_state_mut).await;
                     is_first_run = false;
                 }
 
@@ -154,11 +153,7 @@ where
 }
 
 #[cfg(debug_assertions)]
-async fn decode_test_modes(
-    _app: AppHandle,
-    modes_channel: &mut Channel<ModeSState>,
-    modes_state: &mut ModeSState,
-) {
+async fn decode_test_modes(modes_channel: &mut Channel<ModeSState>, modes_state: &mut ModeSState) {
     let example_messages = [
                   "1000110110101100010000101101111101011000101001010010001110110101001001001111110111111011100000000100111111011101",
                   "1000110110101100010000101101111110011001000100001111011000110011101110000100000001001100010011011000101010110011",

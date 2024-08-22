@@ -98,7 +98,7 @@ impl AdsbDecoderState {
                         let buffer = blocks::Buffer::new(0.0, 0.0, 0.0, 0.1);
                         buffer.feed_from(&rechunker);
 
-                        let adsb_decode = AdsbDecode::new(app.clone(), modes_channel, false);
+                        let adsb_decode = AdsbDecode::new(modes_channel, false);
                         adsb_decode.feed_from(&buffer);
 
                         // let wavwriter = WavWriterBlock::new(
