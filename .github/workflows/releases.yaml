@@ -15,9 +15,9 @@ jobs:
       matrix:
         include:
           - platform: "macos-latest" # for Arm based Macs
-            args: "--target aarch64-apple-darwin"
+            args: ""
           - platform: "macos-13" # for Intel based Macs
-            args: "--target x86_64-apple-darwin"
+            args: ""
           - platform: "ubuntu-22.04"
             args: ""
             # Issues with getting SoapySDR Libraries Installed on Windows
@@ -38,7 +38,13 @@ jobs:
         run: |
           brew tap pothosware/homebrew-pothos
           brew update
-          brew install cmake autoconf automake libtool git librtlsdr libao fftw soapyrtlsdr libusb
+          brew install pkg-config cmake autoconf automake libtool git librtlsdr libao fftw soapyrtlsdr libusb
+
+      - name: Set Up Xcode CLI Tools
+        run: |
+          sudo xcode-select --install
+          export SDKROOT=$(xcrun --show-sdk-path)
+          export MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion | awk -F '.' '{print $1 "." $2}')
 
       - name: Install Dependencies (Ubuntu Only)
         if: matrix.platform == 'ubuntu-22.04'
