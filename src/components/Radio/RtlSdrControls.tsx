@@ -111,7 +111,6 @@ export default function RtlSdrControls({
       setListeningIntervalId(
         setInterval(async () => {
           if (status == RtlSdrStatus.Running) {
-            console.log("A", status);
             setTotalSecondsListened(
               await increaseListeningDuration(secondsBetweenIncrease)
             );
@@ -177,12 +176,6 @@ export default function RtlSdrControls({
       ) {
         setIsProcessingRequest(true);
 
-        console.log(
-          isProcessingRequest,
-          requestedStation.type.toString(),
-          status
-        );
-
         setIsInUse(true);
         setStreamSettings((old) => ({
           ...old,
@@ -200,7 +193,6 @@ export default function RtlSdrControls({
       status == RtlSdrStatus.Stopped
     ) {
       (async () => {
-        console.log("Starting Stream");
         await start_stream();
         setIsProcessingRequest(false);
       })();

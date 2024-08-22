@@ -4,7 +4,6 @@ export async function increaseListeningDuration(
   seconds_listened: number
 ): Promise<number> {
   const prev_seconds = await getSecondsListenedTo();
-  console.log("Prev", prev_seconds, "Additional", seconds_listened);
 
   const new_seconds = prev_seconds + seconds_listened;
 

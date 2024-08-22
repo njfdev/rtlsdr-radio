@@ -35,7 +35,6 @@ export default function RadioView({
   );
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
-    console.log(event.payload);
     if (
       !event.payload.endsWith("stopped") &&
       !event.payload.endsWith("pausing")
