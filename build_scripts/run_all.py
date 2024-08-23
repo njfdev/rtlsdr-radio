@@ -40,13 +40,11 @@ orig_dir = os.getcwd()
 os.chdir(build_dir)
 
 # handle building required libs
-if "win32" in sys.platform:
-    print("Building dependencies for Windows is not yet supported!")
-else:
-    # prevent build errors on macOS Apple Silicon
-    os.environ.pop('IPHONEOS_DEPLOYMENT_TARGET', None)
+subprocess.run(["cmake", "../build_scripts"], check=True)
 
-    subprocess.run(["cmake", "../build_scripts"], check=True)
-    subprocess.run(["make"], check=True)
+# prevent build errors on macOS Apple Silicon
+os.environ.pop('IPHONEOS_DEPLOYMENT_TARGET', None)
+
+subprocess.run(["cmake", "--build", "."], check=True)
 
 os.chdir(orig_dir)
