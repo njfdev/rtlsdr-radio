@@ -7,6 +7,8 @@ include(ExternalProject)
 if(WIN32)
     set(LIB_EXT ".lib")
 
+    set(RTLSDR_DEPENDS_ON pthreads)
+
     # ExternalProject_Add for pthreads
     ExternalProject_Add(
         pthreads
@@ -43,6 +45,7 @@ ExternalProject_Add(
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/rtl-sdr
     GIT_REPOSITORY https://github.com/osmocom/rtl-sdr.git
     GIT_TAG v2.0.2
+    DEPENDS ${RTLSDR_DEPENDS_ON} libusb
     UPDATE_COMMAND ""
     PATCH_COMMAND ""
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -S <SOURCE_DIR> -B <BINARY_DIR> -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_BINARY_DIR}/dist -DLIBUSB_INCLUDE_DIRS=${CMAKE_CURRENT_BINARY_DIR}/dist/include/libusb-1.0 -DLIBUSB_LIBRARIES=${CMAKE_CURRENT_BINARY_DIR}/dist/lib/libusb-1.0${LIB_EXT}
@@ -69,6 +72,7 @@ ExternalProject_Add(
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/soapyrtlsdr
     GIT_REPOSITORY https://github.com/pothosware/SoapyRTLSDR.git
     GIT_TAG soapy-rtl-sdr-0.3.3
+    DEPENDS SoapySDR rtl-sdr
     UPDATE_COMMAND ""
     PATCH_COMMAND ""
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -S <SOURCE_DIR> -B <BINARY_DIR> -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_BINARY_DIR}/dist -DRTLSDR_INCLUDE_DIR=${CMAKE_CURRENT_BINARY_DIR}/dist/include -DRTLSDR_LIBRARY=${CMAKE_CURRENT_BINARY_DIR}/dist/lib/librtlsdr${LIB_EXT} -DSoapySDR_DIR=${CMAKE_CURRENT_BINARY_DIR}/dist/lib/cmake/SoapySDR
