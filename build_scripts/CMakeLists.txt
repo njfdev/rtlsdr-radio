@@ -6,6 +6,19 @@ include(ExternalProject)
 # Set platform-specific library extensions
 if(WIN32)
     set(LIB_EXT ".lib")
+
+    # ExternalProject_Add for pthreads
+    ExternalProject_Add(
+        pthreads
+        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/pthreads
+        GIT_REPOSITORY https://github.com/GerHobbelt/pthread-win32.git
+        GIT_TAG master
+        UPDATE_COMMAND ""
+        PATCH_COMMAND ""
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/dist -S <SOURCE_DIR> -B <BINARY_DIR>
+        BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release
+        INSTALL_COMMAND ${CMAKE_COMMAND} -P <BINARY_DIR>/cmake_install.cmake --prefix ${CMAKE_CURRENT_BINARY_DIR}/dist
+    )
 elseif(APPLE)
     set(LIB_EXT ".dylib")
 else()
