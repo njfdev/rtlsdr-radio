@@ -12,7 +12,7 @@ if (not os.getenv("VITE_EXCLUDE_SIDECAR") == "true"):
     else:
         subprocess.run(["sh", "./build_scripts/nrsc5.sh"], check=True)
 else:
-    file = Path("./build/bin/nrsc5-" + os.getenv("TAURI_ENV_TARGET_TRIPLE"))
+    file = Path("./build/bin/nrsc5-" + os.getenv("TAURI_ENV_TARGET_TRIPLE") + (".exe" if "win32" in sys.platform else ""))
     file.parent.mkdir(parents=True, exist_ok=True)
     file.write_bytes(b"")
 
