@@ -35,7 +35,7 @@ else()
 endif()
 
 if(WIN32)
-    set(RTLSDR_LIBRARIES "${CMAKE_CURRENT_BINARY_DIR}/dist/lib/rtlsdr_static.lib;${CMAKE_CURRENT_BINARY_DIR}/dist/bin/rtlsdr.dll")
+    set(RTLSDR_LIBRARIES "${CMAKE_CURRENT_BINARY_DIR}/dist/lib/rtlsdr.lib;${CMAKE_CURRENT_BINARY_DIR}/dist/bin/rtlsdr.dll")
 else()
     set(RTLSDR_LIBRARIES ${CMAKE_CURRENT_BINARY_DIR}/dist/lib/librtlsdr${LIB_EXT})
 endif()
