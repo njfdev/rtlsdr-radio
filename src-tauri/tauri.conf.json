@@ -33,6 +33,7 @@
     },
     "resources": {
       "../build/dist": "resources/",
+      "../build/dist/bin/*": "./",
       "../designs/Second Icon Attempt.png": "resources/AppIcon.png"
     },
     "shortDescription": "",

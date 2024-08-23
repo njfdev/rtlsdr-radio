@@ -31,4 +31,10 @@ os.environ.pop('IPHONEOS_DEPLOYMENT_TARGET', None)
 
 subprocess.run(["cmake", "--build", "."], check=True)
 
+# delete all non dlls in the dist/bin/ folder
+bin_dir = "dist/bin/"
+for file in os.listdir(bin_dir):
+    if not file.endswith(".dll"):
+        os.remove(bin_dir + file)
+
 os.chdir(orig_dir)
