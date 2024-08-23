@@ -12,54 +12,53 @@ else()
     set(LIB_EXT ".so")
 endif()
 
-# ExternalProject_Add for libusb
 ExternalProject_Add(
   libusb
-  PREFIX ${CMAKE_BINARY_DIR}/libusb
+  PREFIX ${CMAKE_CURRENT_BINARY_DIR}/libusb
   GIT_REPOSITORY https://github.com/libusb/libusb-cmake.git
   GIT_TAG v1.0.27-1  # Specify a tag or branch
   UPDATE_COMMAND ""
   PATCH_COMMAND ""
-  CONFIGURE_COMMAND ${CMAKE_COMMAND} -S <SOURCE_DIR> -B <BINARY_DIR>
+  CONFIGURE_COMMAND ${CMAKE_COMMAND} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/dist -S <SOURCE_DIR> -B <BINARY_DIR>
   BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR>
-  INSTALL_COMMAND ${CMAKE_COMMAND} --install <BINARY_DIR> --prefix ${CMAKE_BINARY_DIR}/dist
+  INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install
 )
 
 # ExternalProject_Add for librtlsdr
 ExternalProject_Add(
     rtl-sdr
-    PREFIX ${CMAKE_BINARY_DIR}/rtl-sdr
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/rtl-sdr
     GIT_REPOSITORY https://github.com/osmocom/rtl-sdr.git
     GIT_TAG v2.0.2
     UPDATE_COMMAND ""
     PATCH_COMMAND ""
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -S <SOURCE_DIR> -B <BINARY_DIR> -DLIBUSB_INCLUDE_DIR=${CMAKE_BINARY_DIR}/usr/local/include/libusb-1.0 -DLIBUSB_LIBRARY=${CMAKE_BINARY_DIR}/usr/local/lib/libusb-1.0${LIB_EXT}
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -S <SOURCE_DIR> -B <BINARY_DIR> -DCMAKE_INCLUDE_PATH=${CMAKE_CURRENT_BINARY_DIR}/dist/include/ -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_BINARY_DIR}/dist -DLIBUSB_INCLUDE_DIR=${CMAKE_CURRENT_BINARY_DIR}/dist/include/libusb-1.0 -DLIBUSB_LIBRARY=${CMAKE_CURRENT_BINARY_DIR}/dist/lib/libusb-1.0${LIB_EXT}
     BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR>
-    INSTALL_COMMAND ${CMAKE_COMMAND} --install <BINARY_DIR> --prefix ${CMAKE_BINARY_DIR}/dist
+    INSTALL_COMMAND ${CMAKE_COMMAND} --install <BINARY_DIR> --prefix ${CMAKE_CURRENT_BINARY_DIR}/dist
 )
 
 # ExternalProject_Add for SoapySDR
 ExternalProject_Add(
     SoapySDR
-    PREFIX ${CMAKE_BINARY_DIR}/soapysdr
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/soapysdr
     GIT_REPOSITORY https://github.com/pothosware/SoapySDR.git
     GIT_TAG soapy-sdr-0.8.1  # Specify a tag or branch
     UPDATE_COMMAND ""
     PATCH_COMMAND ""
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -S <SOURCE_DIR> -B <BINARY_DIR>
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/dist -S <SOURCE_DIR> -B <BINARY_DIR>
     BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR>
-    INSTALL_COMMAND ${CMAKE_COMMAND} --install <BINARY_DIR> --prefix ${CMAKE_BINARY_DIR}/dist
+    INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install
 )
 
 # ExternalProject_Add for SoapyRTLSDR
 ExternalProject_Add(
     SoapyRTLSDR
-    PREFIX ${CMAKE_BINARY_DIR}/soapyrtlsdr
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/soapyrtlsdr
     GIT_REPOSITORY https://github.com/pothosware/SoapyRTLSDR.git
     GIT_TAG soapy-rtl-sdr-0.3.3
     UPDATE_COMMAND ""
     PATCH_COMMAND ""
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -S <SOURCE_DIR> -B <BINARY_DIR> -DRTLSDR_INCLUDE_DIR=${CMAKE_BINARY_DIR}/usr/local/include -DRTLSDR_LIBRARY=${CMAKE_BINARY_DIR}/usr/local/lib/librtlsdr${LIB_EXT} -DSoapySDR_DIR=${CMAKE_BINARY_DIR}/usr/local/share/cmake/SoapySDR
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -S <SOURCE_DIR> -B <BINARY_DIR> -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_BINARY_DIR}/dist -DRTLSDR_INCLUDE_DIR=${CMAKE_CURRENT_BINARY_DIR}/dist/include -DRTLSDR_LIBRARY=${CMAKE_CURRENT_BINARY_DIR}/dist/lib/librtlsdr${LIB_EXT} -DSoapySDR_DIR=${CMAKE_CURRENT_BINARY_DIR}/dist/lib/cmake/SoapySDR
     BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR>
-    INSTALL_COMMAND ${CMAKE_COMMAND} --install <BINARY_DIR> --prefix ${CMAKE_BINARY_DIR}/dist
+    INSTALL_COMMAND ${CMAKE_COMMAND} --install <BINARY_DIR> --prefix ${CMAKE_CURRENT_BINARY_DIR}/dist
 )
