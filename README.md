@@ -56,12 +56,11 @@ git clone https://github.com/njfdev/rtlsdr-radio.git
 cd rtlsdr-radio
 sudo npm install --global yarn
 yarn install
-cargo install tauri-cli --version "^2.0.0-rc"
-VITE_EXCLUDE_SIDECAR=true cargo tauri build
+VITE_EXCLUDE_SIDECAR=true yarn tauri build
 ```
 
 Optionally, you can build with HD Radio functionality, but it might cause issues. Just replace the last command with this one:
 
 ```bash
-VITE_EXCLUDE_SIDECAR=false cargo tauri build
+VITE_EXCLUDE_SIDECAR=false yarn tauri build
 ```
