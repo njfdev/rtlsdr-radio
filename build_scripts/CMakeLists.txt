@@ -3,9 +3,6 @@ project(ExternalDependencies)
 
 include(ExternalProject)
 
-# set install prefix to current dir
-SET(CMAKE_INSTALL_PREFIX ".")
-
 # Set platform-specific library extensions
 if(WIN32)
     set(LIB_EXT ".dll")

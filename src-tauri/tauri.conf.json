@@ -32,9 +32,7 @@
       "signingIdentity": null
     },
     "resources": {
-      "../build/lib/*": "resources/lib/",
-      "../build/lib/SoapySDR/modules0.8/*": "resources/lib/SoapySDR/modules0.8",
-      "../build/lib/pkgconfig/*": "resources/lib/pkgconfig",
+      "../build/usr/local/*": "resources/",
       "../designs/Second Icon Attempt.png": "resources/AppIcon.png"
     },
     "shortDescription": "",

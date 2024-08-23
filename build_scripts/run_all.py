@@ -33,8 +33,17 @@ else:
     file.write_bytes(b"")
 
 
+build_dir = Path("./build")
+file.parent.mkdir(exist_ok=True)
+
+orig_dir = os.getcwd()
+os.chdir(build_dir)
+
 # handle building required libs
 if "win32" in sys.platform:
     print("Building dependencies for Windows is not yet supported!")
 else:
-    subprocess.run(["bash", "./build_scripts/build_app_deps.sh"], check=True)
+    subprocess.run(["cmake", "../build_scripts"], check=True)
+    subprocess.run(["make"], check=True)
+
+os.chdir(orig_dir)
