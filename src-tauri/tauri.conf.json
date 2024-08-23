@@ -32,7 +32,7 @@
       "signingIdentity": null
     },
     "resources": {
-      "../build/usr/local/": "resources/",
+      "../build/dist": "resources/",
       "../designs/Second Icon Attempt.png": "resources/AppIcon.png"
     },
     "shortDescription": "",
