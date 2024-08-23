@@ -43,6 +43,9 @@ os.chdir(build_dir)
 if "win32" in sys.platform:
     print("Building dependencies for Windows is not yet supported!")
 else:
+    # prevent build errors on macOS Apple Silicon
+    os.environ.pop('IPHONEOS_DEPLOYMENT_TARGET', None)
+
     subprocess.run(["cmake", "../build_scripts"], check=True)
     subprocess.run(["make"], check=True)
 
