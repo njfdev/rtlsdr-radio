@@ -12,23 +12,7 @@ if (not os.getenv("VITE_EXCLUDE_SIDECAR") == "true"):
     else:
         subprocess.run(["sh", "./build_scripts/nrsc5.sh"], check=True)
 else:
-    # replace nrsc5 executable with an empty file if sidecar is disabled
-    rust_target_command = "rustc -vV | sed -n 's|host: ||p'"
-    process = subprocess.Popen(rust_target_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    # get the out and err
-    stdout, stderr = process.communicate()
-
-    # decode the string
-    rust_target_string = stdout.decode('utf-8').strip()
-
-    if (os.getenv("TAURI_ENV_PLATFORM") == "darwin"):
-        if (os.getenv("TAURI_ENV_ARCH") == "aarch64"):
-            rust_target_string = "aarch64-apple-darwin"
-        elif (os.getenv("TAURI_ENV_ARCH") == "x86_64"):
-            rust_target_string = "x86_64-apple-darwin"
-
-    file = Path("./build/bin/nrsc5-" + rust_target_string)
+    file = Path("./build/bin/nrsc5-" + os.getenv("TAURI_ENV_TARGET_TRIPLE"))
     file.parent.mkdir(parents=True, exist_ok=True)
     file.write_bytes(b"")
 
