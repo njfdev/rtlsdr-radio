@@ -13,21 +13,22 @@ pub mod utils {
         env::set_var("SOAPY_SDR_PLUGIN_PATH", modules_path.as_mut_os_str());
 
         // Determine the correct file extension for the shared library based on the OS
-        let os_ext = if cfg!(target_os = "windows") {
-            ".dll"
-        } else if cfg!(target_os = "macos") {
+        let os_ext = if cfg!(target_os = "macos") {
             ".dylib"
         } else {
             ".so"
         };
 
-        // Find the first libusb shared library in the resources/lib directory
-        let libusb_path = find_libusb_library(&resource_dir, os_ext)
-            .expect("Failed to find libusb shared library");
+        // do not need to load on Windows (already loaded)
+        if !(cfg!(target_os = "windows")) {
+            // Find the first libusb shared library in the resources/lib directory
+            let libusb_path = find_libusb_library(&resource_dir, os_ext)
+                .expect("Failed to find libusb shared library");
 
-        // load libusb shared library
-        unsafe {
-            let _lib = Library::new(libusb_path).expect("Failed to load shared library");
+            // load libusb shared library
+            unsafe {
+                let _lib = Library::new(libusb_path).expect("Failed to load shared library");
+            }
         }
     }
 
