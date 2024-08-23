@@ -102,10 +102,11 @@ impl RtlSdrState {
 
                         #[cfg(target_os = "windows")]
                         let hwnd = {
-                            use raw_window_handle::windows::WindowsHandle;
+                            let webview_window = app.get_webview_window("main").unwrap();
+                            let native_window = webview_window.hwnd().unwrap();
+                            let hwnd = native_window.0;
 
-                            let handle: WindowsHandle = unimplemented!();
-                            Some(handle.hwnd)
+                            Some(hwnd)
                         };
 
                         let config = PlatformConfig {
