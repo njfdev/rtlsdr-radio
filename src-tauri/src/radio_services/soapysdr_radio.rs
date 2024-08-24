@@ -7,10 +7,7 @@ use std::{
 };
 
 use log::{debug, error};
-use radiorust::{
-    blocks::io::{audio::cpal::AudioPlayer, rf},
-    prelude::*,
-};
+use radiorust::{blocks::io::rf, prelude::*};
 use soapysdr::Direction;
 use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, MediaPlayback, PlatformConfig};
 use tauri::{async_runtime, AppHandle, Emitter, Listener, Manager};
@@ -18,6 +15,7 @@ use tokio::{self, time};
 
 use crate::radiorust_blocks::{
     am_demod::AmDemod,
+    better_cpal,
     pauseable::Pauseable,
     rbds_decode::{DownMixer, RbdsDecode},
 };
@@ -317,7 +315,13 @@ impl RtlSdrState {
                         buffer.feed_from(&volume);
 
                         // output the stream
-                        let playback = AudioPlayer::new(stream_settings.sample_rate, None).unwrap();
+                        let playback = better_cpal::AudioPlayer::new(
+                            stream_settings.sample_rate,
+                            None,
+                            2,
+                            Some(true),
+                        )
+                        .unwrap();
                         playback.feed_from(&buffer);
 
                         app.listen("radio_update_settings", move |event| {
