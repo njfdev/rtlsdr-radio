@@ -2,15 +2,26 @@ pub mod utils {
     use std::{env, fs, path::PathBuf};
 
     use libloading::Library;
+    use log::debug;
     use tauri::{App, Manager};
 
     pub fn setup_dependencies(app: &mut App) {
         let resource_dir = app.path().resource_dir().unwrap();
 
         // set env for SoapySDR modules
-        //env::set_var(key, value);
-        let mut modules_path = resource_dir.join("resources/lib/SoapySDR/modules0.8/");
-        env::set_var("SOAPY_SDR_PLUGIN_PATH", modules_path.as_mut_os_str());
+        let modules_path = resource_dir.join("resources/lib/SoapySDR/modules0.8/");
+        let mut modules_path_str = modules_path.to_str().unwrap();
+        /* On windows, \\?\ is a valid prefix to a path, however, it prevents SoapySDR
+         * from loading the correct path, so we remove it if it exists.
+         */
+        if modules_path_str.starts_with("\\\\?\\") {
+            modules_path_str = &modules_path_str[4..];
+        }
+        env::set_var("SOAPY_SDR_PLUGIN_PATH", modules_path_str);
+        debug!(
+            "SoapySDR Plugin Path: {}",
+            env::var("SOAPY_SDR_PLUGIN_PATH").unwrap()
+        );
 
         // Determine the correct file extension for the shared library based on the OS
         let os_ext = if cfg!(target_os = "macos") {
