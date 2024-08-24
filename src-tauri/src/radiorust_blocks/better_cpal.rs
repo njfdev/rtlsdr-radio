@@ -15,6 +15,7 @@ use radiorust::numbers::*;
 use radiorust::signal::*;
 
 use cpal::traits::{DeviceTrait as _, HostTrait as _, StreamTrait as _};
+use rustfft::num_traits::ToPrimitive;
 
 use std::error::Error as StdError;
 use std::fmt;
@@ -162,6 +163,11 @@ impl AudioPlayer {
         let evhdl_clone = event_handlers.clone();
         let err_fn = move |err| panic!("error during audio playback: {err}");
         let mut current_chunk_and_pos: Option<(Chunk<Complex<f32>>, usize)> = None;
+        let channel_multiplier = if virtual_channels.unwrap() {
+            channels as usize
+        } else {
+            1
+        };
         let write_audio = move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
             for sample in data.iter_mut() {
                 let (current_chunk, mut current_pos) = match current_chunk_and_pos.take() {
@@ -185,9 +191,13 @@ impl AudioPlayer {
                         }
                     },
                 };
-                *sample = current_chunk[current_pos].re;
+                *sample = current_chunk[((current_pos as f32) / (channel_multiplier as f32))
+                    .floor()
+                    .to_usize()
+                    .unwrap()]
+                .re;
                 current_pos += 1;
-                if current_pos < current_chunk.len() {
+                if current_pos < (current_chunk.len() * channel_multiplier) {
                     current_chunk_and_pos = Some((current_chunk, current_pos))
                 }
             }
