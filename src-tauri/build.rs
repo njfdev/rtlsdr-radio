@@ -1,6 +1,6 @@
 fn main() {
     // Tell Cargo the place of the shared libraries
-    println!("cargo:rustc-link-search=../build/dist/lib");
+    println!("cargo:rustc-link-search=../build/dist/resources/lib");
     // for linux
     println!("cargo:rustc-link-arg=-Wl,-rpath,'$ORIGIN'/resources/lib");
     // for macos

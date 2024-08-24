@@ -32,8 +32,7 @@
       "signingIdentity": null
     },
     "resources": {
-      "../build/dist": "resources/",
-      "../build/dist/bin/*": "./",
+      "../build/dist/": "./",
       "../designs/Second Icon Attempt.png": "resources/AppIcon.png"
     },
     "shortDescription": "",

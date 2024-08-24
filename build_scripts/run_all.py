@@ -3,6 +3,7 @@ import sys
 import os
 from pathlib import Path
 import shutil
+import glob
 
 # handle building nrsc5
 if (not os.getenv("VITE_EXCLUDE_SIDECAR") == "true"):
@@ -33,12 +34,25 @@ os.environ.pop('IPHONEOS_DEPLOYMENT_TARGET', None)
 subprocess.run(["cmake", "--build", "."], check=True)
 
 # move all the files we need into dist
-dist_dir = Path("./build/dist")
+dist_dir = Path("./dist")
 dist_dir.parent.mkdir(exist_ok=True)
 
-out_dir = Path("./build/out")
+resources_dir = dist_dir.joinpath("resources")
+resources_dir.parent.mkdir(exist_ok=True)
+
+out_dir = Path("./out")
 
 # copy the files into dist
-shutil.copy2(out_dir, dist_dir)
+
+# copy dlls
+dll_files = glob.glob(str(out_dir.joinpath("bin/*.dll")))
+for dll in dll_files:
+    shutil.copy(dll, dist_dir)
+
+# copy include dir
+shutil.copytree(out_dir.joinpath("include"), resources_dir.joinpath("include"), dirs_exist_ok=True)
+
+# copy lib dir
+shutil.copytree(out_dir.joinpath("lib"), resources_dir.joinpath("lib"), dirs_exist_ok=True)
 
 os.chdir(orig_dir)
