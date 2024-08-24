@@ -22,44 +22,5 @@ pub mod utils {
             "SoapySDR Plugin Path: {}",
             env::var("SOAPY_SDR_PLUGIN_PATH").unwrap()
         );
-
-        // Determine the correct file extension for the shared library based on the OS
-        let os_ext = if cfg!(target_os = "macos") {
-            ".dylib"
-        } else {
-            ".so"
-        };
-
-        // do not need to load on Windows (already loaded)
-        if !(cfg!(target_os = "windows")) {
-            // Find the first libusb shared library in the resources/lib directory
-            let libusb_path = find_libusb_library(&resource_dir, os_ext)
-                .expect("Failed to find libusb shared library");
-
-            // load libusb shared library
-            unsafe {
-                let _lib = Library::new(libusb_path).expect("Failed to load shared library");
-            }
-        }
-    }
-
-    fn find_libusb_library(resource_dir: &PathBuf, os_ext: &str) -> Option<PathBuf> {
-        let lib_dir = resource_dir.join("resources/lib");
-        let entries = fs::read_dir(lib_dir).ok()?;
-
-        for entry in entries {
-            let entry = entry.ok()?;
-            let path = entry.path();
-            if path.is_file() {
-                if let Some(file_name) = path.file_name() {
-                    if let Some(file_name_str) = file_name.to_str() {
-                        if file_name_str.starts_with("libusb") && file_name_str.ends_with(os_ext) {
-                            return Some(path);
-                        }
-                    }
-                }
-            }
-        }
-        None
     }
 }
