@@ -2,6 +2,7 @@ import subprocess
 import sys
 import os
 from pathlib import Path
+import shutil
 
 # handle building nrsc5
 if (not os.getenv("VITE_EXCLUDE_SIDECAR") == "true"):
@@ -18,7 +19,7 @@ else:
 
 
 build_dir = Path("./build")
-file.parent.mkdir(exist_ok=True)
+build_dir.parent.mkdir(exist_ok=True)
 
 orig_dir = os.getcwd()
 os.chdir(build_dir)
@@ -31,10 +32,13 @@ os.environ.pop('IPHONEOS_DEPLOYMENT_TARGET', None)
 
 subprocess.run(["cmake", "--build", "."], check=True)
 
-# delete all non dlls in the dist/bin/ folder
-bin_dir = "dist/bin/"
-for file in os.listdir(bin_dir):
-    if not file.endswith(".dll"):
-        os.remove(bin_dir + file)
+# move all the files we need into dist
+dist_dir = Path("./build/dist")
+dist_dir.parent.mkdir(exist_ok=True)
+
+out_dir = Path("./build/out")
+
+# copy the files into dist
+shutil.copy2(out_dir, dist_dir)
 
 os.chdir(orig_dir)
