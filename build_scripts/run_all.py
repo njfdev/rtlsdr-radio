@@ -5,6 +5,9 @@ from pathlib import Path
 import shutil
 import glob
 
+# prevent build errors on macOS Apple Silicon
+os.environ.pop('IPHONEOS_DEPLOYMENT_TARGET', None)
+
 # handle building nrsc5
 if (not os.getenv("VITE_EXCLUDE_SIDECAR") == "true"):
     if "win32" in sys.platform:
@@ -27,9 +30,6 @@ os.chdir(build_dir)
 
 # handle building required libs
 subprocess.run(["cmake", "../build_scripts"], check=True)
-
-# prevent build errors on macOS Apple Silicon
-os.environ.pop('IPHONEOS_DEPLOYMENT_TARGET', None)
 
 subprocess.run(["cmake", "--build", "."], check=True)
 
