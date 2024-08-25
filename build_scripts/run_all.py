@@ -55,4 +55,15 @@ shutil.copytree(out_dir.joinpath("include"), resources_dir.joinpath("include"), 
 # copy lib dir
 shutil.copytree(out_dir.joinpath("lib"), resources_dir.joinpath("lib"), dirs_exist_ok=True)
 
+# update .pc files with new path
+pc_files = glob.glob(str(resources_dir.joinpath("lib/pkgconfig/*.pc")))
+for pc in pc_files:
+    with open(pc, 'r') as f:
+        lines = f.readlines()
+    
+    lines[0] = "prefix=" + str(resources_dir.absolute()) + "\n"
+
+    with open(pc, 'w') as f:
+        f.writelines(lines)
+
 os.chdir(orig_dir)
