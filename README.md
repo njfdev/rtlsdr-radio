@@ -11,11 +11,12 @@ RTL-SDR Radio is designed to be lightweight, easy-to-use, cross-platform, and mi
 - 📻 Listen to AM Radio
 - ⭐️ Save Radio Stations to Listen to Later
 - ✈️ Decoding location and messages from airplanes (ADS-B)
+- 💻 Cross-platform: Linux, macOS, and Windows
 - 🔋 "Batteries Included" - No need to install anything else! Everything comes bundled within the app.
 
 ## Installation
 
-Installation should be as simple as going to the [GitHub Releases](https://github.com/njfdev/rtlsdr-radio/releases) and downloading the most recent application from the "Assets" dropdown for your specific OS.
+Installation should be as simple as going to the [GitHub Releases](https://github.com/njfdev/rtlsdr-radio/releases) and downloading the most recent application from the "Assets" dropdown for your specific OS. I develop RTL-SDR Radio on a Mac, so builds for other operating systems may have unknown issues.
 
 There is one extra step if you get an error like: `"RTL-SDR Radio" is damaged and can't be opened. You should move it to the Trash.`. I, [njfdev](https://github.com/njfdev), do not have an Apple Developer Account so I cannot sign/notarize the app. This means your Mac will automatically move RTL-SDR Radio to the quarantine, so you will need to remove it from quarantine:
 
@@ -28,7 +29,7 @@ xattr -d com.apple.quarantine /Applications/RTL-SDR\ Radio.app
 
 > Note: A recent upgrade to Tauri V2 has caused HD Radio to stop working. It will probably not work.
 
-> ⚠️ Building on Windows is not tested so there are no instructions to do so.
+> ⚠️ Building on Windows is possible, but not yet documented. If you have experience with compiling applications on Windows, the instructions for macOS/Linux are a good outline of what you need to do.
 
 First, install Rust if it is not already installed:
 
