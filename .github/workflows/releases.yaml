@@ -52,7 +52,7 @@ jobs:
       - name: Install Build Dependencies (Windows Only)
         if: matrix.platform == 'windows-latest'
         shell: powershell
-        run: choco install pkgconfiglite -y
+        run: choco install pkgconfiglite soapy-sdr -y
 
       - name: Setup Node
         uses: actions/setup-node@v4
