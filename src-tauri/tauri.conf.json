@@ -44,7 +44,7 @@
     "createUpdaterArtifacts": true
   },
   "productName": "RTL-SDR Radio",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "identifier": "dev.njf.rtlsdr-radio",
   "plugins": {
     "updater": {
