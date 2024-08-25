@@ -24,9 +24,8 @@ jobs:
             args: ""
           - platform: "ubuntu-22.04"
             args: ""
-            # Issues with getting SoapySDR Libraries Installed on Windows
-          #- platform: "windows-latest"
-          #  args: ""
+          - platform: "windows-latest"
+            args: ""
 
     runs-on: ${{ matrix.platform }}
     env:
