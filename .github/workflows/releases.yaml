@@ -36,24 +36,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Dependencies (MacOS Only)
+      - name: Install Build Dependencies (MacOS Only)
         if: matrix.platform == 'macos-latest' || matrix.platform == 'macos-13'
         run: |
           brew tap pothosware/homebrew-pothos
           brew update
           brew install pkg-config cmake autoconf automake libtool git librtlsdr libao fftw soapyrtlsdr libusb
 
-      - name: Set Needed ENV Variables (MacOS Only)
-        if: matrix.platform == 'macos-latest' || matrix.platform == 'macos-13'
-        run: |
-          export SDKROOT=$(xcrun --show-sdk-path)
-          export MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion | awk -F '.' '{print $1 "." $2}')
-
-      - name: Install Dependencies (Ubuntu Only)
+      - name: Install Build Dependencies (Ubuntu Only)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev librsvg2-dev patchelf git build-essential cmake autoconf automake libtool libao-dev libfftw3-dev librtlsdr-dev nodejs npm libsoapysdr-dev soapysdr-module-rtlsdr libusb-dev libusb-1.0-0-dev curl wget file libxdo-dev libssl-dev libappindicator3-dev librsvg2-dev libasound2-dev libclang-dev libudev-dev patchelf
+
+      - name: Install Build Dependencies (Windows Only)
+        if: matrix.platform == 'windows-latest'
+        shell: powershell
+        run: choco install pkgconfiglite -y
 
       - name: Setup Node
         uses: actions/setup-node@v4
