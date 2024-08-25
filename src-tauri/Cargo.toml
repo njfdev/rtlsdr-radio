@@ -12,12 +12,12 @@ rust-version = "1.60"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "2.0.0-beta", features = [] }
+tauri-build = { version = "2.0.0-rc", features = [] }
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "2.0.0-rc.3", features = [] }
+tauri = { version = "2.0.0-rc", features = [] }
 cpal = "0.15.2"
 radiorust = { version = "0.5.0", features = ["soapysdr", "cpal"] }
 soapysdr = "0.3.2"
@@ -28,11 +28,11 @@ rustfft = "6.2.0"
 fundsp = "0.18.2"
 crc = "3.0.1"
 nalgebra = "0.33.0"
-tauri-plugin-shell = "2.0.0-beta.10"
+tauri-plugin-shell = "2.0.0-rc"
 libloading = "0.8.5"
 unit-conversions = "0.1.16"
 reqwest = { version = "0.11.18", features = ["json"] }
-tauri-bundler = "2.0.1-rc.2"
+tauri-bundler = "2.0.1-rc"
 chrono = { version = "0.4.31", features = ["serde"] }
 souvlaki = "0.7.0"
 tauri-plugin-log = "2.0.0-rc"
@@ -49,7 +49,7 @@ name = "rtlsdr_radio_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [target."cfg(not(any(target_os = \"android\", target_os = \"ios\")))".dependencies]
-tauri-plugin-updater = "2.0.0-beta.12"
+tauri-plugin-updater = "2.0.0-rc"
 
 [profile.dev]
 split-debuginfo = "unpacked"
