@@ -20,8 +20,6 @@ use rustfft::num_traits::ToPrimitive;
 use std::error::Error as StdError;
 use std::fmt;
 
-pub use cpal::Device;
-
 #[derive(Debug)]
 enum ErrorVariant {
     BuildStreamInvalidArgument(&'static str),

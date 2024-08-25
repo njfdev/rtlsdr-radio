@@ -1,8 +1,6 @@
 pub mod utils {
-    use std::{env, fs, path::PathBuf};
-
-    use libloading::Library;
     use log::debug;
+    use std::env;
     use tauri::{App, Manager};
 
     pub fn setup_dependencies(app: &mut App) {
