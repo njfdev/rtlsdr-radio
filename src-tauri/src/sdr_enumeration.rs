@@ -1,11 +1,17 @@
-use std::time::Duration;
+use std::{panic, time::Duration};
 
 use serde::Serialize;
 use soapysdr::{enumerate, Args};
 use tokio::time::sleep;
 
-pub fn get_connected_sdr_args() -> Vec<ConnectedSDRArgs> {
-    args_to_connected_sdr_args(enumerate("driver=rtlsdr").unwrap())
+pub fn get_connected_sdr_args() -> Result<Vec<ConnectedSDRArgs>, ()> {
+    let args = panic::catch_unwind(|| enumerate("driver=rtlsdr"));
+
+    if args.is_err() || args.as_ref().unwrap().is_err() {
+        return Err(());
+    }
+
+    Ok(args_to_connected_sdr_args(args.unwrap().unwrap()))
 }
 
 pub fn register_connected_sdrs_callback<F>(polling_rate: f32, callback: F)
@@ -15,7 +21,9 @@ where
     tokio::spawn(async move {
         let mut prev_args = get_connected_sdr_args();
 
-        callback(prev_args.clone());
+        if prev_args.is_ok() {
+            callback(prev_args.clone().unwrap());
+        }
 
         // run until the application closes
         loop {
@@ -24,7 +32,9 @@ where
             let args = get_connected_sdr_args();
 
             if args != prev_args {
-                callback(args.clone());
+                if args.is_ok() {
+                    callback(args.clone().unwrap());
+                }
                 prev_args = args;
             }
         }

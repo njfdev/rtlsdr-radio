@@ -25,7 +25,7 @@ pub fn setup_dependencies(app: &mut App) {
 
 pub fn setup_callbacks(app: &mut App) {
     let app_handle = app.app_handle().clone();
-    register_connected_sdrs_callback(2.0, move |args| {
+    register_connected_sdrs_callback(10.0, move |args| {
         info!("Connected SDR Details: {:?}", args);
         let _ = app_handle.emit("connected_sdrs", args);
     });

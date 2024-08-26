@@ -13,7 +13,6 @@ use radio_services::{
     soapysdr_adsb::{self, AdsbDecoderState},
     soapysdr_radio::{self, RtlSdrState},
 };
-use sdr_enumeration::ConnectedSDRArgs;
 use serde::Serialize;
 use std::{
     env,
@@ -130,7 +129,14 @@ async fn stop_adsb_decoding(app: AppHandle, state: State<'_, AppState>) -> Resul
 
 #[tauri::command]
 async fn get_connected_sdr_args() -> Result<serde_json::Value, ()> {
-    Ok(sdr_enumeration::get_connected_sdr_args()
+    let args = sdr_enumeration::get_connected_sdr_args();
+
+    if args.is_err() {
+        return Err(());
+    }
+
+    Ok(args
+        .unwrap()
         .serialize(serde_json::value::Serializer)
         .unwrap())
 }
