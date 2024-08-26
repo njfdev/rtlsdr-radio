@@ -13,7 +13,7 @@ use radio_services::{
     soapysdr_adsb::{self, AdsbDecoderState},
     soapysdr_radio::{self, RtlSdrState},
 };
-use sdr_enumeration::connected_sdrs_hotplug_callback;
+use sdr_enumeration::register_connected_sdrs_callback;
 use std::{
     env,
     sync::{Arc, Mutex},
@@ -34,7 +34,7 @@ pub async fn run() {
         .plugin(tauri_plugin_log::Builder::new().build())
         .setup(|app| {
             setup_dependencies(app);
-            connected_sdrs_hotplug_callback(2.0, |args| {
+            register_connected_sdrs_callback(2.0, |args| {
                 println!(
                     "Args: {:?}",
                     args.iter()
