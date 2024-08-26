@@ -311,3 +311,8 @@ export interface AvailableSdrArgs {
   serial: string;
   tuner: string;
 }
+
+export interface SDRState {
+  args: AvailableSdrArgs;
+  dev: boolean;
+}

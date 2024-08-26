@@ -2,7 +2,10 @@ use log::{debug, info};
 use std::env;
 use tauri::{App, Emitter, Manager};
 
-use crate::sdr::enumeration::register_available_sdrs_callback;
+use crate::{
+    sdr::{enumeration::register_available_sdrs_callback, SDRState},
+    AppState,
+};
 
 pub fn setup_dependencies(app: &mut App) {
     let resource_dir = app.path().resource_dir().unwrap();
@@ -27,6 +30,34 @@ pub fn setup_callbacks(app: &mut App) {
     let app_handle = app.app_handle().clone();
     register_available_sdrs_callback(5.0, move |args| {
         info!("Available SDR Details: {:?}", args);
-        let _ = app_handle.emit("available_sdrs", args);
+
+        let state = app_handle.state::<AppState>();
+        let mut sdrs = state.sdrs.lock().unwrap();
+
+        // remove existing devices that no longer are available
+        for existing_dev in sdrs.clone().iter() {
+            let matching_args = args
+                .iter()
+                .find(|available_args| existing_dev.args == **available_args);
+            if matching_args.is_none() {
+                sdrs.retain(|sdr_state| sdr_state.args != existing_dev.args);
+            }
+        }
+
+        // add args that don't have an existing device
+        for available_arg in args.clone().iter() {
+            if sdrs
+                .iter()
+                .find(|sdr_state| sdr_state.args == *available_arg)
+                .is_none()
+            {
+                sdrs.push(SDRState {
+                    args: available_arg.to_owned(),
+                    dev: None,
+                });
+            }
+        }
+
+        let _ = app_handle.emit("sdr_states", sdrs.clone());
     });
 }

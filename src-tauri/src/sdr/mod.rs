@@ -1,11 +1,30 @@
 use enumeration::AvailableSDRArgs;
 use log::{error, info};
+use serde::{Deserialize, Serialize, Serializer};
 use soapysdr::Device;
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Emitter, State};
 
 use crate::AppState;
 
 pub mod enumeration;
+
+fn serialize_device<S>(dev: &Option<soapysdr::Device>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    if dev.is_some() {
+        return serializer.serialize_bool(true);
+    }
+
+    serializer.serialize_bool(false)
+}
+
+#[derive(Serialize, Clone)]
+pub struct SDRState {
+    pub args: AvailableSDRArgs,
+    #[serde(serialize_with = "serialize_device")]
+    pub dev: Option<soapysdr::Device>,
+}
 
 pub fn connect_to_sdr(
     args: AvailableSDRArgs,
@@ -19,14 +38,24 @@ pub fn connect_to_sdr(
         return Err(());
     }
 
+    let dev = dev_result.unwrap();
+
     info!("Connected to {}!", args.label);
 
-    state
-        .connected_sdrs
-        .clone()
-        .lock()
-        .unwrap()
-        .push(dev_result.unwrap());
+    // find sdr and add dev to it
+    let mut sdrs = state.sdrs.lock().unwrap();
+    let find_sdr_result = sdrs.iter_mut().find(|sdr| sdr.args == args);
+    if find_sdr_result.is_some() {
+        find_sdr_result.unwrap().dev = Some(dev);
+    } else {
+        // create new sdr state if not found
+        sdrs.push(SDRState {
+            args,
+            dev: Some(dev),
+        });
+    }
+
+    app.emit("sdr_states", sdrs.clone()).unwrap();
 
     Ok(())
 }

@@ -29,8 +29,6 @@ where
 
             // run until the application closes
             loop {
-                sleep(Duration::from_secs_f32(1.0 / polling_rate));
-
                 let dev_list = libusb_context.devices().unwrap();
 
                 if !are_device_lists_equal(&dev_list, &prev_dev_list) {
@@ -41,6 +39,8 @@ where
                     }
                     prev_dev_list = dev_list;
                 }
+
+                sleep(Duration::from_secs_f32(1.0 / polling_rate));
             }
         }
     });

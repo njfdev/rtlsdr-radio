@@ -14,20 +14,31 @@ use radio_services::{
     soapysdr_adsb::{self, AdsbDecoderState},
     soapysdr_radio::{self, RtlSdrState},
 };
-use sdr::enumeration::AvailableSDRArgs;
+use sdr::{enumeration::AvailableSDRArgs, SDRState};
 use serde::Serialize;
 use std::{
     env,
     sync::{Arc, Mutex},
 };
-use tauri::{async_runtime::block_on, ipc::Channel, AppHandle, State};
+use tauri::{async_runtime::block_on, ipc::Channel, AppHandle, Manager, State};
 use utils::{setup_callbacks, setup_dependencies};
 
 struct AppState {
     nrsc5_state: Nrsc5State,
     rtl_sdr_state: Arc<Mutex<RtlSdrState>>,
     adsb_state: Arc<Mutex<AdsbDecoderState>>,
-    connected_sdrs: Arc<Mutex<Vec<soapysdr::Device>>>,
+    sdrs: Arc<Mutex<Vec<SDRState>>>,
+}
+
+impl AppState {
+    pub fn new() -> Self {
+        Self {
+            nrsc5_state: Nrsc5State::new(),
+            rtl_sdr_state: Arc::new(Mutex::new(RtlSdrState::new())),
+            adsb_state: Arc::new(Mutex::new(AdsbDecoderState::new())),
+            sdrs: Arc::new(Mutex::new(vec![])),
+        }
+    }
 }
 
 #[tokio::main]
@@ -35,18 +46,13 @@ struct AppState {
 pub async fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_log::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_shell::init())
+        .manage(AppState::new())
         .setup(|app| {
             setup_dependencies(app);
             setup_callbacks(app);
             Ok(())
-        })
-        .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_shell::init())
-        .manage(AppState {
-            nrsc5_state: Nrsc5State::new(),
-            rtl_sdr_state: Arc::new(Mutex::new(RtlSdrState::new())),
-            adsb_state: Arc::new(Mutex::new(AdsbDecoderState::new())),
-            connected_sdrs: Arc::new(Mutex::new(vec![])),
         })
         .invoke_handler(tauri::generate_handler![
             start_nrsc5,
@@ -55,7 +61,7 @@ pub async fn run() {
             stop_stream,
             start_adsb_decoding,
             stop_adsb_decoding,
-            get_available_sdr_args,
+            get_sdr_states,
             connect_to_sdr
         ])
         .run(tauri::generate_context!())
@@ -133,15 +139,11 @@ async fn stop_adsb_decoding(app: AppHandle, state: State<'_, AppState>) -> Resul
 }
 
 #[tauri::command]
-async fn get_available_sdr_args() -> Result<serde_json::Value, ()> {
-    let args = sdr::enumeration::get_available_sdr_args();
+async fn get_sdr_states(state: State<'_, AppState>) -> Result<serde_json::Value, ()> {
+    let sdrs = state.sdrs.lock().unwrap();
 
-    if args.is_err() {
-        return Err(());
-    }
-
-    Ok(args
-        .unwrap()
+    Ok(sdrs
+        .clone()
         .serialize(serde_json::value::Serializer)
         .unwrap())
 }
