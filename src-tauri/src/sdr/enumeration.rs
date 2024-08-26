@@ -3,6 +3,7 @@ use std::{panic, thread::sleep, time::Duration};
 use rusb::{Context, DeviceList, UsbContext};
 use serde::{Deserialize, Serialize};
 use soapysdr::{enumerate, Args};
+use struct_iterable::Iterable;
 use tokio::task;
 
 pub fn get_available_sdr_args() -> Result<Vec<AvailableSDRArgs>, ()> {
@@ -45,7 +46,7 @@ where
     });
 }
 
-#[derive(Serialize, Clone, Debug, PartialEq, Deserialize)]
+#[derive(Serialize, Clone, Debug, PartialEq, Deserialize, Iterable)]
 pub struct AvailableSDRArgs {
     pub driver: String,
     pub label: String,
@@ -53,6 +54,18 @@ pub struct AvailableSDRArgs {
     pub product: String,
     pub serial: String,
     pub tuner: String,
+}
+
+impl Into<Args> for AvailableSDRArgs {
+    fn into(self) -> Args {
+        let mut args = Args::new();
+        for (arg_key, arg_value) in self.iter() {
+            if let Some(arg_string) = arg_value.downcast_ref::<String>() {
+                args.set(arg_key, arg_string.to_owned());
+            }
+        }
+        args
+    }
 }
 
 pub fn args_to_available_sdr_args(args: Vec<Args>) -> Vec<AvailableSDRArgs> {

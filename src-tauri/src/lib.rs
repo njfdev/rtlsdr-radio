@@ -7,6 +7,7 @@ mod radiorust_blocks;
 mod sdr;
 mod utils;
 
+use log::info;
 use modes::types::ModeSState;
 use radio_services::{
     nrsc5::Nrsc5State,
@@ -144,8 +145,14 @@ async fn get_available_sdr_args() -> Result<serde_json::Value, ()> {
 }
 
 #[tauri::command]
-async fn connect_to_sdr(args: AvailableSDRArgs) -> Result<(), ()> {
-    println!("Connecting to {}", args.label);
+async fn connect_to_sdr(app: AppHandle, args: AvailableSDRArgs) -> Result<(), ()> {
+    info!("Connecting to {}", args.label);
+
+    let result = sdr::connect_to_sdr(args, app);
+
+    if result.is_err() {
+        return Err(());
+    }
 
     Ok(())
 }
