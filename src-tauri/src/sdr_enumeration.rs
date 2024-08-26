@@ -1,11 +1,11 @@
 use std::{panic, thread::sleep, time::Duration};
 
 use rusb::{Context, DeviceList, UsbContext};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use soapysdr::{enumerate, Args};
 use tokio::task;
 
-pub fn get_available_sdr_args() -> Result<Vec<ConnectedSDRArgs>, ()> {
+pub fn get_available_sdr_args() -> Result<Vec<AvailableSDRArgs>, ()> {
     let args = panic::catch_unwind(|| enumerate("driver=rtlsdr"));
 
     if args.is_err() || args.as_ref().unwrap().is_err() {
@@ -17,7 +17,7 @@ pub fn get_available_sdr_args() -> Result<Vec<ConnectedSDRArgs>, ()> {
 
 pub fn register_available_sdrs_callback<F>(polling_rate: f32, callback: F)
 where
-    F: Fn(Vec<ConnectedSDRArgs>) + Send + 'static,
+    F: Fn(Vec<AvailableSDRArgs>) + Send + 'static,
 {
     task::spawn({
         let polling_rate = polling_rate;
@@ -45,8 +45,8 @@ where
     });
 }
 
-#[derive(Serialize, Clone, Debug, PartialEq)]
-pub struct ConnectedSDRArgs {
+#[derive(Serialize, Clone, Debug, PartialEq, Deserialize)]
+pub struct AvailableSDRArgs {
     pub driver: String,
     pub label: String,
     pub manufacturer: String,
@@ -55,9 +55,9 @@ pub struct ConnectedSDRArgs {
     pub tuner: String,
 }
 
-pub fn args_to_available_sdr_args(args: Vec<Args>) -> Vec<ConnectedSDRArgs> {
+pub fn args_to_available_sdr_args(args: Vec<Args>) -> Vec<AvailableSDRArgs> {
     args.iter()
-        .map(|args| ConnectedSDRArgs {
+        .map(|args| AvailableSDRArgs {
             driver: args.get("driver").unwrap().to_string(),
             label: args.get("label").unwrap().to_string(),
             manufacturer: args.get("manufacturer").unwrap().to_string(),
@@ -65,7 +65,7 @@ pub fn args_to_available_sdr_args(args: Vec<Args>) -> Vec<ConnectedSDRArgs> {
             serial: args.get("serial").unwrap().to_string(),
             tuner: args.get("tuner").unwrap().to_string(),
         })
-        .collect::<Vec<ConnectedSDRArgs>>()
+        .collect::<Vec<AvailableSDRArgs>>()
 }
 
 pub fn are_device_lists_equal(list1: &DeviceList<Context>, list2: &DeviceList<Context>) -> bool {

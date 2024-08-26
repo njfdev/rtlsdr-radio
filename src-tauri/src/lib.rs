@@ -13,6 +13,7 @@ use radio_services::{
     soapysdr_adsb::{self, AdsbDecoderState},
     soapysdr_radio::{self, RtlSdrState},
 };
+use sdr_enumeration::AvailableSDRArgs;
 use serde::Serialize;
 use std::{
     env,
@@ -51,7 +52,8 @@ pub async fn run() {
             stop_stream,
             start_adsb_decoding,
             stop_adsb_decoding,
-            get_available_sdr_args
+            get_available_sdr_args,
+            connect_to_sdr
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -139,4 +141,11 @@ async fn get_available_sdr_args() -> Result<serde_json::Value, ()> {
         .unwrap()
         .serialize(serde_json::value::Serializer)
         .unwrap())
+}
+
+#[tauri::command]
+async fn connect_to_sdr(args: AvailableSDRArgs) -> Result<(), ()> {
+    println!("Connecting to {}", args.label);
+
+    Ok(())
 }
