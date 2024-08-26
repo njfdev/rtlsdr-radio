@@ -5,17 +5,17 @@ use serde::Serialize;
 use soapysdr::{enumerate, Args};
 use tokio::task;
 
-pub fn get_connected_sdr_args() -> Result<Vec<ConnectedSDRArgs>, ()> {
+pub fn get_available_sdr_args() -> Result<Vec<ConnectedSDRArgs>, ()> {
     let args = panic::catch_unwind(|| enumerate("driver=rtlsdr"));
 
     if args.is_err() || args.as_ref().unwrap().is_err() {
         return Err(());
     }
 
-    Ok(args_to_connected_sdr_args(args.unwrap().unwrap()))
+    Ok(args_to_available_sdr_args(args.unwrap().unwrap()))
 }
 
-pub fn register_connected_sdrs_callback<F>(polling_rate: f32, callback: F)
+pub fn register_available_sdrs_callback<F>(polling_rate: f32, callback: F)
 where
     F: Fn(Vec<ConnectedSDRArgs>) + Send + 'static,
 {
@@ -33,7 +33,7 @@ where
                 let dev_list = libusb_context.devices().unwrap();
 
                 if !are_device_lists_equal(&dev_list, &prev_dev_list) {
-                    let args = get_connected_sdr_args();
+                    let args = get_available_sdr_args();
 
                     if args.is_ok() {
                         callback(args.unwrap());
@@ -55,7 +55,7 @@ pub struct ConnectedSDRArgs {
     pub tuner: String,
 }
 
-pub fn args_to_connected_sdr_args(args: Vec<Args>) -> Vec<ConnectedSDRArgs> {
+pub fn args_to_available_sdr_args(args: Vec<Args>) -> Vec<ConnectedSDRArgs> {
     args.iter()
         .map(|args| ConnectedSDRArgs {
             driver: args.get("driver").unwrap().to_string(),

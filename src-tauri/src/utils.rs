@@ -2,7 +2,7 @@ use log::{debug, info};
 use std::env;
 use tauri::{App, Emitter, Manager};
 
-use crate::sdr_enumeration::register_connected_sdrs_callback;
+use crate::sdr_enumeration::register_available_sdrs_callback;
 
 pub fn setup_dependencies(app: &mut App) {
     let resource_dir = app.path().resource_dir().unwrap();
@@ -25,8 +25,8 @@ pub fn setup_dependencies(app: &mut App) {
 
 pub fn setup_callbacks(app: &mut App) {
     let app_handle = app.app_handle().clone();
-    register_connected_sdrs_callback(5.0, move |args| {
-        info!("Connected SDR Details: {:?}", args);
-        let _ = app_handle.emit("connected_sdrs", args);
+    register_available_sdrs_callback(5.0, move |args| {
+        info!("Available SDR Details: {:?}", args);
+        let _ = app_handle.emit("available_sdrs", args);
     });
 }

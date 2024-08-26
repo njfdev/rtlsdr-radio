@@ -1,43 +1,43 @@
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useEffect, useState } from "react";
-import { ConnectedSdrArgs } from "@/lib/types";
+import { AvailableSdrArgs } from "@/lib/types";
 import { invoke } from "@tauri-apps/api/core";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 const appWindow = getCurrentWebviewWindow();
 
 export default function SdrSelector() {
-  const [connnectedSdrArgs, setConnectedSdrArgs] = useState<ConnectedSdrArgs[]>(
+  const [availableSdrArgs, setAvailableSdrArgs] = useState<AvailableSdrArgs[]>(
     []
   );
 
   useEffect(() => {
     (async () => {
       try {
-        setConnectedSdrArgs(
+        setAvailableSdrArgs(
           (await invoke<object>(
-            "get_connected_sdr_args",
+            "get_available_sdr_args",
             {}
-          )) as ConnectedSdrArgs[]
+          )) as AvailableSdrArgs[]
         );
       } catch {
-        console.log("Error Getting Connected SDRs");
+        console.log("Error Getting Available SDRs");
       }
     })();
   }, []);
 
-  appWindow.listen("connected_sdrs", (event: { payload: object }) => {
+  appWindow.listen("available_sdrs", (event: { payload: object }) => {
     console.log(event.payload);
-    setConnectedSdrArgs(event.payload as ConnectedSdrArgs[]);
+    setAvailableSdrArgs(event.payload as AvailableSdrArgs[]);
   });
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Connected SDRs</CardTitle>
+        <CardTitle>Available SDRs</CardTitle>
       </CardHeader>
       <CardContent>
-        {connnectedSdrArgs.map((args) => {
+        {availableSdrArgs.map((args) => {
           return <div key={args.serial}>{args.label}</div>;
         })}
       </CardContent>

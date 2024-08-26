@@ -303,7 +303,7 @@ export interface RegistrationObject {
   engine_info: EngineModelObject;
 }
 
-export interface ConnectedSdrArgs {
+export interface AvailableSdrArgs {
   driver: string;
   label: string;
   manufacturer: string;

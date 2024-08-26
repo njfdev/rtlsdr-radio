@@ -51,7 +51,7 @@ pub async fn run() {
             stop_stream,
             start_adsb_decoding,
             stop_adsb_decoding,
-            get_connected_sdr_args
+            get_available_sdr_args
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -128,8 +128,8 @@ async fn stop_adsb_decoding(app: AppHandle, state: State<'_, AppState>) -> Resul
 }
 
 #[tauri::command]
-async fn get_connected_sdr_args() -> Result<serde_json::Value, ()> {
-    let args = sdr_enumeration::get_connected_sdr_args();
+async fn get_available_sdr_args() -> Result<serde_json::Value, ()> {
+    let args = sdr_enumeration::get_available_sdr_args();
 
     if args.is_err() {
         return Err(());
