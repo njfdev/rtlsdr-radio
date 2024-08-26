@@ -25,19 +25,21 @@ where
         async move {
             let libusb_context = Context::new().unwrap();
 
-            let mut prev_dev_list = libusb_context.devices().unwrap();
+            let mut prev_dev_list: DeviceList<Context> = libusb_context.devices().unwrap();
+            let mut is_first_call = true;
 
             // run until the application closes
             loop {
                 let dev_list = libusb_context.devices().unwrap();
 
-                if !are_device_lists_equal(&dev_list, &prev_dev_list) {
+                if !are_device_lists_equal(&dev_list, &prev_dev_list) || is_first_call {
                     let args = get_available_sdr_args();
 
                     if args.is_ok() {
                         callback(args.unwrap());
                     }
                     prev_dev_list = dev_list;
+                    is_first_call = false;
                 }
 
                 sleep(Duration::from_secs_f32(1.0 / polling_rate));
