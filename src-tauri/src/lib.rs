@@ -27,6 +27,7 @@ struct AppState {
     nrsc5_state: Nrsc5State,
     rtl_sdr_state: Arc<Mutex<RtlSdrState>>,
     adsb_state: Arc<Mutex<AdsbDecoderState>>,
+    connected_sdrs: Arc<Mutex<Vec<soapysdr::Device>>>,
 }
 
 #[tokio::main]
@@ -45,6 +46,7 @@ pub async fn run() {
             nrsc5_state: Nrsc5State::new(),
             rtl_sdr_state: Arc::new(Mutex::new(RtlSdrState::new())),
             adsb_state: Arc::new(Mutex::new(AdsbDecoderState::new())),
+            connected_sdrs: Arc::new(Mutex::new(vec![])),
         })
         .invoke_handler(tauri::generate_handler![
             start_nrsc5,
@@ -145,10 +147,14 @@ async fn get_available_sdr_args() -> Result<serde_json::Value, ()> {
 }
 
 #[tauri::command]
-async fn connect_to_sdr(app: AppHandle, args: AvailableSDRArgs) -> Result<(), ()> {
+async fn connect_to_sdr(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    args: AvailableSDRArgs,
+) -> Result<(), ()> {
     info!("Connecting to {}", args.label);
 
-    let result = sdr::connect_to_sdr(args, app);
+    let result = sdr::connect_to_sdr(args, app, state);
 
     if result.is_err() {
         return Err(());
