@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Station } from "@/lib/types";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useEffect, useState } from "react";
+import SdrSelector from "./SdrSelector";
 
 const appWindow = getCurrentWebviewWindow();
 
@@ -48,6 +49,7 @@ export default function AppView() {
 
   return (
     <main className="flex flex-col h-screen w-screen gap-4">
+      <SdrSelector />
       <Tabs
         value={currentTab}
         onValueChange={async (newTab) => {

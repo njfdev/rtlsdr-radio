@@ -302,3 +302,12 @@ export interface RegistrationObject {
   aircraft_info: AircraftModelObject;
   engine_info: EngineModelObject;
 }
+
+export interface ConnectedSdrArgs {
+  driver: string;
+  label: string;
+  manufacturer: string;
+  product: string;
+  serial: string;
+  tuner: string;
+}

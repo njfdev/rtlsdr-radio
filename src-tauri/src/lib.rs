@@ -13,13 +13,14 @@ use radio_services::{
     soapysdr_adsb::{self, AdsbDecoderState},
     soapysdr_radio::{self, RtlSdrState},
 };
-use sdr_enumeration::register_connected_sdrs_callback;
+use sdr_enumeration::ConnectedSDRArgs;
+use serde::Serialize;
 use std::{
     env,
     sync::{Arc, Mutex},
 };
 use tauri::{async_runtime::block_on, ipc::Channel, AppHandle, State};
-use utils::utils::setup_dependencies;
+use utils::{setup_callbacks, setup_dependencies};
 
 struct AppState {
     nrsc5_state: Nrsc5State,
@@ -34,14 +35,7 @@ pub async fn run() {
         .plugin(tauri_plugin_log::Builder::new().build())
         .setup(|app| {
             setup_dependencies(app);
-            register_connected_sdrs_callback(2.0, |args| {
-                println!(
-                    "Args: {:?}",
-                    args.iter()
-                        .map(|arg| arg.to_string())
-                        .collect::<Vec<String>>()
-                );
-            });
+            setup_callbacks(app);
             Ok(())
         })
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -57,7 +51,8 @@ pub async fn run() {
             start_stream,
             stop_stream,
             start_adsb_decoding,
-            stop_adsb_decoding
+            stop_adsb_decoding,
+            get_connected_sdr_args
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -131,4 +126,11 @@ async fn stop_adsb_decoding(app: AppHandle, state: State<'_, AppState>) -> Resul
     .await
     .unwrap();
     Ok("".to_string())
+}
+
+#[tauri::command]
+async fn get_connected_sdr_args() -> Result<serde_json::Value, ()> {
+    Ok(sdr_enumeration::get_connected_sdr_args()
+        .serialize(serde_json::value::Serializer)
+        .unwrap())
 }
