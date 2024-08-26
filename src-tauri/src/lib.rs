@@ -4,7 +4,7 @@
 mod modes;
 mod radio_services;
 mod radiorust_blocks;
-mod sdr_enumeration;
+mod sdr;
 mod utils;
 
 use modes::types::ModeSState;
@@ -13,7 +13,7 @@ use radio_services::{
     soapysdr_adsb::{self, AdsbDecoderState},
     soapysdr_radio::{self, RtlSdrState},
 };
-use sdr_enumeration::AvailableSDRArgs;
+use sdr::enumeration::AvailableSDRArgs;
 use serde::Serialize;
 use std::{
     env,
@@ -131,7 +131,7 @@ async fn stop_adsb_decoding(app: AppHandle, state: State<'_, AppState>) -> Resul
 
 #[tauri::command]
 async fn get_available_sdr_args() -> Result<serde_json::Value, ()> {
-    let args = sdr_enumeration::get_available_sdr_args();
+    let args = sdr::enumeration::get_available_sdr_args();
 
     if args.is_err() {
         return Err(());

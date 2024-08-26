@@ -2,7 +2,7 @@ use log::{debug, info};
 use std::env;
 use tauri::{App, Emitter, Manager};
 
-use crate::sdr_enumeration::register_available_sdrs_callback;
+use crate::sdr::enumeration::register_available_sdrs_callback;
 
 pub fn setup_dependencies(app: &mut App) {
     let resource_dir = app.path().resource_dir().unwrap();
