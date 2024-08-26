@@ -19,7 +19,6 @@ use std::{
     sync::{Arc, Mutex},
 };
 use tauri::{async_runtime::block_on, ipc::Channel, AppHandle, State};
-use tokio::task;
 use utils::{setup_callbacks, setup_dependencies};
 
 struct AppState {
@@ -31,37 +30,31 @@ struct AppState {
 #[tokio::main]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub async fn run() {
-    let local_set = task::LocalSet::new();
-
-    local_set
-        .run_until(async move {
-            tauri::Builder::default()
-                .plugin(tauri_plugin_log::Builder::new().build())
-                .setup(|app| {
-                    setup_dependencies(app);
-                    setup_callbacks(app);
-                    Ok(())
-                })
-                .plugin(tauri_plugin_updater::Builder::new().build())
-                .plugin(tauri_plugin_shell::init())
-                .manage(AppState {
-                    nrsc5_state: Nrsc5State::new(),
-                    rtl_sdr_state: Arc::new(Mutex::new(RtlSdrState::new())),
-                    adsb_state: Arc::new(Mutex::new(AdsbDecoderState::new())),
-                })
-                .invoke_handler(tauri::generate_handler![
-                    start_nrsc5,
-                    stop_nrsc5,
-                    start_stream,
-                    stop_stream,
-                    start_adsb_decoding,
-                    stop_adsb_decoding,
-                    get_connected_sdr_args
-                ])
-                .run(tauri::generate_context!())
-                .expect("error while running tauri application");
+    tauri::Builder::default()
+        .plugin(tauri_plugin_log::Builder::new().build())
+        .setup(|app| {
+            setup_dependencies(app);
+            setup_callbacks(app);
+            Ok(())
         })
-        .await;
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_shell::init())
+        .manage(AppState {
+            nrsc5_state: Nrsc5State::new(),
+            rtl_sdr_state: Arc::new(Mutex::new(RtlSdrState::new())),
+            adsb_state: Arc::new(Mutex::new(AdsbDecoderState::new())),
+        })
+        .invoke_handler(tauri::generate_handler![
+            start_nrsc5,
+            stop_nrsc5,
+            start_stream,
+            stop_stream,
+            start_adsb_decoding,
+            stop_adsb_decoding,
+            get_connected_sdr_args
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
 }
 
 #[tauri::command]

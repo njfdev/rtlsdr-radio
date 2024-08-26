@@ -1,17 +1,9 @@
-use std::{
-    panic,
-    sync::{Arc, Mutex, MutexGuard},
-    time::Duration,
-};
+use std::{panic, thread::sleep, time::Duration};
 
-use log::info;
-use rusb::{
-    ffi::libusb_device, has_hotplug, Context, Device, DeviceList, GlobalContext, Hotplug,
-    HotplugBuilder, UsbContext,
-};
+use rusb::{Context, DeviceList, UsbContext};
 use serde::Serialize;
 use soapysdr::{enumerate, Args};
-use tokio::{task, time::sleep};
+use tokio::task;
 
 pub fn get_connected_sdr_args() -> Result<Vec<ConnectedSDRArgs>, ()> {
     let args = panic::catch_unwind(|| enumerate("driver=rtlsdr"));
@@ -27,24 +19,27 @@ pub fn register_connected_sdrs_callback<F>(polling_rate: f32, callback: F)
 where
     F: Fn(Vec<ConnectedSDRArgs>) + Send + 'static,
 {
-    task::spawn_local(async move {
-        let libusb_context = GlobalContext::default();
+    task::spawn({
+        let polling_rate = polling_rate;
+        async move {
+            let libusb_context = Context::new().unwrap();
 
-        let mut prev_dev_list = libusb_context.devices().unwrap();
+            let mut prev_dev_list = libusb_context.devices().unwrap();
 
-        // run until the application closes
-        loop {
-            sleep(Duration::from_secs_f32(1.0 / polling_rate)).await;
+            // run until the application closes
+            loop {
+                sleep(Duration::from_secs_f32(1.0 / polling_rate));
 
-            let dev_list = libusb_context.devices().unwrap();
+                let dev_list = libusb_context.devices().unwrap();
 
-            if !are_device_lists_equal(&dev_list, &prev_dev_list) {
-                let args = get_connected_sdr_args();
+                if !are_device_lists_equal(&dev_list, &prev_dev_list) {
+                    let args = get_connected_sdr_args();
 
-                if args.is_ok() {
-                    callback(args.unwrap());
+                    if args.is_ok() {
+                        callback(args.unwrap());
+                    }
+                    prev_dev_list = dev_list;
                 }
-                prev_dev_list = dev_list;
             }
         }
     });
@@ -73,11 +68,7 @@ pub fn args_to_connected_sdr_args(args: Vec<Args>) -> Vec<ConnectedSDRArgs> {
         .collect::<Vec<ConnectedSDRArgs>>()
 }
 
-pub fn are_device_lists_equal(
-    list1: &DeviceList<GlobalContext>,
-    list2: &DeviceList<GlobalContext>,
-) -> bool {
-    println!("List 1 len: {}, List 2 len: {}", list1.len(), list2.len());
+pub fn are_device_lists_equal(list1: &DeviceList<Context>, list2: &DeviceList<Context>) -> bool {
     if list1.len() != list2.len() {
         return false;
     }
