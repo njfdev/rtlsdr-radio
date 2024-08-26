@@ -1,5 +1,7 @@
 use std::{panic, time::Duration};
 
+use log::info;
+use rusb::{Context, GlobalContext, Hotplug, HotplugBuilder, UsbContext};
 use serde::Serialize;
 use soapysdr::{enumerate, Args};
 use tokio::time::sleep;
@@ -14,11 +16,33 @@ pub fn get_connected_sdr_args() -> Result<Vec<ConnectedSDRArgs>, ()> {
     Ok(args_to_connected_sdr_args(args.unwrap().unwrap()))
 }
 
+#[derive(Default)]
+struct SdrConnectionHandler();
+
+impl<T> Hotplug<T> for SdrConnectionHandler
+where
+    T: UsbContext,
+{
+    fn device_arrived(&mut self, device: rusb::Device<T>) {
+        info!("Device Connected");
+    }
+
+    fn device_left(&mut self, device: rusb::Device<T>) {
+        info!("Device Disconnected");
+    }
+}
+
 pub fn register_connected_sdrs_callback<F>(polling_rate: f32, callback: F)
 where
     F: Fn(Vec<ConnectedSDRArgs>) + Send + 'static,
 {
     tokio::spawn(async move {
+        let libusb_context = GlobalContext::default();
+
+        let mut hotplug_builder = HotplugBuilder::new();
+        hotplug_builder.register(libusb_context, Box::new(SdrConnectionHandler::default()));
+        hotplug_builder.enumerate(true);
+
         let mut prev_args = get_connected_sdr_args();
 
         if prev_args.is_ok() {

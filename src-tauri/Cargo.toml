@@ -38,6 +38,7 @@ souvlaki = "0.7.0"
 tauri-plugin-log = "2.0.0-rc"
 log = "0.4.22"
 soapysdr-sys = "0.7.5"
+rusb = "0.9.4"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

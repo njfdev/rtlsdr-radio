@@ -1,3 +1,4 @@
 [env]
 PKG_CONFIG_PATH = { value = "../build/dist/resources/lib/pkgconfig", relative = true, force=true }
+PKG_CONFIG_LIBDIR = { value = "../build/dist/resources/lib/pkgconfig", relative = true, force=true }
 C_INCLUDE_PATH = { value = "../build/dist/resources/include", relative = true, force=true }

@@ -66,4 +66,16 @@ for pc in pc_files:
     with open(pc, 'w') as f:
         f.writelines(lines)
 
+# make custom libusb.pc file
+libusb_pc_file_data = f"""prefix={resources_dir.absolute()}
+exec_prefix={resources_dir.absolute()}
+libdir={resources_dir.joinpath('lib').absolute()}
+includedir={resources_dir.joinpath('include').absolute()}
+
+Name: libusb-1.0
+Description: C API for USB device access from Linux, Mac OS X, Windows, OpenBSD/NetBSD and Solaris userspace"""
+
+with open(resources_dir.joinpath("lib/pkgconfig/libusb-1.0.pc"), 'w') as f:
+    f.write(libusb_pc_file_data)
+
 os.chdir(orig_dir)
