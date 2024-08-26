@@ -5321,6 +5321,7 @@ dependencies = [
  "serde",
  "serde_json",
  "soapysdr",
+ "soapysdr-sys",
  "souvlaki",
  "tauri",
  "tauri-build",
