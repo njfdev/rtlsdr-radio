@@ -59,3 +59,29 @@ pub fn connect_to_sdr(
 
     Ok(())
 }
+
+pub fn disconnect_sdr(
+    args: AvailableSDRArgs,
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), &str> {
+    // find sdr and add dev to it
+    let mut sdrs = state.sdrs.lock().unwrap();
+    let find_sdr_result = sdrs.iter_mut().find(|sdr| sdr.args == args);
+    if find_sdr_result.is_none() {
+        return Err("Could not find SDR to disconnect");
+    }
+
+    let sdr = find_sdr_result.unwrap();
+    if sdr.dev.is_none() {
+        return Err("SDR is not connected");
+    }
+
+    {
+        sdr.dev.take();
+    }
+
+    app.emit("sdr_states", sdrs.clone()).unwrap();
+
+    Ok(())
+}

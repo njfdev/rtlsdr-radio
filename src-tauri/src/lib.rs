@@ -62,7 +62,8 @@ pub async fn run() {
             start_adsb_decoding,
             stop_adsb_decoding,
             get_sdr_states,
-            connect_to_sdr
+            connect_to_sdr,
+            disconnect_sdr
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -163,4 +164,17 @@ async fn connect_to_sdr(
     }
 
     Ok(())
+}
+
+#[tauri::command]
+async fn disconnect_sdr(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    args: AvailableSDRArgs,
+) -> Result<(), &str> {
+    info!("Disconnecting from {}", args.label);
+
+    let result = sdr::disconnect_sdr(args, app, state);
+
+    return result;
 }

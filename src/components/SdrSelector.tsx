@@ -28,6 +28,10 @@ export default function SdrSelector() {
     await invoke("connect_to_sdr", { args: sdrArgs });
   };
 
+  const disconnectSdr = async (sdrArgs: AvailableSdrArgs) => {
+    await invoke("disconnect_sdr", { args: sdrArgs });
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -43,7 +47,11 @@ export default function SdrSelector() {
             >
               <span>{state.args.label}</span>
               <Button
-                onClick={() => connectToSdr(state.args)}
+                onClick={() =>
+                  isConnected
+                    ? disconnectSdr(state.args)
+                    : connectToSdr(state.args)
+                }
                 variant={isConnected ? "secondary" : "default"}
                 size="sm"
               >
