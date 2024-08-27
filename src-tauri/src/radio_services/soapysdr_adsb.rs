@@ -10,10 +10,13 @@ use blocks::Rechunker;
 use log::error;
 use radiorust::{blocks::io::rf, prelude::*};
 use soapysdr::Direction;
-use tauri::{async_runtime, ipc::Channel, AppHandle, Emitter};
+use tauri::{async_runtime, ipc::Channel, AppHandle, Emitter, Manager};
 use tokio::{self, time};
 
-use crate::{modes::types::ModeSState, radiorust_blocks::adsb_decode::AdsbDecode};
+use crate::{
+    modes::types::ModeSState, radiorust_blocks::adsb_decode::AdsbDecode, sdr::get_current_sdr,
+    AppState,
+};
 
 pub struct AdsbDecoderState(Arc<Mutex<AdsbDecoderData>>);
 pub struct AdsbDecoderData {
@@ -49,17 +52,16 @@ impl AdsbDecoderState {
                 tokio::runtime::Runtime::new()
                     .unwrap()
                     .block_on(async move {
-                        // connect to SDR
-                        let rtlsdr_dev_result = soapysdr::Device::new("driver=rtlsdr");
+                        // get SDR
+                        let rtlsdr_dev_result = get_current_sdr(app.state::<AppState>());
 
                         if rtlsdr_dev_result.is_err() {
                             // notify frontend of error
-                            app.emit(
-                                "adsb_err",
-                                "Could not connect to your RTL-SDR. Make sure it is plugged in!",
-                            )
+                            app.emit("rtlsdr_err", unsafe {
+                                rtlsdr_dev_result.unwrap_err_unchecked()
+                            })
                             .expect("failed to emit event");
-                            app.emit("adsb_status", "stopped")
+                            app.emit("rtlsdr_status", "stopped")
                                 .expect("failed to emit event");
 
                             // remove the reference to the thread

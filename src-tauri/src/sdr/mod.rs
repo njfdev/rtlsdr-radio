@@ -99,3 +99,20 @@ pub fn disconnect_sdr(
         }
     }
 }
+
+pub fn get_current_sdr(state: State<'_, AppState>) -> Result<Device, String> {
+    let mut sdrs = state.sdrs.lock().unwrap();
+
+    for sdr in sdrs.iter_mut() {
+        match sdr.dev.clone() {
+            SDRDeviceState::Connected { dev } => {
+                sdr.dev = SDRDeviceState::InUse;
+
+                return Ok(dev.clone());
+            }
+            _ => {}
+        }
+    }
+
+    return Err(String::from("No SDRs are currently connected"));
+}

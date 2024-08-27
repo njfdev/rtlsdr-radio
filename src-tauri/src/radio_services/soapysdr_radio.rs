@@ -13,11 +13,15 @@ use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, MediaPlayback, P
 use tauri::{async_runtime, AppHandle, Emitter, Listener, Manager};
 use tokio::{self, time};
 
-use crate::radiorust_blocks::{
-    am_demod::AmDemod,
-    better_cpal,
-    pauseable::Pauseable,
-    rbds_decode::{DownMixer, RbdsDecode},
+use crate::{
+    radiorust_blocks::{
+        am_demod::AmDemod,
+        better_cpal,
+        pauseable::Pauseable,
+        rbds_decode::{DownMixer, RbdsDecode},
+    },
+    sdr::get_current_sdr,
+    AppState,
 };
 
 #[derive(serde::Deserialize, PartialEq)]
@@ -70,15 +74,14 @@ impl RtlSdrState {
                 tokio::runtime::Runtime::new()
                     .unwrap()
                     .block_on(async move {
-                        // connect to SDR
-                        let rtlsdr_dev_result = soapysdr::Device::new("driver=rtlsdr");
+                        // get SDR
+                        let rtlsdr_dev_result = get_current_sdr(app.state::<AppState>());
 
                         if rtlsdr_dev_result.is_err() {
                             // notify frontend of error
-                            app.emit(
-                                "rtlsdr_err",
-                                "Could not connect to your RTL-SDR. Make sure it is plugged in!",
-                            )
+                            app.emit("rtlsdr_err", unsafe {
+                                rtlsdr_dev_result.unwrap_err_unchecked()
+                            })
                             .expect("failed to emit event");
                             app.emit("rtlsdr_status", "stopped")
                                 .expect("failed to emit event");
