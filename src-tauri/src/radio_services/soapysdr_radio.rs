@@ -75,7 +75,7 @@ impl RtlSdrState {
                     .unwrap()
                     .block_on(async move {
                         // get SDR
-                        let rtlsdr_dev_result = get_current_sdr(app.state::<AppState>());
+                        let rtlsdr_dev_result = get_current_sdr(app.clone());
 
                         if rtlsdr_dev_result.is_err() {
                             // notify frontend of error

@@ -314,5 +314,5 @@ export interface AvailableSdrArgs {
 
 export interface SDRState {
   args: AvailableSdrArgs;
-  dev: boolean;
+  dev: "Available" | "Connected" | "InUse";
 }

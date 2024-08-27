@@ -2,7 +2,7 @@ use enumeration::AvailableSDRArgs;
 use log::{error, info};
 use serde::{Deserialize, Serialize, Serializer};
 use soapysdr::Device;
-use tauri::{AppHandle, Emitter, State};
+use tauri::{App, AppHandle, Emitter, Manager, State};
 
 use crate::AppState;
 
@@ -14,10 +14,13 @@ where
 {
     match dev {
         SDRDeviceState::Available => {
-            return serializer.serialize_bool(false);
+            return serializer.serialize_str("Available");
         }
-        _ => {
-            return serializer.serialize_bool(true);
+        SDRDeviceState::Connected { dev } => {
+            return serializer.serialize_str("Connected");
+        }
+        SDRDeviceState::InUse => {
+            return serializer.serialize_str("InUse");
         }
     }
 }
@@ -100,13 +103,16 @@ pub fn disconnect_sdr(
     }
 }
 
-pub fn get_current_sdr(state: State<'_, AppState>) -> Result<Device, String> {
+pub fn get_current_sdr(app: AppHandle) -> Result<Device, String> {
+    let state = app.state::<AppState>();
     let mut sdrs = state.sdrs.lock().unwrap();
 
     for sdr in sdrs.iter_mut() {
         match sdr.dev.clone() {
             SDRDeviceState::Connected { dev } => {
                 sdr.dev = SDRDeviceState::InUse;
+
+                app.emit("sdr_states", sdrs.clone()).unwrap();
 
                 return Ok(dev.clone());
             }

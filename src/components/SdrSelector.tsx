@@ -21,6 +21,7 @@ export default function SdrSelector() {
   }, []);
 
   appWindow.listen("sdr_states", (event: { payload: object }) => {
+    console.log(event.payload, typeof event.payload);
     setSDRState(event.payload as SDRState[]);
   });
 
@@ -39,7 +40,6 @@ export default function SdrSelector() {
       </CardHeader>
       <CardContent>
         {sdrStates.map((state) => {
-          const isConnected = state.dev;
           return (
             <div
               className="flex gap-2 align-middle items-center"
@@ -48,14 +48,19 @@ export default function SdrSelector() {
               <span>{state.args.label}</span>
               <Button
                 onClick={() =>
-                  isConnected
-                    ? disconnectSdr(state.args)
-                    : connectToSdr(state.args)
+                  state.dev == "Available"
+                    ? connectToSdr(state.args)
+                    : state.dev == "Connected" && disconnectSdr(state.args)
                 }
-                variant={isConnected ? "secondary" : "default"}
+                variant={state.dev == "Connected" ? "secondary" : "default"}
+                disabled={state.dev == "InUse"}
                 size="sm"
               >
-                {isConnected ? "Disconnect" : "Connect"}
+                {state.dev == "Connected"
+                  ? "Disconnect"
+                  : state.dev == "Available"
+                  ? "Connect"
+                  : "In Use"}
               </Button>
             </div>
           );
