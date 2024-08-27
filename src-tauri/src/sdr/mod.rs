@@ -8,22 +8,32 @@ use crate::AppState;
 
 pub mod enumeration;
 
-fn serialize_device<S>(dev: &Option<soapysdr::Device>, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_device<S>(dev: &SDRDeviceState, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    if dev.is_some() {
-        return serializer.serialize_bool(true);
+    match dev {
+        SDRDeviceState::Available => {
+            return serializer.serialize_bool(false);
+        }
+        _ => {
+            return serializer.serialize_bool(true);
+        }
     }
+}
 
-    serializer.serialize_bool(false)
+#[derive(Clone)]
+pub enum SDRDeviceState {
+    Available,
+    Connected { dev: Device },
+    InUse,
 }
 
 #[derive(Serialize, Clone)]
 pub struct SDRState {
     pub args: AvailableSDRArgs,
     #[serde(serialize_with = "serialize_device")]
-    pub dev: Option<soapysdr::Device>,
+    pub dev: SDRDeviceState,
 }
 
 pub fn connect_to_sdr(
@@ -46,12 +56,12 @@ pub fn connect_to_sdr(
     let mut sdrs = state.sdrs.lock().unwrap();
     let find_sdr_result = sdrs.iter_mut().find(|sdr| sdr.args == args);
     if find_sdr_result.is_some() {
-        find_sdr_result.unwrap().dev = Some(dev);
+        find_sdr_result.unwrap().dev = SDRDeviceState::Connected { dev };
     } else {
         // create new sdr state if not found
         sdrs.push(SDRState {
             args,
-            dev: Some(dev),
+            dev: SDRDeviceState::Connected { dev },
         });
     }
 
@@ -73,15 +83,19 @@ pub fn disconnect_sdr(
     }
 
     let sdr = find_sdr_result.unwrap();
-    if sdr.dev.is_none() {
-        return Err("SDR is not connected");
+
+    match sdr.dev.clone() {
+        SDRDeviceState::Available => {
+            return Err("SDR already disconnected");
+        }
+        SDRDeviceState::Connected { dev } => {
+            sdr.dev = SDRDeviceState::Available;
+
+            app.emit("sdr_states", sdrs.clone()).unwrap();
+            return Ok(());
+        }
+        SDRDeviceState::InUse => {
+            return Err("Can't disconnect SDR because it is in use");
+        }
     }
-
-    {
-        sdr.dev.take();
-    }
-
-    app.emit("sdr_states", sdrs.clone()).unwrap();
-
-    Ok(())
 }

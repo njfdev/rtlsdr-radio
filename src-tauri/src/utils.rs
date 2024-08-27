@@ -3,7 +3,7 @@ use std::env;
 use tauri::{App, Emitter, Manager};
 
 use crate::{
-    sdr::{enumeration::register_available_sdrs_callback, SDRState},
+    sdr::{enumeration::register_available_sdrs_callback, SDRDeviceState, SDRState},
     AppState,
 };
 
@@ -53,7 +53,7 @@ pub fn setup_callbacks(app: &mut App) {
             {
                 sdrs.push(SDRState {
                     args: available_arg.to_owned(),
-                    dev: None,
+                    dev: SDRDeviceState::Available,
                 });
             }
         }
