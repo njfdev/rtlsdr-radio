@@ -198,8 +198,14 @@ impl RtlSdrState {
                         if stream_settings.stream_type == StreamType::AM {
                             // 0 -> disabled, 1 -> I-branch direct sampling, 2 -> Q-branch direct sampling
                             let _ = rtlsdr_dev.write_setting("direct_samp", "2");
-                            let _ = rtlsdr_dev.write_setting("digital_agc", "true");
+                        } else {
+                            let _ = rtlsdr_dev.write_setting("direct_samp", "0");
                         }
+
+                        // enable automatic gain mode
+                        rtlsdr_dev
+                            .set_gain_mode(Direction::Rx, 0, true)
+                            .expect("Failed to set automatic gain");
 
                         // start sdr rx stream
                         let rx_stream = rtlsdr_dev.rx_stream::<Complex<f32>>(&[0]).unwrap();

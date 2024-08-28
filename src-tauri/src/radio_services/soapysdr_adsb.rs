@@ -82,6 +82,9 @@ impl AdsbDecoderState {
                             .set_frequency(Direction::Rx, 0, 1090.0 * 1_000_000.0, "")
                             .expect("Failed to set frequency");
 
+                        // make sure direct sampling is disabled
+                        let _ = rtlsdr_dev.write_setting("direct_samp", "0");
+
                         // enable automatic gain mode
                         rtlsdr_dev
                             .set_gain_mode(Direction::Rx, 0, true)
