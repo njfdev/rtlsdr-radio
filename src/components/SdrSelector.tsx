@@ -34,7 +34,7 @@ export default function SdrSelector() {
   };
 
   return (
-    <Card>
+    <Card className="mt-4 max-w-[36rem] mx-auto">
       <CardHeader>
         <CardTitle>Available SDRs</CardTitle>
       </CardHeader>

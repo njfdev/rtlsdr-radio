@@ -65,7 +65,7 @@ export default function AppView() {
         }}
         className="flex flex-col justify-start items-center align-middle h-screen w-screen overflow-hidden"
       >
-        <TabsList className="mt-4 mb-2">
+        <TabsList className="mb-2">
           <TabsTrigger value="radio">Radio</TabsTrigger>
           <TabsTrigger value="adsb">ADS-B</TabsTrigger>
         </TabsList>
