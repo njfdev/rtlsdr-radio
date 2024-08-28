@@ -20,7 +20,7 @@ use crate::{
         pauseable::Pauseable,
         rbds_decode::{DownMixer, RbdsDecode},
     },
-    sdr::get_current_sdr,
+    sdr::{get_current_sdr_dev, release_sdr_dev},
     AppState,
 };
 
@@ -75,7 +75,7 @@ impl RtlSdrState {
                     .unwrap()
                     .block_on(async move {
                         // get SDR
-                        let rtlsdr_dev_result = get_current_sdr(app.clone());
+                        let rtlsdr_dev_result = get_current_sdr_dev(app.clone());
 
                         if rtlsdr_dev_result.is_err() {
                             // notify frontend of error
@@ -178,7 +178,7 @@ impl RtlSdrState {
                                 .unwrap();
                         }
 
-                        let rtlsdr_dev = rtlsdr_dev_result.unwrap();
+                        let (rtlsdr_dev, sdr_args) = rtlsdr_dev_result.unwrap();
 
                         // set sample rate
                         let sample_rate = 1.024e6;
@@ -327,6 +327,7 @@ impl RtlSdrState {
                         .unwrap();
                         playback.feed_from(&buffer);
 
+                        let sdr_clone = rtlsdr_dev.clone();
                         app.listen("radio_update_settings", move |event| {
                             if let Ok(new_settings) =
                                 serde_json::from_str::<StreamSettings>(&event.payload())
@@ -335,9 +336,9 @@ impl RtlSdrState {
                                     volume.set(new_settings.volume);
                                 }
                                 let sdr_freq = new_settings.freq * freq_mul;
-                                if rtlsdr_dev.frequency(Direction::Rx, 0).unwrap() != sdr_freq {
+                                if sdr_clone.frequency(Direction::Rx, 0).unwrap() != sdr_freq {
                                     // set center frequency
-                                    rtlsdr_dev
+                                    sdr_clone
                                         .set_frequency(Direction::Rx, 0, sdr_freq, "")
                                         .expect("Failed to set frequency");
                                 }
@@ -359,6 +360,9 @@ impl RtlSdrState {
 
                             time::sleep(Duration::from_millis(250)).await;
                         }
+
+                        // release the SDR
+                        release_sdr_dev(app, rtlsdr_dev, sdr_args);
                     })
             }));
     }

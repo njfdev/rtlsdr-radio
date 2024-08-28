@@ -103,7 +103,7 @@ pub fn disconnect_sdr(
     }
 }
 
-pub fn get_current_sdr(app: AppHandle) -> Result<Device, String> {
+pub fn get_current_sdr_dev(app: AppHandle) -> Result<(Device, AvailableSDRArgs), String> {
     let state = app.state::<AppState>();
     let mut sdrs = state.sdrs.lock().unwrap();
 
@@ -111,14 +111,33 @@ pub fn get_current_sdr(app: AppHandle) -> Result<Device, String> {
         match sdr.dev.clone() {
             SDRDeviceState::Connected { dev } => {
                 sdr.dev = SDRDeviceState::InUse;
+                let args = sdr.args.clone();
 
                 app.emit("sdr_states", sdrs.clone()).unwrap();
 
-                return Ok(dev.clone());
+                return Ok((dev.clone(), args));
             }
             _ => {}
         }
     }
 
     return Err(String::from("No SDRs are currently connected"));
+}
+
+pub fn release_sdr_dev(app: AppHandle, dev: Device, args: AvailableSDRArgs) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let mut sdrs = state.sdrs.lock().unwrap();
+    let find_sdr_result = sdrs.iter_mut().find(|sdr| sdr.args == args);
+
+    if find_sdr_result.is_none() {
+        return Err(String::from("Could not find SDR to release dev to"));
+    }
+
+    let sdr = find_sdr_result.unwrap();
+
+    sdr.dev = SDRDeviceState::Connected { dev: dev };
+
+    app.emit("sdr_states", sdrs.clone()).unwrap();
+
+    return Ok(());
 }

@@ -14,7 +14,9 @@ use tauri::{async_runtime, ipc::Channel, AppHandle, Emitter, Manager};
 use tokio::{self, time};
 
 use crate::{
-    modes::types::ModeSState, radiorust_blocks::adsb_decode::AdsbDecode, sdr::get_current_sdr,
+    modes::types::ModeSState,
+    radiorust_blocks::adsb_decode::AdsbDecode,
+    sdr::{get_current_sdr_dev, release_sdr_dev},
     AppState,
 };
 
@@ -53,7 +55,7 @@ impl AdsbDecoderState {
                     .unwrap()
                     .block_on(async move {
                         // get SDR
-                        let rtlsdr_dev_result = get_current_sdr(app.clone());
+                        let rtlsdr_dev_result = get_current_sdr_dev(app.clone());
 
                         if rtlsdr_dev_result.is_err() {
                             // notify frontend of error
@@ -69,7 +71,7 @@ impl AdsbDecoderState {
                             return;
                         }
 
-                        let rtlsdr_dev = rtlsdr_dev_result.unwrap();
+                        let (rtlsdr_dev, sdr_args) = rtlsdr_dev_result.unwrap();
 
                         // set sample rate (the clock is 1MHz, so we need at least 2MHz sample rate, which the RTL-SDR can barely do)
                         let sample_rate = 2e6;
@@ -117,6 +119,9 @@ impl AdsbDecoderState {
 
                             time::sleep(Duration::from_millis(250)).await;
                         }
+
+                        // release the SDR
+                        release_sdr_dev(app, rtlsdr_dev, sdr_args);
                     })
             }));
     }
