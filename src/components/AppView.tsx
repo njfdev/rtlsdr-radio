@@ -56,8 +56,29 @@ const views: ViewData[] = [
   },
 ];
 
+function GetViewById(
+  id: string,
+  current_views: ViewData[] = views
+): ViewData | null {
+  for (const view of current_views) {
+    if (view.id == id) {
+      return view;
+    }
+
+    if (view.subviews) {
+      const result = GetViewById(id, view.subviews);
+
+      if (result) {
+        return result;
+      }
+    }
+  }
+
+  return null;
+}
+
 export default function AppView() {
-  const [currentViewId, setCurrentViewId] = useState<ReactNode>(views[0].id);
+  const [currentViewId, setCurrentViewId] = useState<string>(views[0].id);
 
   const [isSdrInUse, setIsSdrInUse] = useState(false);
   const [shouldStopAdsb, setShouldStopAdsb] = useState(false);
@@ -104,13 +125,27 @@ export default function AppView() {
     >
       <ResizablePanel maxSize={20} minSize={15}>
         <div className="flex flex-col gap-8 p-6">
-          <MapViewData viewData={views} topLevel={true} />
+          <MapViewData
+            viewData={views}
+            setCurrentViewId={setCurrentViewId}
+            topLevel={true}
+          />
         </div>
       </ResizablePanel>
       <ResizableHandle />
       <ResizablePanel>
-        <main className="flex flex-col gap-4">
+        <main className="flex flex-col gap-4 h-screen">
           <SdrSelector />
+          {(() => {
+            const view = GetViewById(currentViewId);
+
+            if (view) {
+              return <view.view />;
+            }
+
+            return <></>;
+          })()}
+          {/*
           <Tabs
             value={currentTab}
             onValueChange={async (newTab) => {
@@ -149,6 +184,7 @@ export default function AppView() {
               />
             </TabsContent>
           </Tabs>
+          */}
         </main>
       </ResizablePanel>
     </ResizablePanelGroup>
@@ -157,9 +193,11 @@ export default function AppView() {
 
 function MapViewData({
   viewData,
+  setCurrentViewId,
   topLevel = false,
 }: {
   viewData: ViewData[];
+  setCurrentViewId: any;
   topLevel?: boolean;
 }) {
   return (
@@ -173,7 +211,10 @@ function MapViewData({
                   {currentViewData.name}
                 </h2>
                 {currentViewData.subviews && (
-                  <MapViewData viewData={currentViewData.subviews} />
+                  <MapViewData
+                    viewData={currentViewData.subviews}
+                    setCurrentViewId={setCurrentViewId}
+                  />
                 )}
               </>
             ) : (
@@ -181,6 +222,9 @@ function MapViewData({
                 size="sm"
                 variant="ghost"
                 className="w-full justify-start -mx-[0.625rem]"
+                onClick={() => {
+                  setCurrentViewId(currentViewData.id);
+                }}
               >
                 {currentViewData.name}
               </Button>
