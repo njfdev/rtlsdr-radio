@@ -1,4 +1,9 @@
-import { Station, StationDetails, StationSortOption } from "./types";
+import {
+  Station,
+  StationDetails,
+  StationSortOption,
+  StationType,
+} from "./types";
 
 const stationsStorageName = "savedStations";
 
@@ -62,12 +67,18 @@ export async function removeStation(station: StationDetails) {
   dispatchEvent(new Event("saved_stations"));
 }
 
-export async function getSavedStations(): Promise<StationDetails[]> {
+export async function getSavedStations(
+  stationType?: StationType
+): Promise<StationDetails[]> {
   const stations = localStorage.getItem(stationsStorageName);
 
   if (!stations) return [];
 
   const parsedStations: [StationDetails] = JSON.parse(stations);
+
+  if (stationType !== undefined) {
+    return parsedStations.filter((station) => station.type == stationType);
+  }
 
   return parsedStations;
 }

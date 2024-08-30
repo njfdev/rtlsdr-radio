@@ -2,7 +2,7 @@
 
 import Nrsc5Controls from "@/components/Radio/Nrsc5Controls";
 import RtlSdrControls from "@/components/Radio/RtlSdrControls";
-import { Station, StreamType } from "@/lib/types";
+import { Station, StationType, StreamType } from "@/lib/types";
 import { useState } from "react";
 import SaveStationsMenu from "@/components/Radio/SavedStationsMenu";
 import { areStationsEqual } from "@/lib/stationsStorage";
@@ -10,7 +10,7 @@ import { areStationsEqual } from "@/lib/stationsStorage";
 const isNrsc5Available =
   import.meta.env.VITE_EXCLUDE_SIDECAR == "true" ? false : true;
 
-export default function RadioView({ type }: { type: "hd" | "fm" | "am" }) {
+export default function RadioView({ type }: { type: StationType }) {
   const [requestedStation, setRequestedStation] = useState<undefined | Station>(
     undefined
   );
@@ -21,7 +21,7 @@ export default function RadioView({ type }: { type: "hd" | "fm" | "am" }) {
   return (
     <div className="flex h-full w-full gap-4 px-4 pb-4">
       <div className="flex align-middle justify-center w-full h-full overflow-y-auto">
-        {type == "hd" ? (
+        {type == StationType.HDRadio ? (
           isNrsc5Available ? (
             <Nrsc5Controls
               currentStation={currentStation}
@@ -43,7 +43,7 @@ export default function RadioView({ type }: { type: "hd" | "fm" | "am" }) {
               to enable HD Radio features.
             </div>
           )
-        ) : type == "fm" ? (
+        ) : type == StationType.FMRadio ? (
           <RtlSdrControls
             currentStation={currentStation}
             setCurrentStation={setCurrentStation}
@@ -70,6 +70,7 @@ export default function RadioView({ type }: { type: "hd" | "fm" | "am" }) {
             areStationsEqual(currentStation, requestedStation)) ||
           false
         }
+        stationType={type}
       />
     </div>
   );

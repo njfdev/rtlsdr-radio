@@ -37,10 +37,12 @@ export default function SavedStationsMenu({
   setRequestedStation,
   currentStation,
   isStationPlaying,
+  stationType,
 }: {
   setRequestedStation: Dispatch<SetStateAction<Station | undefined>>;
   currentStation: Station | undefined;
   isStationPlaying: boolean;
+  stationType: StationType;
 }) {
   const [stations, setStations] = useState<undefined | StationDetails[]>(
     undefined
@@ -54,7 +56,7 @@ export default function SavedStationsMenu({
   useEffect(() => {
     if (stations === undefined) {
       (async () => {
-        setStations(await getSavedStations());
+        setStations(await getSavedStations(stationType));
       })();
     }
   }, [stations]);
@@ -71,7 +73,7 @@ export default function SavedStationsMenu({
   };
 
   addEventListener("saved_stations", async () => {
-    setStations(await getSavedStations());
+    setStations(await getSavedStations(stationType));
   });
 
   useEffect(() => {

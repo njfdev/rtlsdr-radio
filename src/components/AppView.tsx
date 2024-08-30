@@ -1,7 +1,7 @@
 import AdsbDecoderView from "@/components/AdsbDecoderView";
 import RadioView from "@/components/Radio/RadioView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Station, StreamType } from "@/lib/types";
+import { Station, StationType, StreamType } from "@/lib/types";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { ReactNode, useEffect, useState } from "react";
 import SdrSelector from "./SdrSelector";
@@ -31,17 +31,17 @@ const views: ViewData[] = [
       {
         id: "hd-radio",
         name: "HD Radio",
-        view: () => <RadioView type="hd" />,
+        view: () => <RadioView type={StationType.HDRadio} />,
       },
       {
         id: "fm-radio",
         name: "FM Radio",
-        view: () => <RadioView type="fm" />,
+        view: () => <RadioView type={StationType.FMRadio} />,
       },
       {
         id: "am-radio",
         name: "AM Radio",
-        view: () => <RadioView type="am" />,
+        view: () => <RadioView type={StationType.AMRadio} />,
       },
     ],
   },
