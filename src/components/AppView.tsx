@@ -1,7 +1,7 @@
 import AdsbDecoderView from "@/components/AdsbDecoderView";
 import RadioView from "@/components/Radio/RadioView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Station } from "@/lib/types";
+import { Station, StreamType } from "@/lib/types";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { ReactNode, useEffect, useState } from "react";
 import SdrSelector from "./SdrSelector";
@@ -11,6 +11,8 @@ import {
   ResizablePanelGroup,
 } from "./ui/resizable";
 import { Button } from "./ui/button";
+import Nrsc5Controls from "./Radio/Nrsc5Controls";
+import RtlSdrControls from "./Radio/RtlSdrControls";
 
 const appWindow = getCurrentWebviewWindow();
 
@@ -18,7 +20,7 @@ interface ViewData {
   id: string;
   name: string;
   subviews?: ViewData[];
-  view?: any;
+  view?: () => any;
 }
 
 const views: ViewData[] = [
@@ -29,17 +31,17 @@ const views: ViewData[] = [
       {
         id: "hd-radio",
         name: "HD Radio",
-        view: RadioView,
+        view: Nrsc5Controls,
       },
       {
         id: "fm-radio",
         name: "FM Radio",
-        view: RadioView,
+        view: () => <RtlSdrControls streamType={StreamType.FM} />,
       },
       {
         id: "am-radio",
         name: "AM Radio",
-        view: RadioView,
+        view: () => <RtlSdrControls streamType={StreamType.AM} />,
       },
     ],
   },
@@ -139,7 +141,7 @@ export default function AppView() {
           {(() => {
             const view = GetViewById(currentViewId);
 
-            if (view) {
+            if (view?.view) {
               return <view.view />;
             }
 
