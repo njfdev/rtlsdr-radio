@@ -53,15 +53,11 @@ export default function Nrsc5Controls({
   setCurrentStation,
   requestedStation,
   setRequestedStation,
-  isInUse,
-  setIsInUse,
 }: {
   currentStation: Station | undefined;
   setCurrentStation: Dispatch<SetStateAction<Station | undefined>>;
   requestedStation: Station | undefined;
   setRequestedStation: Dispatch<SetStateAction<Station | undefined>>;
-  isInUse: boolean;
-  setIsInUse: Dispatch<SetStateAction<boolean>>;
 }) {
   const [freq, setFreq] = useState<number>(101.5);
   const [channel, setChannel] = useState<number>(1);
@@ -90,11 +86,6 @@ export default function Nrsc5Controls({
         requestedStation.type == StationType.HDRadio &&
         !areStationsEqual(requestedStation, currentStation)
       ) {
-        if (isInUse) {
-          await stop_nrsc5();
-        }
-
-        setIsInUse(true);
         await setFreq(requestedStation.frequency);
         await setChannel(requestedStation.channel!);
         start_nrsc5();
@@ -103,7 +94,6 @@ export default function Nrsc5Controls({
   });
 
   const start_nrsc5 = () => {
-    setIsInUse(true);
     setNrsc5Status(Nrsc5Status.Starting);
     setStreamDetails({ frequency: freq, channel });
     invoke<string>("start_nrsc5", {
@@ -126,7 +116,6 @@ export default function Nrsc5Controls({
   };
   const stop_nrsc5 = async () => {
     await invoke<string>("stop_nrsc5", {});
-    await setIsInUse(false);
     setCurrentStation(undefined);
   };
 

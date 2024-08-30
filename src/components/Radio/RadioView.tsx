@@ -2,152 +2,64 @@
 
 import Nrsc5Controls from "@/components/Radio/Nrsc5Controls";
 import RtlSdrControls from "@/components/Radio/RtlSdrControls";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Station, StationType, StreamType } from "@/lib/types";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Station, StreamType } from "@/lib/types";
+import { useState } from "react";
 import SaveStationsMenu from "@/components/Radio/SavedStationsMenu";
 import { areStationsEqual } from "@/lib/stationsStorage";
-const appWindow = getCurrentWebviewWindow();
 
 const isNrsc5Available =
   import.meta.env.VITE_EXCLUDE_SIDECAR == "true" ? false : true;
 
-export default function RadioView({
-  currentStation,
-  setCurrentStation,
-  requestedStation,
-  setRequestedStation,
-  isSdrInUse,
-  setIsSdrInUse,
-}: {
-  currentStation: Station | undefined;
-  setCurrentStation: Dispatch<SetStateAction<Station | undefined>>;
-  requestedStation: Station | undefined;
-  setRequestedStation: Dispatch<SetStateAction<Station | undefined>>;
-  isSdrInUse: boolean;
-  setIsSdrInUse: Dispatch<SetStateAction<boolean>>;
-}) {
-  const [openTab, setOpenTab] = useState<string>(
-    isNrsc5Available
-      ? StationType.HDRadio.toString()
-      : StationType.FMRadio.toString()
+export default function RadioView({ type }: { type: "hd" | "fm" | "am" }) {
+  const [requestedStation, setRequestedStation] = useState<undefined | Station>(
+    undefined
   );
-
-  appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
-    if (
-      !event.payload.endsWith("stopped") &&
-      !event.payload.endsWith("pausing")
-    ) {
-      if (event.payload.startsWith("fm")) {
-        setOpenTab(StationType.FMRadio.toString());
-      } else if (event.payload.startsWith("am")) {
-        setOpenTab(StationType.AMRadio.toString());
-      }
-    }
-  });
-
-  appWindow.listen("nrsc5_status", (event: { payload: string }) => {
-    if (event.payload != "stopped") {
-      setOpenTab(StationType.HDRadio.toString());
-    }
-  });
-
-  useEffect(() => {
-    if (
-      isSdrInUse &&
-      requestedStation &&
-      !areStationsEqual(currentStation, requestedStation) &&
-      openTab != requestedStation.type.toString()
-    ) {
-      setOpenTab("");
-    }
-
-    if (
-      !requestedStation ||
-      (isSdrInUse && !areStationsEqual(currentStation, requestedStation))
-    )
-      return;
-
-    // TODO: Optimize this by put in for loop
-    if (requestedStation.type == StationType.HDRadio) {
-      setOpenTab(StationType.HDRadio.toString());
-    } else if (requestedStation.type == StationType.FMRadio) {
-      setOpenTab(StationType.FMRadio.toString());
-    } else if (requestedStation.type == StationType.AMRadio) {
-      setOpenTab(StationType.AMRadio.toString());
-    }
-  }, [requestedStation, isSdrInUse, currentStation]);
+  const [currentStation, setCurrentStation] = useState<undefined | Station>(
+    undefined
+  );
 
   return (
     <div className="flex h-full w-full gap-4 px-4 pb-4">
       <div className="flex align-middle justify-center w-full h-full overflow-y-auto">
-        <Tabs
-          value={openTab}
-          onValueChange={(value) => {
-            setRequestedStation(undefined);
-            setCurrentStation(undefined);
-            setOpenTab(value as typeof openTab);
-          }}
-          className="flex flex-col justify-start items-center align-middle mt-4 *:pb-8 w-full"
-        >
-          <TabsList className="!pb-1">
-            <TabsTrigger value={StationType.HDRadio.toString()}>
-              HD Radio
-            </TabsTrigger>
-            <TabsTrigger value={StationType.FMRadio.toString()}>
-              FM Radio
-            </TabsTrigger>
-            <TabsTrigger value={StationType.AMRadio.toString()}>
-              AM Radio
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value={StationType.HDRadio.toString()}>
-            {isNrsc5Available ? (
-              <Nrsc5Controls
-                currentStation={currentStation}
-                setCurrentStation={setCurrentStation}
-                requestedStation={requestedStation}
-                setRequestedStation={setRequestedStation}
-                isInUse={isSdrInUse}
-                setIsInUse={setIsSdrInUse}
-              />
-            ) : (
-              <div className="max-w-[32rem] text-center my-8 text-gray-400">
-                HD Radio is disabled in the precompiled version of RTL-SDR
-                Radio. Please{" "}
-                <a
-                  className="text-blue-400 hover:underline"
-                  href="https://github.com/njfdev/rtlsdr-radio#compiling-from-source"
-                  target="_blank"
-                >
-                  build from source
-                </a>{" "}
-                to enable HD Radio features.
-              </div>
-            )}
-          </TabsContent>
-          <TabsContent value={StationType.FMRadio.toString()}>
-            <RtlSdrControls
+        {type == "hd" ? (
+          isNrsc5Available ? (
+            <Nrsc5Controls
               currentStation={currentStation}
               setCurrentStation={setCurrentStation}
               requestedStation={requestedStation}
               setRequestedStation={setRequestedStation}
-              setIsInUse={setIsSdrInUse}
-              streamType={StreamType.FM}
             />
-          </TabsContent>
-          <TabsContent value={StationType.AMRadio.toString()}>
-            <RtlSdrControls
-              currentStation={currentStation}
-              setCurrentStation={setCurrentStation}
-              requestedStation={requestedStation}
-              setRequestedStation={setRequestedStation}
-              setIsInUse={setIsSdrInUse}
-              streamType={StreamType.AM}
-            />
-          </TabsContent>
-        </Tabs>
+          ) : (
+            <div className="max-w-[32rem] text-center my-8 text-gray-400">
+              HD Radio is disabled in the precompiled version of RTL-SDR Radio.
+              Please{" "}
+              <a
+                className="text-blue-400 hover:underline"
+                href="https://github.com/njfdev/rtlsdr-radio#compiling-from-source"
+                target="_blank"
+              >
+                build from source
+              </a>{" "}
+              to enable HD Radio features.
+            </div>
+          )
+        ) : type == "fm" ? (
+          <RtlSdrControls
+            currentStation={currentStation}
+            setCurrentStation={setCurrentStation}
+            requestedStation={requestedStation}
+            setRequestedStation={setRequestedStation}
+            streamType={StreamType.FM}
+          />
+        ) : (
+          <RtlSdrControls
+            currentStation={currentStation}
+            setCurrentStation={setCurrentStation}
+            requestedStation={requestedStation}
+            setRequestedStation={setRequestedStation}
+            streamType={StreamType.AM}
+          />
+        )}
       </div>
       <SaveStationsMenu
         setRequestedStation={setRequestedStation}

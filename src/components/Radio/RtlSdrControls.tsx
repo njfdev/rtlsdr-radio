@@ -54,14 +54,12 @@ export default function RtlSdrControls({
   setCurrentStation,
   requestedStation,
   setRequestedStation,
-  setIsInUse,
   streamType,
 }: {
   currentStation: Station | undefined;
   setCurrentStation: Dispatch<SetStateAction<Station | undefined>>;
   requestedStation: Station | undefined;
   setRequestedStation: Dispatch<SetStateAction<Station | undefined>>;
-  setIsInUse: Dispatch<SetStateAction<boolean>>;
   streamType: StreamType;
 }) {
   const currentStationType =
@@ -176,7 +174,6 @@ export default function RtlSdrControls({
       ) {
         setIsProcessingRequest(true);
 
-        setIsInUse(true);
         setStreamSettings((old) => ({
           ...old,
           freq: requestedStation.frequency,
@@ -209,7 +206,6 @@ export default function RtlSdrControls({
   }, [requestedStation, status]);
 
   const start_stream = async () => {
-    setIsInUse(true);
     setStatus(RtlSdrStatus.Starting);
     setCurrentStation({
       type: currentStationType,
@@ -232,7 +228,6 @@ export default function RtlSdrControls({
     }
     set10SecondsElapsed(false);
     await invoke<string>("stop_stream", {});
-    await setIsInUse(false);
     setCurrentStation(undefined);
     await setRbdsData({});
   };
@@ -253,7 +248,6 @@ export default function RtlSdrControls({
     setError(event.payload);
     await setCurrentStation(undefined);
     await setRequestedStation(undefined);
-    setIsInUse(false);
   });
 
   appWindow.listen("rtlsdr_rbds", async (event: { payload: string }) => {
