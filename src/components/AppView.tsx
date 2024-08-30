@@ -80,7 +80,7 @@ function GetViewById(
 }
 
 export default function AppView() {
-  const [currentViewId, setCurrentViewId] = useState<string>(views[0].id);
+  const [currentViewId, setCurrentViewId] = useState<string>("fm-radio");
 
   return (
     <ResizablePanelGroup
