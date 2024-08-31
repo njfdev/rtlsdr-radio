@@ -4,11 +4,20 @@ import { AvailableSdrArgs, SDRState } from "@/lib/types";
 import { invoke } from "@tauri-apps/api/core";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 const appWindow = getCurrentWebviewWindow();
 
 export default function SdrSelector() {
   const [sdrStates, setSDRState] = useState<SDRState[]>([]);
+  const [selectedSdrSerial, setSelectedSdrSerial] = useState("none");
 
   useEffect(() => {
     (async () => {
@@ -34,38 +43,73 @@ export default function SdrSelector() {
   };
 
   return (
-    <Card className="max-w-[36rem] mx-auto my-1">
-      <CardHeader>
-        <CardTitle>Available SDRs</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {sdrStates.map((state) => {
-          return (
-            <div
-              className="flex gap-2 align-middle items-center"
-              key={state.args.serial}
-            >
-              <span>{state.args.label}</span>
-              <Button
-                onClick={() =>
-                  state.dev == "Available"
-                    ? connectToSdr(state.args)
-                    : state.dev == "Connected" && disconnectSdr(state.args)
-                }
-                variant={state.dev == "Connected" ? "secondary" : "default"}
-                disabled={state.dev == "InUse"}
-                size="sm"
-              >
-                {state.dev == "Connected"
-                  ? "Disconnect"
-                  : state.dev == "Available"
-                  ? "Connect"
-                  : "In Use"}
-              </Button>
-            </div>
-          );
-        })}
-      </CardContent>
-    </Card>
+    <div className="flex max-w-[36rem] mx-auto">
+      {(() => {
+        const selectedSdr = sdrStates.find(
+          (state) => state.args.serial == selectedSdrSerial
+        );
+
+        return (
+          <Card className="my-1">
+            <CardHeader>
+              <CardTitle>
+                {selectedSdr ? selectedSdr.args.label : "No SDR Selected"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {selectedSdr && (
+                <div
+                  className="flex gap-2 align-middle items-center"
+                  key={selectedSdr.args.serial}
+                >
+                  <span>{selectedSdr.args.label}</span>
+                  <Button
+                    onClick={() =>
+                      selectedSdr.dev == "Available"
+                        ? connectToSdr(selectedSdr.args)
+                        : selectedSdr.dev == "Connected" &&
+                          disconnectSdr(selectedSdr.args)
+                    }
+                    variant={
+                      selectedSdr.dev == "Connected" ? "secondary" : "default"
+                    }
+                    disabled={selectedSdr.dev == "InUse"}
+                    size="sm"
+                  >
+                    {selectedSdr.dev == "Connected"
+                      ? "Disconnect"
+                      : selectedSdr.dev == "Available"
+                      ? "Connect"
+                      : "In Use"}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
+      <Select
+        value={selectedSdrSerial}
+        onValueChange={(serial) => setSelectedSdrSerial(serial)}
+      >
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectItem value="none">Select an SDR</SelectItem>
+            {sdrStates.map((state) => {
+              return (
+                <SelectItem value={state.args.serial} key={state.args.serial}>
+                  <div className="flex gap-2 justify-between w-full align-middle items-center">
+                    <span>{state.args.label}</span>
+                  </div>
+                </SelectItem>
+              );
+            })}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
