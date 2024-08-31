@@ -20,6 +20,7 @@ import {
   RadioStreamSettings,
   StreamType,
   volumeStorageName,
+  AvailableSdrArgs,
 } from "@/lib/types";
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -90,6 +91,9 @@ export default function RtlSdrControls({
   //const [rbdsData, setRbdsData] = useState<RbdsData>({} as RbdsData);
   const [has10SecondsElapsed, set10SecondsElapsed] = useState(false);
   const [totalSecondsListened, setTotalSecondsListened] = useState(0);
+  const [currentSdrArgs, setCurrentSdrArgs] = useState<
+    undefined | AvailableSdrArgs
+  >(undefined);
   let counterId: NodeJS.Timeout | undefined;
 
   const [isSaved, setIsSaved] = useState(
@@ -210,9 +214,41 @@ export default function RtlSdrControls({
   const rbdsChannel = new Channel<RbdsData>();
   rbdsChannel.onmessage = (message) => {
     setGlobalState((old) => ({ ...old, rbdsData: message }));
+    if (currentSdrArgs) {
+      updateSdrGlobalState(currentSdrArgs!, {
+        statusText: message.radioText || "",
+      });
+    }
+  };
+
+  const updateSdrGlobalState = (
+    sdrArgs: AvailableSdrArgs,
+    changes: { functionName?: string; statusText?: string }
+  ) => {
+    setGlobalState((old) => {
+      const newSdrs = [...old.sdrStates];
+      const currentSdrIndex = newSdrs.findIndex(
+        (value) => value.args.serial == sdrArgs?.serial
+      );
+      if (currentSdrIndex == -1) {
+        return old;
+      }
+      const newChanges = {
+        functionName:
+          changes.functionName || newSdrs[currentSdrIndex].functionName,
+        statusText: changes.statusText || newSdrs[currentSdrIndex].statusText,
+      };
+      newSdrs[currentSdrIndex] = { ...newSdrs[currentSdrIndex], ...newChanges };
+      console.log(newSdrs[currentSdrIndex], changes.functionName);
+      return { ...old, sdrStates: newSdrs };
+    });
   };
 
   const start_stream = async () => {
+    if (!globalState.defaultSdrArgs) {
+      return;
+    }
+
     setStatus(RtlSdrStatus.Starting);
     setCurrentStation({
       type: currentStationType,
@@ -224,6 +260,11 @@ export default function RtlSdrControls({
       streamSettings,
       sdrArgs: globalState.defaultSdrArgs,
       rbdsChannel,
+    });
+    setCurrentSdrArgs(globalState.defaultSdrArgs);
+    updateSdrGlobalState(globalState.defaultSdrArgs, {
+      functionName: streamType.toString().toUpperCase() + " Radio",
+      statusText: "",
     });
 
     // If no RBDS data after 10 seconds, alert user
@@ -237,6 +278,11 @@ export default function RtlSdrControls({
     }
     set10SecondsElapsed(false);
     await invoke<string>("stop_stream", {});
+    updateSdrGlobalState(currentSdrArgs!, {
+      functionName: undefined,
+      statusText: undefined,
+    });
+    setCurrentSdrArgs(undefined);
     setCurrentStation(undefined);
     setRequestedStation(null);
     setStatus(RtlSdrStatus.Stopped);

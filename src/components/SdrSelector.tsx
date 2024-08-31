@@ -22,14 +22,14 @@ export default function SdrSelector({
   globalState: GlobalState;
   setGlobalState: React.Dispatch<React.SetStateAction<GlobalState>>;
 }) {
-  const [sdrStates, setSDRState] = useState<SDRState[] | undefined>(undefined);
+  //const [sdrStates, setSDRState] = useState<SDRState[] | undefined>(undefined);
   const [selectedSdrSerial, setSelectedSdrSerial] = useState("none");
 
   const handleNewSdrStates = (newSdrStates: SDRState[]) => {
     // if more that 1 state,
     if (
       newSdrStates.length > 0 &&
-      (sdrStates === undefined ||
+      (globalState.sdrStates === undefined ||
         selectedSdrSerial == "none" ||
         getSdrFromSerial(selectedSdrSerial)?.dev === "InUse")
     ) {
@@ -56,7 +56,7 @@ export default function SdrSelector({
   };
 
   const getSdrFromSerial = (serial: string) => {
-    return sdrStates?.find((state) => state.args.serial == serial);
+    return globalState.sdrStates?.find((state) => state.args.serial == serial);
   };
 
   useEffect(() => {
@@ -75,7 +75,7 @@ export default function SdrSelector({
           {}
         )) as SDRState[];
 
-        setSDRState(newSdrStates);
+        setGlobalState((old) => ({ ...old, sdrStates: newSdrStates }));
 
         handleNewSdrStates(newSdrStates);
       } catch {
@@ -86,7 +86,7 @@ export default function SdrSelector({
 
   appWindow.listen("sdr_states", (event: { payload: object }) => {
     const newSdrStates = event.payload as SDRState[];
-    setSDRState(newSdrStates);
+    setGlobalState((old) => ({ ...old, sdrStates: newSdrStates }));
     handleNewSdrStates(newSdrStates);
   });
 
@@ -104,7 +104,7 @@ export default function SdrSelector({
         const selectedSdr = getSdrFromSerial(selectedSdrSerial);
 
         return (
-          <div>
+          <div className="flex">
             {selectedSdr && (
               <Button
                 className="w-full"
@@ -127,6 +127,11 @@ export default function SdrSelector({
                   : "In Use"}
               </Button>
             )}
+            {selectedSdr && (
+              <div>
+                {selectedSdr.functionName} - {selectedSdr.statusText}
+              </div>
+            )}
           </div>
         );
       })()}
@@ -140,7 +145,7 @@ export default function SdrSelector({
         <SelectContent>
           <SelectGroup>
             <SelectItem value="none">Select an SDR</SelectItem>
-            {sdrStates?.map((state) => {
+            {globalState.sdrStates?.map((state) => {
               return (
                 <SelectItem value={state.args.serial} key={state.args.serial}>
                   <div className="flex gap-2 justify-between w-full align-middle items-center">

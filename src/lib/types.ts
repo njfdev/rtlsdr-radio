@@ -319,4 +319,6 @@ export interface AvailableSdrArgs {
 export interface SDRState {
   args: AvailableSdrArgs;
   dev: "Available" | "Connected" | "InUse";
+  functionName?: string;
+  statusText?: string;
 }

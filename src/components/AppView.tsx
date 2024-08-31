@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AvailableSdrArgs,
   RbdsData,
+  SDRState,
   Station,
   StationType,
   StreamType,
@@ -92,6 +93,7 @@ function GetViewById(
 export interface GlobalState {
   rbdsData: RbdsData;
   defaultSdrArgs: AvailableSdrArgs | undefined;
+  sdrStates: SDRState[];
 }
 
 export default function AppView() {
