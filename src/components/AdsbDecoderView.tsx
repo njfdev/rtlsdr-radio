@@ -46,6 +46,7 @@ import Map, {
 import type { MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { formatZipCode, snakeToTitle, titleCapitalization } from "@/lib/utils";
+import { GlobalState } from "./AppView";
 
 enum AdsbStatus {
   Starting = "starting",
@@ -57,9 +58,11 @@ enum AdsbStatus {
 const appWindow = getCurrentWebviewWindow();
 
 export default function AdsbDecoderView({
-  defaultSdrArgs,
+  globalState,
+  setGlobalState,
 }: {
-  defaultSdrArgs: AvailableSdrArgs | undefined;
+  globalState: GlobalState;
+  setGlobalState: React.Dispatch<React.SetStateAction<GlobalState>>;
 }) {
   const [modesState, setModesState] = useState<ModesState | undefined>(
     undefined
@@ -76,14 +79,14 @@ export default function AdsbDecoderView({
   };
 
   const start_decoding = async () => {
-    if (defaultSdrArgs) {
+    if (globalState.defaultSdrArgs) {
       setModesState(undefined);
       setAdsbStatus(AdsbStatus.Starting);
       await invoke<string>("start_adsb_decoding", {
         streamSettings: {
           gain: 20.0,
         } as AdsbDecodeSettings,
-        sdrArgs: defaultSdrArgs,
+        sdrArgs: globalState.defaultSdrArgs,
         modesChannel,
       });
     }
