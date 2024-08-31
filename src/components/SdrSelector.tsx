@@ -99,15 +99,37 @@ export default function SdrSelector({
   };
 
   return (
-    <div className="flex max-w-[36rem] mx-auto">
+    <div className="flex gap-2 w-screen items-center align-middle justify-center">
+      <div className="flex-1" />
+      <Select
+        value={selectedSdrSerial}
+        onValueChange={(serial) => setSelectedSdrSerial(serial)}
+      >
+        <SelectTrigger className="justify-content-center w-[24rem]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectItem value="none">Select an SDR</SelectItem>
+            {globalState.sdrStates?.map((state) => {
+              return (
+                <SelectItem value={state.args.serial} key={state.args.serial}>
+                  <div className="flex gap-2 justify-between w-full align-middle items-center">
+                    <span>{state.args.label}</span>
+                  </div>
+                </SelectItem>
+              );
+            })}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
       {(() => {
         const selectedSdr = getSdrFromSerial(selectedSdrSerial);
 
         return (
-          <div className="flex">
+          <div className="flex flex-1">
             {selectedSdr && (
               <Button
-                className="w-full"
                 onClick={() =>
                   selectedSdr.dev == "Available"
                     ? connectToSdr(selectedSdr.args)
@@ -127,36 +149,9 @@ export default function SdrSelector({
                   : "In Use"}
               </Button>
             )}
-            {selectedSdr && (
-              <div>
-                {selectedSdr.functionName} - {selectedSdr.statusText}
-              </div>
-            )}
           </div>
         );
       })()}
-      <Select
-        value={selectedSdrSerial}
-        onValueChange={(serial) => setSelectedSdrSerial(serial)}
-      >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            <SelectItem value="none">Select an SDR</SelectItem>
-            {globalState.sdrStates?.map((state) => {
-              return (
-                <SelectItem value={state.args.serial} key={state.args.serial}>
-                  <div className="flex gap-2 justify-between w-full align-middle items-center">
-                    <span>{state.args.label}</span>
-                  </div>
-                </SelectItem>
-              );
-            })}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
     </div>
   );
 }

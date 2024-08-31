@@ -10,7 +10,7 @@ export default function BottomBar({
   setGlobalState: React.Dispatch<React.SetStateAction<GlobalState>>;
 }) {
   return (
-    <div className="w-screen h-[4.5rem]">
+    <div className="w-screen h-[3.5rem]">
       <Separator />
       <div className="w-screen h-full flex gap-4 items-center align-middle justify-center">
         <SdrSelector
