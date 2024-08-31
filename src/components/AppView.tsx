@@ -85,9 +85,9 @@ export default function AppView() {
   return (
     <ResizablePanelGroup
       direction="horizontal"
-      className="flex gap-4 h-screen w-screen"
+      className="flex h-screen w-screen"
     >
-      <ResizablePanel maxSize={20} minSize={15}>
+      <ResizablePanel maxSize={25} minSize={15}>
         <div className="flex flex-col gap-8 p-6">
           <MapViewData
             viewData={views}

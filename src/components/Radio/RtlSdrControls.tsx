@@ -269,9 +269,9 @@ export default function RtlSdrControls({
   }, []);
 
   return (
-    <div className="flex xl:flex-row flex-col gap-8 xl:w-[48rem] w-[24rem]">
+    <div className="flex xl:flex-row flex-col gap-4 xl:max-w-[48rem] max-w-[24rem] grow">
       <form
-        className="grid gap-3 max-w-[24rem] w-[24rem] h-max mx-auto"
+        className="grid gap-3 max-w-[24rem] w-full xl:grow h-max mx-auto"
         onSubmit={(e) => {
           e.preventDefault();
           if (status == RtlSdrStatus.Stopped) {
@@ -402,7 +402,7 @@ export default function RtlSdrControls({
         )}
       </form>
       {streamType == StreamType.FM && (
-        <div className="max-w-[24rem] w-[24rem]">
+        <div className="max-w-[24rem] w-full xl-grow">
           <Tabs
             defaultValue="radioInfo"
             className={`transition-all w-full ${
