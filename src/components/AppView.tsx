@@ -1,7 +1,12 @@
 import AdsbDecoderView from "@/components/AdsbDecoderView";
 import RadioView from "@/components/Radio/RadioView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Station, StationType, StreamType } from "@/lib/types";
+import {
+  AvailableSdrArgs,
+  Station,
+  StationType,
+  StreamType,
+} from "@/lib/types";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { ReactNode, useEffect, useState } from "react";
 import SdrSelector from "./SdrSelector";
@@ -21,7 +26,7 @@ interface ViewData {
   id: string;
   name: string;
   subviews?: ViewData[];
-  view?: () => any;
+  view?: (props: { defaultSdrArgs: AvailableSdrArgs | undefined }) => ReactNode;
 }
 
 const views: ViewData[] = [
@@ -32,17 +37,17 @@ const views: ViewData[] = [
       {
         id: "hd-radio",
         name: "HD Radio",
-        view: () => <RadioView type={StationType.HDRadio} />,
+        view: (props) => <RadioView type={StationType.HDRadio} {...props} />,
       },
       {
         id: "fm-radio",
         name: "FM Radio",
-        view: () => <RadioView type={StationType.FMRadio} />,
+        view: (props) => <RadioView type={StationType.FMRadio} {...props} />,
       },
       {
         id: "am-radio",
         name: "AM Radio",
-        view: () => <RadioView type={StationType.AMRadio} />,
+        view: (props) => <RadioView type={StationType.AMRadio} {...props} />,
       },
     ],
   },
@@ -53,7 +58,7 @@ const views: ViewData[] = [
       {
         id: "ads-b",
         name: "ADS-B",
-        view: AdsbDecoderView,
+        view: (props) => <AdsbDecoderView {...props} />,
       },
     ],
   },
@@ -82,6 +87,9 @@ function GetViewById(
 
 export default function AppView() {
   const [currentViewId, setCurrentViewId] = useState<string>("fm-radio");
+  const [defaultSdrArgs, setDefaultSdrArgs] = useState<
+    AvailableSdrArgs | undefined
+  >(undefined);
 
   return (
     <div className="flex flex-col w-screen h-screen">
@@ -106,7 +114,7 @@ export default function AppView() {
               const view = GetViewById(currentViewId);
 
               if (view?.view) {
-                return <view.view />;
+                return <view.view defaultSdrArgs={defaultSdrArgs} />;
               }
 
               return <></>;
@@ -114,7 +122,7 @@ export default function AppView() {
           </main>
         </ResizablePanel>
       </ResizablePanelGroup>
-      <BottomBar />
+      <BottomBar setDefaultSdrArgs={setDefaultSdrArgs} />
     </div>
   );
 }

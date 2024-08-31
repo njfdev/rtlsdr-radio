@@ -15,7 +15,13 @@ import {
 
 const appWindow = getCurrentWebviewWindow();
 
-export default function SdrSelector() {
+export default function SdrSelector({
+  setDefaultSdrArgs,
+}: {
+  setDefaultSdrArgs: React.Dispatch<
+    React.SetStateAction<AvailableSdrArgs | undefined>
+  >;
+}) {
   const [sdrStates, setSDRState] = useState<SDRState[] | undefined>(undefined);
   const [selectedSdrSerial, setSelectedSdrSerial] = useState("none");
 
@@ -25,8 +31,7 @@ export default function SdrSelector() {
       newSdrStates.length > 0 &&
       (sdrStates === undefined ||
         selectedSdrSerial == "none" ||
-        sdrStates.find((value) => value.args.serial == selectedSdrSerial)
-          ?.dev === "InUse")
+        getSdrFromSerial(selectedSdrSerial)?.dev === "InUse")
     ) {
       // check if any are in use, if so, set it as default
       const inUseSdrs = newSdrStates.filter((value) => value.dev === "InUse");
@@ -47,6 +52,15 @@ export default function SdrSelector() {
       setSelectedSdrSerial(newSdrStates[0].args.serial);
     }
   };
+
+  const getSdrFromSerial = (serial: string) => {
+    return sdrStates?.find((state) => state.args.serial == serial);
+  };
+
+  useEffect(() => {
+    const currentSdrState = getSdrFromSerial(selectedSdrSerial);
+    setDefaultSdrArgs(currentSdrState?.args);
+  }, [selectedSdrSerial]);
 
   useEffect(() => {
     (async () => {
@@ -82,9 +96,7 @@ export default function SdrSelector() {
   return (
     <div className="flex max-w-[36rem] mx-auto">
       {(() => {
-        const selectedSdr = sdrStates?.find(
-          (state) => state.args.serial == selectedSdrSerial
-        );
+        const selectedSdr = getSdrFromSerial(selectedSdrSerial);
 
         return (
           <Card className="my-1">

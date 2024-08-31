@@ -2,7 +2,12 @@
 
 import Nrsc5Controls from "@/components/Radio/Nrsc5Controls";
 import RtlSdrControls from "@/components/Radio/RtlSdrControls";
-import { Station, StationType, StreamType } from "@/lib/types";
+import {
+  AvailableSdrArgs,
+  Station,
+  StationType,
+  StreamType,
+} from "@/lib/types";
 import { useState } from "react";
 import SaveStationsMenu from "@/components/Radio/SavedStationsMenu";
 import { areStationsEqual } from "@/lib/stationsStorage";
@@ -10,7 +15,13 @@ import { areStationsEqual } from "@/lib/stationsStorage";
 const isNrsc5Available =
   import.meta.env.VITE_EXCLUDE_SIDECAR == "true" ? false : true;
 
-export default function RadioView({ type }: { type: StationType }) {
+export default function RadioView({
+  type,
+  defaultSdrArgs,
+}: {
+  type: StationType;
+  defaultSdrArgs: AvailableSdrArgs | undefined;
+}) {
   const [requestedStation, setRequestedStation] = useState<
     undefined | null | Station
   >(undefined);
@@ -28,6 +39,7 @@ export default function RadioView({ type }: { type: StationType }) {
               setCurrentStation={setCurrentStation}
               requestedStation={requestedStation}
               setRequestedStation={setRequestedStation}
+              defaultSdrArgs={defaultSdrArgs}
             />
           ) : (
             <div className="max-w-[32rem] text-center my-8 text-gray-400">
@@ -50,6 +62,7 @@ export default function RadioView({ type }: { type: StationType }) {
             requestedStation={requestedStation}
             setRequestedStation={setRequestedStation}
             streamType={StreamType.FM}
+            defaultSdrArgs={defaultSdrArgs}
           />
         ) : (
           <RtlSdrControls
@@ -58,6 +71,7 @@ export default function RadioView({ type }: { type: StationType }) {
             requestedStation={requestedStation}
             setRequestedStation={setRequestedStation}
             streamType={StreamType.AM}
+            defaultSdrArgs={defaultSdrArgs}
           />
         )}
       </div>

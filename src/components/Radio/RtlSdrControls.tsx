@@ -20,6 +20,7 @@ import {
   RadioStreamSettings,
   StreamType,
   volumeStorageName,
+  AvailableSdrArgs,
 } from "@/lib/types";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -55,12 +56,14 @@ export default function RtlSdrControls({
   requestedStation,
   setRequestedStation,
   streamType,
+  defaultSdrArgs,
 }: {
   currentStation: Station | undefined;
   setCurrentStation: Dispatch<SetStateAction<Station | undefined>>;
   requestedStation: Station | undefined | null;
   setRequestedStation: Dispatch<SetStateAction<Station | undefined | null>>;
   streamType: StreamType;
+  defaultSdrArgs: AvailableSdrArgs | undefined;
 }) {
   const currentStationType =
     streamType == StreamType.FM ? StationType.FMRadio : StationType.AMRadio;
@@ -212,6 +215,7 @@ export default function RtlSdrControls({
     setError("");
     await invoke<string>("start_stream", {
       streamSettings,
+      defaultSdrArgs,
     });
 
     // If no RBDS data after 10 seconds, alert user
