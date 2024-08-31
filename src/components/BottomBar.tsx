@@ -10,9 +10,11 @@ export default function BottomBar({
   >;
 }) {
   return (
-    <div className="w-screen">
+    <div className="w-screen h-[4.5rem]">
       <Separator />
-      <SdrSelector setDefaultSdrArgs={setDefaultSdrArgs} />
+      <div className="w-screen h-full flex gap-4 items-center align-middle justify-center">
+        <SdrSelector setDefaultSdrArgs={setDefaultSdrArgs} />
+      </div>
     </div>
   );
 }

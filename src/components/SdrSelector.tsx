@@ -101,42 +101,30 @@ export default function SdrSelector({
         const selectedSdr = getSdrFromSerial(selectedSdrSerial);
 
         return (
-          <Card className="my-1">
-            <CardHeader>
-              <CardTitle>
-                {selectedSdr ? selectedSdr.args.label : "No SDR Selected"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {selectedSdr && (
-                <div
-                  className="flex gap-2 align-middle items-center"
-                  key={selectedSdr.args.serial}
-                >
-                  <span>{selectedSdr.args.label}</span>
-                  <Button
-                    onClick={() =>
-                      selectedSdr.dev == "Available"
-                        ? connectToSdr(selectedSdr.args)
-                        : selectedSdr.dev == "Connected" &&
-                          disconnectSdr(selectedSdr.args)
-                    }
-                    variant={
-                      selectedSdr.dev == "Available" ? "default" : "secondary"
-                    }
-                    disabled={selectedSdr.dev == "InUse"}
-                    size="sm"
-                  >
-                    {selectedSdr.dev == "Connected"
-                      ? "Disconnect"
-                      : selectedSdr.dev == "Available"
-                      ? "Connect"
-                      : "In Use"}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div>
+            {selectedSdr && (
+              <Button
+                className="w-full"
+                onClick={() =>
+                  selectedSdr.dev == "Available"
+                    ? connectToSdr(selectedSdr.args)
+                    : selectedSdr.dev == "Connected" &&
+                      disconnectSdr(selectedSdr.args)
+                }
+                variant={
+                  selectedSdr.dev == "Available" ? "default" : "secondary"
+                }
+                disabled={selectedSdr.dev == "InUse"}
+                size="sm"
+              >
+                {selectedSdr.dev == "Connected"
+                  ? "Disconnect"
+                  : selectedSdr.dev == "Available"
+                  ? "Connect"
+                  : "In Use"}
+              </Button>
+            )}
+          </div>
         );
       })()}
       <Select
