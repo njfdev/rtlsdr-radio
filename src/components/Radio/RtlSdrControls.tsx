@@ -339,7 +339,7 @@ export default function RtlSdrControls({
           disabled={
             status == RtlSdrStatus.Starting ||
             status == RtlSdrStatus.Pausing ||
-            !defaultSdrArgs
+            (status == RtlSdrStatus.Stopped && !defaultSdrArgs)
           }
         >
           {status == RtlSdrStatus.Running ? (
