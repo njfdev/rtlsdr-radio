@@ -94,6 +94,7 @@ export default function AppView() {
             <MapViewData
               viewData={views}
               setCurrentViewId={setCurrentViewId}
+              currentViewId={currentViewId}
               topLevel={true}
             />
           </div>
@@ -121,10 +122,12 @@ export default function AppView() {
 function MapViewData({
   viewData,
   setCurrentViewId,
+  currentViewId,
   topLevel = false,
 }: {
   viewData: ViewData[];
   setCurrentViewId: any;
+  currentViewId: string;
   topLevel?: boolean;
 }) {
   return (
@@ -141,6 +144,7 @@ function MapViewData({
                   <MapViewData
                     viewData={currentViewData.subviews}
                     setCurrentViewId={setCurrentViewId}
+                    currentViewId={currentViewId}
                   />
                 )}
               </>
@@ -148,7 +152,9 @@ function MapViewData({
               <Button
                 size="sm"
                 variant="ghost"
-                className="w-full justify-start -mx-[0.625rem]"
+                className={`w-full justify-start -mx-[0.625rem] ${
+                  currentViewId === currentViewData.id ? "font-bold" : ""
+                }`}
                 onClick={() => {
                   setCurrentViewId(currentViewData.id);
                 }}
