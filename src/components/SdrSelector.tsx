@@ -16,13 +16,49 @@ import {
 const appWindow = getCurrentWebviewWindow();
 
 export default function SdrSelector() {
-  const [sdrStates, setSDRState] = useState<SDRState[]>([]);
+  const [sdrStates, setSDRState] = useState<SDRState[] | undefined>(undefined);
   const [selectedSdrSerial, setSelectedSdrSerial] = useState("none");
+
+  const handleNewSdrStates = (newSdrStates: SDRState[]) => {
+    // if more that 1 state,
+    if (
+      newSdrStates.length > 0 &&
+      (sdrStates === undefined ||
+        selectedSdrSerial == "none" ||
+        sdrStates.find((value) => value.args.serial == selectedSdrSerial)
+          ?.dev === "InUse")
+    ) {
+      // check if any are in use, if so, set it as default
+      const inUseSdrs = newSdrStates.filter((value) => value.dev === "InUse");
+      if (inUseSdrs.length > 0) {
+        setSelectedSdrSerial(inUseSdrs[0].args.serial);
+        return;
+      }
+
+      // check if any are connected, if so, set it as default
+      const connectedSdrs = newSdrStates.filter(
+        (value) => value.dev === "Connected"
+      );
+      if (connectedSdrs.length > 0) {
+        setSelectedSdrSerial(connectedSdrs[0].args.serial);
+        return;
+      }
+
+      setSelectedSdrSerial(newSdrStates[0].args.serial);
+    }
+  };
 
   useEffect(() => {
     (async () => {
       try {
-        setSDRState((await invoke<object>("get_sdr_states", {})) as SDRState[]);
+        const newSdrStates = (await invoke<object>(
+          "get_sdr_states",
+          {}
+        )) as SDRState[];
+
+        setSDRState(newSdrStates);
+
+        handleNewSdrStates(newSdrStates);
       } catch {
         console.error("Error Getting SDR States");
       }
@@ -30,8 +66,9 @@ export default function SdrSelector() {
   }, []);
 
   appWindow.listen("sdr_states", (event: { payload: object }) => {
-    console.log(event.payload, typeof event.payload);
-    setSDRState(event.payload as SDRState[]);
+    const newSdrStates = event.payload as SDRState[];
+    setSDRState(newSdrStates);
+    handleNewSdrStates(newSdrStates);
   });
 
   const connectToSdr = async (sdrArgs: AvailableSdrArgs) => {
@@ -45,7 +82,7 @@ export default function SdrSelector() {
   return (
     <div className="flex max-w-[36rem] mx-auto">
       {(() => {
-        const selectedSdr = sdrStates.find(
+        const selectedSdr = sdrStates?.find(
           (state) => state.args.serial == selectedSdrSerial
         );
 
@@ -98,7 +135,7 @@ export default function SdrSelector() {
         <SelectContent>
           <SelectGroup>
             <SelectItem value="none">Select an SDR</SelectItem>
-            {sdrStates.map((state) => {
+            {sdrStates?.map((state) => {
               return (
                 <SelectItem value={state.args.serial} key={state.args.serial}>
                   <div className="flex gap-2 justify-between w-full align-middle items-center">
