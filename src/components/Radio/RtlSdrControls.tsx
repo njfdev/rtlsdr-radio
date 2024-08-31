@@ -22,7 +22,7 @@ import {
   volumeStorageName,
   AvailableSdrArgs,
 } from "@/lib/types";
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Loader2 } from "lucide-react";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
@@ -85,7 +85,7 @@ export default function RtlSdrControls({
   });
   const [isProcessingRequest, setIsProcessingRequest] = useState(false);
   const [error, setError] = useState("");
-  const [rbdsData, setRbdsData] = useState<RbdsData>({});
+  const [rbdsData, setRbdsData] = useState<RbdsData>({} as RbdsData);
   const [has10SecondsElapsed, set10SecondsElapsed] = useState(false);
   const [totalSecondsListened, setTotalSecondsListened] = useState(0);
   let counterId: NodeJS.Timeout | undefined;
@@ -133,7 +133,7 @@ export default function RtlSdrControls({
       setIsProcessingRequest(true);
       // If station is changed, reset RDBD date which is station specific
       if (streamSettings.freq != currentStation?.frequency) {
-        setRbdsData({});
+        setRbdsData({} as RbdsData);
       }
       const newStation: Station = {
         type: currentStationType,
@@ -205,6 +205,11 @@ export default function RtlSdrControls({
     }
   }, [requestedStation, status]);
 
+  const rbdsChannel = new Channel<RbdsData>();
+  rbdsChannel.onmessage = (message) => {
+    setRbdsData(message);
+  };
+
   const start_stream = async () => {
     setStatus(RtlSdrStatus.Starting);
     setCurrentStation({
@@ -216,6 +221,7 @@ export default function RtlSdrControls({
     await invoke<string>("start_stream", {
       streamSettings,
       sdrArgs: defaultSdrArgs,
+      rbdsChannel,
     });
 
     // If no RBDS data after 10 seconds, alert user
@@ -232,7 +238,7 @@ export default function RtlSdrControls({
     setCurrentStation(undefined);
     setRequestedStation(null);
     setStatus(RtlSdrStatus.Stopped);
-    await setRbdsData({});
+    await setRbdsData({} as RbdsData);
   };
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
@@ -253,11 +259,6 @@ export default function RtlSdrControls({
     setError(event.payload);
     await setCurrentStation(undefined);
     await setRequestedStation(null);
-  });
-
-  appWindow.listen("rtlsdr_rbds", async (event: { payload: string }) => {
-    const parsed_data = JSON.parse(event.payload);
-    setRbdsData((old) => ({ ...old, ...parsed_data }));
   });
 
   return (
@@ -370,8 +371,8 @@ export default function RtlSdrControls({
                 streamSettings.freq
               }`;
 
-              if (rbdsData.program_type) {
-                stationTitle += ` - ${rbdsData.program_type}`;
+              if (rbdsData.programType) {
+                stationTitle += ` - ${rbdsData.programType}`;
               }
 
               const stationData: StationDetails = {
@@ -425,14 +426,13 @@ export default function RtlSdrControls({
                 <TabsContent value="radioInfo">
                   <Card>
                     <CardHeader>
-                      {rbdsData.radio_text ? (
+                      {rbdsData.radioText ? (
                         <CardTitle
                           className="whitespace-pre-wrap"
                           dangerouslySetInnerHTML={{
                             __html:
-                              rbdsData.radio_text &&
-                              rbdsData.radio_text.trimEnd()
-                                ? rbdsData.radio_text
+                              rbdsData.radioText && rbdsData.radioText.trimEnd()
+                                ? rbdsData.radioText
                                     .trimEnd()
                                     .replace(
                                       /( {2,})/g,
@@ -445,8 +445,8 @@ export default function RtlSdrControls({
                         <Skeleton className="h-6 max-w-52" />
                       )}
                       <CardDescription>
-                        {rbdsData.program_type ? (
-                          rbdsData.program_type
+                        {rbdsData.programType ? (
+                          rbdsData.programType
                         ) : (
                           <Skeleton className="h-4 max-w-20" />
                         )}
@@ -476,12 +476,10 @@ export default function RtlSdrControls({
                       <span className="flex items-center gap-1">
                         <b>Program Service Name:</b>{" "}
                         <span className="font-mono">
-                          {rbdsData.program_service_name != undefined ? (
+                          {rbdsData.serviceName != undefined ? (
                             <>
-                              {rbdsData.program_service_name}
-                              {rbdsData.pty_name
-                                ? ` - ${rbdsData.pty_name}`
-                                : ""}
+                              {rbdsData.serviceName}
+                              {rbdsData.ptyName ? ` - ${rbdsData.ptyName}` : ""}
                             </>
                           ) : (
                             <div>
@@ -500,8 +498,9 @@ export default function RtlSdrControls({
                       </span>
                       <span className="flex items-center gap-1">
                         <b>Radio Type:</b>{" "}
-                        {rbdsData.di_is_stereo != undefined ? (
-                          rbdsData.ms_flag ? (
+                        {rbdsData.decoderInfo &&
+                        rbdsData.decoderInfo.diIsStereo != undefined ? (
+                          rbdsData.msFlag ? (
                             "Music"
                           ) : (
                             "Speech"
@@ -516,8 +515,9 @@ export default function RtlSdrControls({
                       <div className="indent-4 flex flex-col -mt-2">
                         <span className="flex items-center gap-1">
                           <b>Channels:</b>{" "}
-                          {rbdsData.di_is_stereo != undefined ? (
-                            rbdsData.di_is_stereo ? (
+                          {rbdsData.decoderInfo &&
+                          rbdsData.decoderInfo.diIsStereo != undefined ? (
+                            rbdsData.decoderInfo.diIsStereo ? (
                               "Stereo"
                             ) : (
                               "Mono"
@@ -528,8 +528,9 @@ export default function RtlSdrControls({
                         </span>
                         <span className="flex items-center gap-1">
                           <b>Binaural Audio:</b>{" "}
-                          {rbdsData.di_is_binaural != undefined ? (
-                            rbdsData.di_is_binaural ? (
+                          {rbdsData.decoderInfo &&
+                          rbdsData.decoderInfo.diIsBinaural != undefined ? (
+                            rbdsData.decoderInfo.diIsBinaural ? (
                               "Yes"
                             ) : (
                               "No"
@@ -540,8 +541,9 @@ export default function RtlSdrControls({
                         </span>
                         <span className="flex items-center gap-1">
                           <b>Compression:</b>{" "}
-                          {rbdsData.di_is_compressed != undefined ? (
-                            rbdsData.di_is_compressed ? (
+                          {rbdsData.decoderInfo &&
+                          rbdsData.decoderInfo.diIsCompressed != undefined ? (
+                            rbdsData.decoderInfo.diIsCompressed ? (
                               "Yes"
                             ) : (
                               "No"
@@ -552,8 +554,9 @@ export default function RtlSdrControls({
                         </span>
                         <span className="flex items-center gap-1">
                           <b>PTY Type:</b>{" "}
-                          {rbdsData.di_is_pty_dynamic != undefined ? (
-                            rbdsData.di_is_pty_dynamic ? (
+                          {rbdsData.decoderInfo &&
+                          rbdsData.decoderInfo.diIsPtyDynamic != undefined ? (
+                            rbdsData.decoderInfo.diIsPtyDynamic ? (
                               "Dynamic"
                             ) : (
                               "Static"

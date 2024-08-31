@@ -66,18 +66,22 @@ export interface RadioStreamSettings {
 }
 
 export interface RbdsData {
-  pi?: number;
-  program_type?: string;
-  pty_name?: string;
-  program_service_name?: string;
-  radio_text?: string;
-  ms_flag?: boolean;
-  di_is_stereo?: boolean;
-  di_is_binaural?: boolean;
-  di_is_compressed?: boolean;
-  di_is_pty_dynamic?: boolean;
-  ta?: boolean;
-  tp?: boolean;
+  pi?: number | null;
+  serviceName?: string | null;
+  programType?: string | null;
+  radioText?: string | null;
+  radioTextAbFlag?: string | null;
+  ptyName?: string | null;
+  ptyNameAbFlag?: string | null;
+  ta?: boolean | null;
+  tp?: boolean | null;
+  msFlag?: boolean | null;
+  decoderInfo: {
+    diIsStereo?: boolean | null;
+    diIsBinaural?: boolean | null;
+    diIsCompressed?: boolean | null;
+    diIsPtyDynamic?: boolean | null;
+  } | null;
 }
 
 export interface AdsbDecodeSettings {

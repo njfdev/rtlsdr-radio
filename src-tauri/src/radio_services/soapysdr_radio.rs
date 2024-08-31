@@ -10,7 +10,7 @@ use log::{debug, error};
 use radiorust::{blocks::io::rf, prelude::*};
 use soapysdr::Direction;
 use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, MediaPlayback, PlatformConfig};
-use tauri::{async_runtime, AppHandle, Emitter, Listener, Manager};
+use tauri::{async_runtime, ipc::Channel, AppHandle, Emitter, Listener, Manager};
 use tokio::{self, time};
 
 use crate::{
@@ -18,7 +18,7 @@ use crate::{
         am_demod::AmDemod,
         better_cpal,
         pauseable::Pauseable,
-        rbds_decode::{DownMixer, RbdsDecode},
+        rbds_decode::{DownMixer, RbdsDecode, RbdsState},
     },
     sdr::{enumeration::AvailableSDRArgs, get_sdr_dev, release_sdr_dev},
     AppState,
@@ -58,6 +58,7 @@ impl RtlSdrState {
         app: AppHandle,
         stream_settings: StreamSettings,
         default_sdr_args: AvailableSDRArgs,
+        rbds_channel: Channel<RbdsState>,
     ) {
         let rtlsdr_state = self.0.clone();
         let rtlsdr_state_clone = rtlsdr_state.clone();
@@ -291,8 +292,10 @@ impl RtlSdrState {
 
                             let controls_clone2 = controls_arc.clone();
                             // add rbds decoder to output FM stream
-                            let rdbs_decoder =
-                                RbdsDecode::<f32>::new(app.clone(), move |radiotext: String| {
+                            let rdbs_decoder = RbdsDecode::<f32>::new(
+                                app.clone(),
+                                rbds_channel,
+                                move |radiotext: String| {
                                     let _ = controls_clone2.lock().unwrap().set_metadata(
                                         MediaMetadata {
                                             title: Some(&radiotext),
@@ -301,7 +304,8 @@ impl RtlSdrState {
                                             ..Default::default()
                                         },
                                     );
-                                });
+                                },
+                            );
                             rdbs_decoder.feed_from(&rbds_lowpass_filter);
                         } else if stream_settings.stream_type == StreamType::AM {
                             let demodulator = AmDemod::<f32>::new();

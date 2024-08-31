@@ -1,6 +1,7 @@
 use std::{collections::VecDeque, f64::consts::PI, ops::Range};
 
 use log::{debug, info};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 #[cfg(debug_assertions)]
@@ -20,7 +21,7 @@ use radiorust::{
     prelude::{ChunkBuf, ChunkBufPool, Complex},
     signal::Signal,
 };
-use tauri::{AppHandle, Emitter};
+use tauri::{ipc::Channel, AppHandle, Emitter};
 use tokio::spawn;
 pub struct DownMixer<Flt> {
     receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
@@ -214,7 +215,7 @@ impl<Flt> RbdsDecode<Flt>
 where
     Flt: Float + Into<f64> + Into<f32>,
 {
-    pub fn new<F>(app: AppHandle, radiotext_callback: F) -> Self
+    pub fn new<F>(app: AppHandle, rbds_channel: Channel<RbdsState>, radiotext_callback: F) -> Self
     where
         F: Fn(String) + Send + Sync + 'static,
     {
@@ -341,7 +342,7 @@ where
                                             &mut decoded_bits,
                                             &mut rbds_decode_state,
                                             &radiotext_callback,
-                                            app.clone(),
+                                            rbds_channel.clone(),
                                             true,
                                         );
                                         decoded_bits.clear();
@@ -380,7 +381,7 @@ where
                             &mut decoded_bits,
                             &mut rbds_decode_state,
                             &radiotext_callback,
-                            app.clone(),
+                            rbds_channel.clone(),
                             false,
                         );
 
@@ -588,14 +589,40 @@ fn send_rbds_data<T: serde::Serialize>(param_name: &str, data: T, app: AppHandle
         .expect("failed to emit event");
 }
 
-#[derive(Clone)]
-struct RbdsState {
-    pi: u16,
-    service_name: String,
-    radio_text: String,
-    radio_text_ab_flag: bool, // if switches from previous value, then clear radio_text
-    pty_name: String,
-    pty_name_ab_flag: bool, // if switches from previous value, then clear pty_name
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RbdsDecoderInfo {
+    pub di_is_stereo: Option<bool>,
+    pub di_is_binaural: Option<bool>,
+    pub di_is_compressed: Option<bool>,
+    pub di_is_pty_dynamic: Option<bool>,
+}
+
+impl RbdsDecoderInfo {
+    pub fn new() -> Self {
+        Self {
+            di_is_stereo: None,
+            di_is_binaural: None,
+            di_is_compressed: None,
+            di_is_pty_dynamic: None,
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RbdsState {
+    pub pi: u16,
+    pub service_name: String,
+    pub radio_text: String,
+    pub radio_text_ab_flag: bool, // if switches from previous value, then clear radio_text
+    pub pty_name: String,
+    pub pty_name_ab_flag: bool, // if switches from previous value, then clear pty_name
+    pub ta: Option<bool>,
+    pub tp: Option<bool>,
+    pub ms_flag: Option<bool>,
+    pub decoder_info: RbdsDecoderInfo,
+    pub program_type: Option<String>,
 }
 
 impl RbdsState {
@@ -607,6 +634,11 @@ impl RbdsState {
             radio_text_ab_flag: false,
             pty_name: String::from(" ".repeat(8)),
             pty_name_ab_flag: false,
+            ta: None,
+            tp: None,
+            ms_flag: None,
+            decoder_info: RbdsDecoderInfo::new(),
+            program_type: None,
         }
     }
 }
@@ -615,7 +647,7 @@ fn process_rbds_group<F>(
     group_data: Vec<(u32, String)>,
     rbds_state: &mut RbdsState,
     radiotext_callback: &F,
-    app: AppHandle,
+    rbds_channel: Channel<RbdsState>,
 ) where
     F: Fn(String),
 {
@@ -679,17 +711,13 @@ fn process_rbds_group<F>(
             } else {
                 false
             };
-            let mut di_bit_name = "";
 
             match decoder_control_bit_index {
-                0 => di_bit_name = "di_is_stereo",
-                1 => di_bit_name = "di_is_binaural",
-                2 => di_bit_name = "di_is_compressed",
-                3 => di_bit_name = "di_is_pty_dynamic",
+                0 => rbds_state.decoder_info.di_is_stereo = Some(decoder_control_bit),
+                1 => rbds_state.decoder_info.di_is_binaural = Some(decoder_control_bit),
+                2 => rbds_state.decoder_info.di_is_compressed = Some(decoder_control_bit),
+                3 => rbds_state.decoder_info.di_is_pty_dynamic = Some(decoder_control_bit),
                 _ => {}
-            }
-            if di_bit_name.len() > 0 {
-                send_rbds_data(&di_bit_name, decoder_control_bit, app.clone());
             }
 
             // set the traffic announcement bit
@@ -698,7 +726,7 @@ fn process_rbds_group<F>(
             } else {
                 false
             };
-            send_rbds_data("ta", ta, app.clone());
+            rbds_state.ta = Some(ta);
 
             // get and set the service_name characters
             let mut service_name_segment: String = String::from("");
@@ -733,14 +761,7 @@ fn process_rbds_group<F>(
             } else {
                 false
             };
-
-            // send rbds data to UI
-            send_rbds_data(
-                "program_service_name",
-                rbds_state.service_name.clone(),
-                app.clone(),
-            );
-            send_rbds_data("ms_flag", ms_flag, app.clone());
+            rbds_state.ms_flag = Some(ms_flag);
         }
         // RadioText
         0b0010 => {
@@ -783,8 +804,6 @@ fn process_rbds_group<F>(
                 .radio_text
                 .replace_range(char_starting_index..char_ending_index, &radio_text_segment);
 
-            // send rbds data to UI
-            send_rbds_data("radio_text", rbds_state.radio_text.clone(), app.clone());
             // update radiotext callback if nothing has changed
             if previous_radio_text != rbds_state.radio_text {
                 radiotext_callback(rbds_state.radio_text.clone());
@@ -843,25 +862,23 @@ fn process_rbds_group<F>(
                 rbds_state
                     .pty_name
                     .replace_range(char_starting_index..char_ending_index, &ptyn_segment);
-
-                // send rbds data to UI
-                send_rbds_data("pty_name", rbds_state.pty_name.clone(), app.clone());
             }
         }
         _ => {}
     }
 
-    // send rbds data to UI
-    send_rbds_data("program_type", RBDS_PTY_INDEX[pty].to_string(), app.clone());
-    send_rbds_data("tp", tp, app.clone());
-    send_rbds_data("pi", pi, app.clone());
+    rbds_state.program_type = Some(RBDS_PTY_INDEX[pty].to_string());
+    rbds_state.tp = Some(tp);
+
+    // update frontend
+    rbds_channel.send(rbds_state.clone());
 }
 
 fn rbds_process_bits<F>(
     bit_stream: &mut Vec<u8>,
     rbds_decode_state: &mut RbdsDecodeState,
     radiotext_callback: &F,
-    app: AppHandle,
+    rbds_channel: Channel<RbdsState>,
     bit_stream_ending: bool,
 ) where
     F: Fn(String),
@@ -931,7 +948,7 @@ fn rbds_process_bits<F>(
                             rbds_decode_state.current_block_group.clone(),
                             &mut rbds_decode_state.rbds_state,
                             radiotext_callback,
-                            app.clone(),
+                            rbds_channel.clone(),
                         );
                         rbds_decode_state.current_block_group.clear();
                     }

@@ -2,7 +2,6 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useEffect, useState } from "react";
 import { AvailableSdrArgs, SDRState } from "@/lib/types";
 import { invoke } from "@tauri-apps/api/core";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import {
   Select,

@@ -14,6 +14,7 @@ use radio_services::{
     soapysdr_adsb::{self, AdsbDecoderState},
     soapysdr_radio::{self, RtlSdrState},
 };
+use radiorust_blocks::rbds_decode::RbdsState;
 use sdr::{enumeration::AvailableSDRArgs, SDRState};
 use serde::Serialize;
 use std::{
@@ -88,6 +89,7 @@ fn start_stream(
     state: State<AppState>,
     stream_settings: soapysdr_radio::StreamSettings,
     sdr_args: AvailableSDRArgs,
+    rbds_channel: Channel<RbdsState>,
 ) {
     if state.rtl_sdr_state.lock().unwrap().is_playing() {
         return;
@@ -96,7 +98,7 @@ fn start_stream(
         .rtl_sdr_state
         .lock()
         .unwrap()
-        .start_stream(app, stream_settings, sdr_args);
+        .start_stream(app, stream_settings, sdr_args, rbds_channel);
 }
 
 #[tauri::command]
