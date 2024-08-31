@@ -77,6 +77,7 @@ export default function AdsbDecoderView({
 
   const start_decoding = async () => {
     if (defaultSdrArgs) {
+      setModesState(undefined);
       setAdsbStatus(AdsbStatus.Starting);
       await invoke<string>("start_adsb_decoding", {
         streamSettings: {
