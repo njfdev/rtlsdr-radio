@@ -148,7 +148,7 @@ export default function AdsbDecoderView({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <ResizablePanelGroup direction="horizontal">
-        <ResizablePanel>
+        <ResizablePanel minSize={50}>
           <Map
             ref={mapRef}
             initialViewState={{
@@ -262,12 +262,13 @@ export default function AdsbDecoderView({
 
         <ResizablePanel
           defaultSize={33}
+          minSize={25}
           className="grow h-full overflow-hidden"
         >
           <Card className="w-full h-full rounded-none border-x-0 border-b-0 overflow-hidden flex flex-col">
             <CardHeader>
-              <div className="flex justify-between w-full align-middle items-center">
-                <div>
+              <div className="flex gap-2 justify-between w-full align-middle items-center">
+                <div className="w-full">
                   <CardTitle>Aircraft</CardTitle>
                   <CardDescription>
                     {modesState?.aircraft.filter((aircraft, _index, _array) => {
