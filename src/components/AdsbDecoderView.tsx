@@ -16,14 +16,7 @@ import {
   ResizableHandle,
 } from "./ui/resizable";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import {
-  Dispatch,
-  MouseEventHandler,
-  SetStateAction,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { MouseEventHandler, useEffect, useRef, useState } from "react";
 import {
   Card,
   CardContent,
@@ -64,16 +57,8 @@ enum AdsbStatus {
 const appWindow = getCurrentWebviewWindow();
 
 export default function AdsbDecoderView({
-  //isSdrInUse,
-  setIsSdrInUse,
-  shouldStop,
-  setShouldStop,
   defaultSdrArgs,
 }: {
-  //isSdrInUse: boolean;
-  setIsSdrInUse: Dispatch<SetStateAction<boolean>>;
-  shouldStop: boolean;
-  setShouldStop: Dispatch<SetStateAction<boolean>>;
   defaultSdrArgs: AvailableSdrArgs | undefined;
 }) {
   const [modesState, setModesState] = useState<ModesState | undefined>(
@@ -93,7 +78,6 @@ export default function AdsbDecoderView({
   const start_decoding = async () => {
     if (defaultSdrArgs) {
       setAdsbStatus(AdsbStatus.Starting);
-      await setIsSdrInUse(true);
       await invoke<string>("start_adsb_decoding", {
         streamSettings: {
           gain: 20.0,
@@ -106,8 +90,6 @@ export default function AdsbDecoderView({
   const stop_decoding = async () => {
     setAdsbStatus(AdsbStatus.Stopping);
     await invoke<string>("stop_adsb_decoding", {});
-    setIsSdrInUse(false);
-    setShouldStop(false);
   };
 
   appWindow.listen("adsb_status", (event: { payload: string }) => {
@@ -119,12 +101,6 @@ export default function AdsbDecoderView({
       ]
     );
   });
-
-  useEffect(() => {
-    if (shouldStop) {
-      stop_decoding();
-    }
-  }, [shouldStop]);
 
   // if the details of an aircraft that disappears is open, go back to the main list
   useEffect(() => {

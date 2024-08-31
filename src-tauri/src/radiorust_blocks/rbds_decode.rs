@@ -386,7 +386,8 @@ where
 
                         // Step 4: Save to WAV file for Testing (if not in production)
                         #[cfg(debug_assertions)]
-                        {
+                        // disable completely for now
+                        if false {
                             if wav_writer.clone().lock().unwrap().is_none() {
                                 let wav_spec = WavSpec {
                                     channels: 4,
