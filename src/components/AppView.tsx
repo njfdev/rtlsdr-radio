@@ -13,6 +13,7 @@ import {
 import { Button } from "./ui/button";
 import Nrsc5Controls from "./Radio/Nrsc5Controls";
 import RtlSdrControls from "./Radio/RtlSdrControls";
+import BottomBar from "./BottomBar";
 
 const appWindow = getCurrentWebviewWindow();
 
@@ -83,35 +84,37 @@ export default function AppView() {
   const [currentViewId, setCurrentViewId] = useState<string>("fm-radio");
 
   return (
-    <ResizablePanelGroup
-      direction="horizontal"
-      className="flex h-screen w-screen"
-    >
-      <ResizablePanel maxSize={25} minSize={15}>
-        <div className="flex flex-col gap-8 p-6">
-          <MapViewData
-            viewData={views}
-            setCurrentViewId={setCurrentViewId}
-            topLevel={true}
-          />
-        </div>
-      </ResizablePanel>
-      <ResizableHandle />
-      <ResizablePanel>
-        <main className="flex flex-col gap-4 h-screen">
-          <SdrSelector />
-          {(() => {
-            const view = GetViewById(currentViewId);
+    <div className="flex flex-col w-screen h-screen">
+      <ResizablePanelGroup
+        direction="horizontal"
+        className="flex w-screen grow"
+      >
+        <ResizablePanel maxSize={25} minSize={15}>
+          <div className="flex flex-col gap-8 p-6 select-none">
+            <MapViewData
+              viewData={views}
+              setCurrentViewId={setCurrentViewId}
+              topLevel={true}
+            />
+          </div>
+        </ResizablePanel>
+        <ResizableHandle />
+        <ResizablePanel>
+          <main className="flex flex-col gap-4 h-full">
+            {(() => {
+              const view = GetViewById(currentViewId);
 
-            if (view?.view) {
-              return <view.view />;
-            }
+              if (view?.view) {
+                return <view.view />;
+              }
 
-            return <></>;
-          })()}
-        </main>
-      </ResizablePanel>
-    </ResizablePanelGroup>
+              return <></>;
+            })()}
+          </main>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+      <BottomBar />
+    </div>
   );
 }
 

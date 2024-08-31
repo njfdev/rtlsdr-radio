@@ -19,7 +19,7 @@ export default function RadioView({ type }: { type: StationType }) {
   );
 
   return (
-    <div className="flex h-full w-full gap-4 px-4 pb-4">
+    <div className="flex h-full w-full gap-4 p-4">
       <div className="flex align-middle justify-center w-full h-full overflow-y-auto">
         {type == StationType.HDRadio ? (
           isNrsc5Available ? (
