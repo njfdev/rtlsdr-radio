@@ -39,7 +39,7 @@ export default function SavedStationsMenu({
   isStationPlaying,
   stationType,
 }: {
-  setRequestedStation: Dispatch<SetStateAction<Station | undefined>>;
+  setRequestedStation: Dispatch<SetStateAction<Station | undefined | null>>;
   currentStation: Station | undefined;
   isStationPlaying: boolean;
   stationType: StationType;
@@ -69,7 +69,7 @@ export default function SavedStationsMenu({
 
   const updateRequestedStation = async (station: Station | undefined) => {
     await setLoadingStation(station);
-    await setRequestedStation(station);
+    await setRequestedStation(station || null);
   };
 
   addEventListener("saved_stations", async () => {

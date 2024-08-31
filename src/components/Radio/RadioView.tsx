@@ -11,9 +11,9 @@ const isNrsc5Available =
   import.meta.env.VITE_EXCLUDE_SIDECAR == "true" ? false : true;
 
 export default function RadioView({ type }: { type: StationType }) {
-  const [requestedStation, setRequestedStation] = useState<undefined | Station>(
-    undefined
-  );
+  const [requestedStation, setRequestedStation] = useState<
+    undefined | null | Station
+  >(undefined);
   const [currentStation, setCurrentStation] = useState<undefined | Station>(
     undefined
   );
@@ -63,7 +63,7 @@ export default function RadioView({ type }: { type: StationType }) {
       </div>
       <SaveStationsMenu
         setRequestedStation={setRequestedStation}
-        currentStation={requestedStation}
+        currentStation={currentStation}
         isStationPlaying={
           (currentStation &&
             requestedStation &&

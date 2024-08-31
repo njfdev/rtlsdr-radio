@@ -58,8 +58,8 @@ export default function RtlSdrControls({
 }: {
   currentStation: Station | undefined;
   setCurrentStation: Dispatch<SetStateAction<Station | undefined>>;
-  requestedStation: Station | undefined;
-  setRequestedStation: Dispatch<SetStateAction<Station | undefined>>;
+  requestedStation: Station | undefined | null;
+  setRequestedStation: Dispatch<SetStateAction<Station | undefined | null>>;
   streamType: StreamType;
 }) {
   const currentStationType =
@@ -170,7 +170,7 @@ export default function RtlSdrControls({
       if (
         requestedStation &&
         requestedStation.type == currentStationType &&
-        !areStationsEqual(requestedStation, currentStation)
+        !areStationsEqual(requestedStation || undefined, currentStation)
       ) {
         setIsProcessingRequest(true);
 
@@ -186,7 +186,7 @@ export default function RtlSdrControls({
     if (
       isProcessingRequest &&
       requestedStation?.type == currentStationType &&
-      !areStationsEqual(requestedStation, currentStation) &&
+      !areStationsEqual(requestedStation || undefined, currentStation) &&
       status == RtlSdrStatus.Stopped
     ) {
       (async () => {
@@ -197,10 +197,7 @@ export default function RtlSdrControls({
   }, [isProcessingRequest, streamSettings]);
 
   useEffect(() => {
-    if (
-      (!requestedStation && status != RtlSdrStatus.Stopped) ||
-      (requestedStation && requestedStation?.type != currentStationType)
-    ) {
+    if (requestedStation === null && status != RtlSdrStatus.Stopped) {
       stop_stream();
     }
   }, [requestedStation, status]);
@@ -229,44 +226,35 @@ export default function RtlSdrControls({
     set10SecondsElapsed(false);
     await invoke<string>("stop_stream", {});
     setCurrentStation(undefined);
+    setRequestedStation(null);
+    setStatus(RtlSdrStatus.Stopped);
     await setRbdsData({});
   };
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
     const fixed_payload = event.payload.replace("fm_", "").replace("am_", "");
 
-    setStatus(
-      RtlSdrStatus[
-        Object.keys(RtlSdrStatus)[
-          Object.values(RtlSdrStatus).indexOf(fixed_payload as RtlSdrStatus)
-        ] as keyof typeof RtlSdrStatus
-      ]
-    );
+    if (event.payload.startsWith(streamType.toString().toLowerCase())) {
+      setStatus(
+        RtlSdrStatus[
+          Object.keys(RtlSdrStatus)[
+            Object.values(RtlSdrStatus).indexOf(fixed_payload as RtlSdrStatus)
+          ] as keyof typeof RtlSdrStatus
+        ]
+      );
+    }
   });
 
   appWindow.listen("rtlsdr_err", async (event: { payload: string }) => {
     setError(event.payload);
     await setCurrentStation(undefined);
-    await setRequestedStation(undefined);
+    await setRequestedStation(null);
   });
 
   appWindow.listen("rtlsdr_rbds", async (event: { payload: string }) => {
     const parsed_data = JSON.parse(event.payload);
     setRbdsData((old) => ({ ...old, ...parsed_data }));
   });
-
-  let firstRun = true;
-  useEffect(() => {
-    return () => {
-      if (firstRun) {
-        firstRun = false;
-      } else {
-        (async () => {
-          await stop_stream();
-        })();
-      }
-    };
-  }, []);
 
   return (
     <div className="flex xl:flex-row flex-col gap-4 xl:max-w-[48rem] max-w-[24rem] grow">
@@ -341,7 +329,7 @@ export default function RtlSdrControls({
         <Button
           onClick={() => {
             if (status == RtlSdrStatus.Running) {
-              setRequestedStation(undefined);
+              setRequestedStation(null);
             }
           }}
           disabled={

@@ -163,15 +163,6 @@ export default function Nrsc5Controls({
     }));
   });
 
-  useEffect(() => {
-    // this will run on unmount
-    return () => {
-      (async () => {
-        await stop_nrsc5();
-      })();
-    };
-  }, []);
-
   return (
     <div className="flex flex-col-reverse xl:flex-row-reverse xl:w-[48rem] w-[24rem] gap-4">
       <div className="flex flex-col gap-2 items-center grow basis-0 justify-center align-middle w-full">
