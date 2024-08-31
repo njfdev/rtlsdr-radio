@@ -2,7 +2,6 @@ use std::{collections::VecDeque, f64::consts::PI, ops::Range};
 
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 
 #[cfg(debug_assertions)]
 use hound::{WavSpec, WavWriter};
@@ -21,7 +20,7 @@ use radiorust::{
     prelude::{ChunkBuf, ChunkBufPool, Complex},
     signal::Signal,
 };
-use tauri::{ipc::Channel, AppHandle, Emitter};
+use tauri::ipc::Channel;
 use tokio::spawn;
 pub struct DownMixer<Flt> {
     receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
@@ -215,7 +214,7 @@ impl<Flt> RbdsDecode<Flt>
 where
     Flt: Float + Into<f64> + Into<f32>,
 {
-    pub fn new<F>(app: AppHandle, rbds_channel: Channel<RbdsState>, radiotext_callback: F) -> Self
+    pub fn new<F>(rbds_channel: Channel<RbdsState>, radiotext_callback: F) -> Self
     where
         F: Fn(String) + Send + Sync + 'static,
     {
@@ -580,15 +579,6 @@ fn calculate_syndrome(recieved_data: u32) -> u16 {
     syndrome
 }
 
-fn send_rbds_data<T: serde::Serialize>(param_name: &str, data: T, app: AppHandle) {
-    let json_object: String = json!({
-        param_name: data
-    })
-    .to_string();
-    app.emit("rtlsdr_rbds", json_object.as_str())
-        .expect("failed to emit event");
-}
-
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RbdsDecoderInfo {
@@ -871,7 +861,7 @@ fn process_rbds_group<F>(
     rbds_state.tp = Some(tp);
 
     // update frontend
-    rbds_channel.send(rbds_state.clone());
+    rbds_channel.send(rbds_state.clone()).unwrap();
 }
 
 fn rbds_process_bits<F>(

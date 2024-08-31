@@ -10,14 +10,13 @@ use blocks::Rechunker;
 use log::error;
 use radiorust::{blocks::io::rf, prelude::*};
 use soapysdr::Direction;
-use tauri::{async_runtime, ipc::Channel, AppHandle, Emitter, Manager};
+use tauri::{async_runtime, ipc::Channel, AppHandle, Emitter};
 use tokio::{self, time};
 
 use crate::{
     modes::types::ModeSState,
     radiorust_blocks::adsb_decode::AdsbDecode,
     sdr::{enumeration::AvailableSDRArgs, get_sdr_dev, release_sdr_dev},
-    AppState,
 };
 
 pub struct AdsbDecoderState(Arc<Mutex<AdsbDecoderData>>);
@@ -56,10 +55,7 @@ impl AdsbDecoderState {
                     .unwrap()
                     .block_on(async move {
                         // get SDR
-                        let rtlsdr_dev_result = get_sdr_dev(
-                            app.clone(),
-                            sdr_args
-                        );
+                        let rtlsdr_dev_result = get_sdr_dev(app.clone(), sdr_args);
 
                         if rtlsdr_dev_result.is_err() {
                             // notify frontend of error
@@ -128,7 +124,7 @@ impl AdsbDecoderState {
                         }
 
                         // release the SDR
-                        release_sdr_dev(app, rtlsdr_dev, sdr_args);
+                        release_sdr_dev(app, rtlsdr_dev, sdr_args).unwrap();
                     })
             }));
     }

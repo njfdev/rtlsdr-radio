@@ -21,7 +21,7 @@ use std::{
     env,
     sync::{Arc, Mutex},
 };
-use tauri::{async_runtime::block_on, ipc::Channel, AppHandle, Manager, State};
+use tauri::{async_runtime::block_on, ipc::Channel, AppHandle, State};
 use utils::{setup_callbacks, setup_dependencies};
 
 struct AppState {
@@ -154,11 +154,7 @@ async fn get_sdr_states(state: State<'_, AppState>) -> Result<serde_json::Value,
 }
 
 #[tauri::command]
-async fn connect_to_sdr(
-    app: AppHandle,
-    state: State<'_, AppState>,
-    args: AvailableSDRArgs,
-) -> Result<(), ()> {
+async fn connect_to_sdr(app: AppHandle, args: AvailableSDRArgs) -> Result<(), ()> {
     info!("Connecting to {}", args.label);
 
     let result = sdr::connect_to_sdr(args, app);

@@ -21,7 +21,6 @@ use crate::{
         rbds_decode::{DownMixer, RbdsDecode, RbdsState},
     },
     sdr::{enumeration::AvailableSDRArgs, get_sdr_dev, release_sdr_dev},
-    AppState,
 };
 
 #[derive(serde::Deserialize, PartialEq)]
@@ -292,10 +291,8 @@ impl RtlSdrState {
 
                             let controls_clone2 = controls_arc.clone();
                             // add rbds decoder to output FM stream
-                            let rdbs_decoder = RbdsDecode::<f32>::new(
-                                app.clone(),
-                                rbds_channel,
-                                move |radiotext: String| {
+                            let rdbs_decoder =
+                                RbdsDecode::<f32>::new(rbds_channel, move |radiotext: String| {
                                     let _ = controls_clone2.lock().unwrap().set_metadata(
                                         MediaMetadata {
                                             title: Some(&radiotext),
@@ -304,8 +301,7 @@ impl RtlSdrState {
                                             ..Default::default()
                                         },
                                     );
-                                },
-                            );
+                                });
                             rdbs_decoder.feed_from(&rbds_lowpass_filter);
                         } else if stream_settings.stream_type == StreamType::AM {
                             let demodulator = AmDemod::<f32>::new();
@@ -377,7 +373,7 @@ impl RtlSdrState {
                         }
 
                         // release the SDR
-                        release_sdr_dev(app, rtlsdr_dev, sdr_args);
+                        release_sdr_dev(app, rtlsdr_dev, sdr_args).unwrap();
                     })
             }));
     }

@@ -1,8 +1,8 @@
 use enumeration::AvailableSDRArgs;
 use log::{error, info};
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Serialize, Serializer};
 use soapysdr::Device;
-use tauri::{App, AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::AppState;
 
@@ -16,7 +16,7 @@ where
         SDRDeviceState::Available => {
             return serializer.serialize_str("Available");
         }
-        SDRDeviceState::Connected { dev } => {
+        SDRDeviceState::Connected { dev: _ } => {
             return serializer.serialize_str("Connected");
         }
         SDRDeviceState::InUse => {
@@ -39,9 +39,7 @@ pub struct SDRState {
     pub dev: SDRDeviceState,
 }
 
-fn connect_to_sdr_with_mut(sdr_state: &mut SDRState, app: AppHandle) -> Result<(), ()> {
-    let state = app.state::<AppState>();
-
+fn connect_to_sdr_with_mut(sdr_state: &mut SDRState) -> Result<(), ()> {
     let dev_result = Device::new(sdr_state.args.clone());
 
     if dev_result.is_err() {
@@ -108,7 +106,7 @@ pub fn disconnect_sdr(
         SDRDeviceState::Available => {
             return Err("SDR already disconnected");
         }
-        SDRDeviceState::Connected { dev } => {
+        SDRDeviceState::Connected { dev: _ } => {
             sdr.dev = SDRDeviceState::Available;
 
             app.emit("sdr_states", sdrs.clone()).unwrap();
@@ -127,8 +125,8 @@ pub fn get_sdr_dev(
     let state = app.state::<AppState>();
     let mut sdrs = state.sdrs.lock().unwrap();
 
-    let mut dev_clone: Option<Device> = None;
-    let mut args_clone: Option<AvailableSDRArgs> = None;
+    let dev_clone: Device;
+    let args_clone: AvailableSDRArgs;
 
     {
         let sdr_result = sdrs.iter_mut().find(|sdr_state| sdr_state.args == args);
@@ -144,14 +142,14 @@ pub fn get_sdr_dev(
         }
 
         if let SDRDeviceState::Available = sdr.dev {
-            connect_to_sdr_with_mut(sdr, app.clone());
+            connect_to_sdr_with_mut(sdr).unwrap();
         }
 
         if let SDRDeviceState::Connected { dev } = sdr.dev.clone() {
             sdr.dev = SDRDeviceState::InUse;
 
-            dev_clone = Some(dev.clone());
-            args_clone = Some(sdr.args.clone());
+            dev_clone = dev.clone();
+            args_clone = sdr.args.clone();
         } else {
             return Err(String::from("Could not get SDR device"));
         }
@@ -159,7 +157,7 @@ pub fn get_sdr_dev(
 
     app.emit("sdr_states", (*sdrs).clone()).unwrap();
 
-    return Ok((dev_clone.unwrap(), args_clone.unwrap()));
+    return Ok((dev_clone, args_clone));
 }
 
 pub fn release_sdr_dev(app: AppHandle, dev: Device, args: AvailableSDRArgs) -> Result<(), String> {
