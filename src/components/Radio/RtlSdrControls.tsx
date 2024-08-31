@@ -215,7 +215,7 @@ export default function RtlSdrControls({
     setError("");
     await invoke<string>("start_stream", {
       streamSettings,
-      defaultSdrArgs,
+      sdrArgs: defaultSdrArgs,
     });
 
     // If no RBDS data after 10 seconds, alert user
@@ -337,7 +337,9 @@ export default function RtlSdrControls({
             }
           }}
           disabled={
-            status == RtlSdrStatus.Starting || status == RtlSdrStatus.Pausing
+            status == RtlSdrStatus.Starting ||
+            status == RtlSdrStatus.Pausing ||
+            !defaultSdrArgs
           }
         >
           {status == RtlSdrStatus.Running ? (
@@ -350,6 +352,8 @@ export default function RtlSdrControls({
             <>
               <Loader2 className="animate-spin mr-2" /> Stopping...
             </>
+          ) : !defaultSdrArgs ? (
+            "Select an SDR Before Starting"
           ) : (
             `Start ${streamType.valueOf()} Stream`
           )}

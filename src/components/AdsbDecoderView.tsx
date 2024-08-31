@@ -6,6 +6,7 @@ import {
   AircraftState,
   AirspeedType,
   AltitudeType,
+  AvailableSdrArgs,
   ModesState,
 } from "@/lib/types";
 import { Button } from "./ui/button";
@@ -67,11 +68,13 @@ export default function AdsbDecoderView({
   setIsSdrInUse,
   shouldStop,
   setShouldStop,
+  defaultSdrArgs,
 }: {
   //isSdrInUse: boolean;
   setIsSdrInUse: Dispatch<SetStateAction<boolean>>;
   shouldStop: boolean;
   setShouldStop: Dispatch<SetStateAction<boolean>>;
+  defaultSdrArgs: AvailableSdrArgs | undefined;
 }) {
   const [modesState, setModesState] = useState<ModesState | undefined>(
     undefined
@@ -88,14 +91,17 @@ export default function AdsbDecoderView({
   };
 
   const start_decoding = async () => {
-    setAdsbStatus(AdsbStatus.Starting);
-    await setIsSdrInUse(true);
-    await invoke<string>("start_adsb_decoding", {
-      streamSettings: {
-        gain: 20.0,
-      } as AdsbDecodeSettings,
-      modesChannel,
-    });
+    if (defaultSdrArgs) {
+      setAdsbStatus(AdsbStatus.Starting);
+      await setIsSdrInUse(true);
+      await invoke<string>("start_adsb_decoding", {
+        streamSettings: {
+          gain: 20.0,
+        } as AdsbDecodeSettings,
+        sdrArgs: defaultSdrArgs,
+        modesChannel,
+      });
+    }
   };
   const stop_decoding = async () => {
     setAdsbStatus(AdsbStatus.Stopping);

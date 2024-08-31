@@ -39,11 +39,28 @@ pub struct SDRState {
     pub dev: SDRDeviceState,
 }
 
-pub fn connect_to_sdr(
-    args: AvailableSDRArgs,
-    app: AppHandle,
-    state: State<'_, AppState>,
-) -> Result<(), ()> {
+fn connect_to_sdr_with_mut(sdr_state: &mut SDRState, app: AppHandle) -> Result<(), ()> {
+    let state = app.state::<AppState>();
+
+    let dev_result = Device::new(sdr_state.args.clone());
+
+    if dev_result.is_err() {
+        error!("Could not connect to {}.", sdr_state.args.label);
+        return Err(());
+    }
+
+    let dev = dev_result.unwrap();
+
+    info!("Connected to {}!", sdr_state.args.label);
+
+    sdr_state.dev = SDRDeviceState::Connected { dev };
+
+    Ok(())
+}
+
+pub fn connect_to_sdr(args: AvailableSDRArgs, app: AppHandle) -> Result<(), ()> {
+    let state = app.state::<AppState>();
+
     let dev_result = Device::new(args.clone());
 
     if dev_result.is_err() {
@@ -103,25 +120,46 @@ pub fn disconnect_sdr(
     }
 }
 
-pub fn get_current_sdr_dev(app: AppHandle) -> Result<(Device, AvailableSDRArgs), String> {
+pub fn get_sdr_dev(
+    app: AppHandle,
+    args: AvailableSDRArgs,
+) -> Result<(Device, AvailableSDRArgs), String> {
     let state = app.state::<AppState>();
     let mut sdrs = state.sdrs.lock().unwrap();
 
-    for sdr in sdrs.iter_mut() {
-        match sdr.dev.clone() {
-            SDRDeviceState::Connected { dev } => {
-                sdr.dev = SDRDeviceState::InUse;
-                let args = sdr.args.clone();
+    let mut dev_clone: Option<Device> = None;
+    let mut args_clone: Option<AvailableSDRArgs> = None;
 
-                app.emit("sdr_states", sdrs.clone()).unwrap();
+    {
+        let sdr_result = sdrs.iter_mut().find(|sdr_state| sdr_state.args == args);
 
-                return Ok((dev.clone(), args));
-            }
-            _ => {}
+        if sdr_result.is_none() {
+            return Err(String::from("Could not find SDR with specified arguments"));
+        }
+
+        let sdr = sdr_result.unwrap();
+
+        if let SDRDeviceState::InUse = sdr.dev {
+            return Err(String::from("SDR already in use"));
+        }
+
+        if let SDRDeviceState::Available = sdr.dev {
+            connect_to_sdr_with_mut(sdr, app.clone());
+        }
+
+        if let SDRDeviceState::Connected { dev } = sdr.dev.clone() {
+            sdr.dev = SDRDeviceState::InUse;
+
+            dev_clone = Some(dev.clone());
+            args_clone = Some(sdr.args.clone());
+        } else {
+            return Err(String::from("Could not get SDR device"));
         }
     }
 
-    return Err(String::from("No SDRs are currently connected"));
+    app.emit("sdr_states", (*sdrs).clone()).unwrap();
+
+    return Ok((dev_clone.unwrap(), args_clone.unwrap()));
 }
 
 pub fn release_sdr_dev(app: AppHandle, dev: Device, args: AvailableSDRArgs) -> Result<(), String> {

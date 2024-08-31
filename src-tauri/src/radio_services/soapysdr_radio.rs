@@ -20,7 +20,7 @@ use crate::{
         pauseable::Pauseable,
         rbds_decode::{DownMixer, RbdsDecode},
     },
-    sdr::{get_current_sdr_dev, release_sdr_dev},
+    sdr::{enumeration::AvailableSDRArgs, get_sdr_dev, release_sdr_dev},
     AppState,
 };
 
@@ -53,7 +53,12 @@ impl RtlSdrState {
         })))
     }
 
-    pub fn start_stream(&self, app: AppHandle, stream_settings: StreamSettings) {
+    pub fn start_stream(
+        &self,
+        app: AppHandle,
+        stream_settings: StreamSettings,
+        default_sdr_args: AvailableSDRArgs,
+    ) {
         let rtlsdr_state = self.0.clone();
         let rtlsdr_state_clone = rtlsdr_state.clone();
 
@@ -75,7 +80,7 @@ impl RtlSdrState {
                     .unwrap()
                     .block_on(async move {
                         // get SDR
-                        let rtlsdr_dev_result = get_current_sdr_dev(app.clone());
+                        let rtlsdr_dev_result = get_sdr_dev(app.clone(), default_sdr_args);
 
                         if rtlsdr_dev_result.is_err() {
                             // notify frontend of error

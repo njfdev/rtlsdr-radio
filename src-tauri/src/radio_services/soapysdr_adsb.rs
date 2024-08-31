@@ -16,7 +16,7 @@ use tokio::{self, time};
 use crate::{
     modes::types::ModeSState,
     radiorust_blocks::adsb_decode::AdsbDecode,
-    sdr::{get_current_sdr_dev, release_sdr_dev},
+    sdr::{enumeration::AvailableSDRArgs, get_sdr_dev, release_sdr_dev},
     AppState,
 };
 
@@ -42,6 +42,7 @@ impl AdsbDecoderState {
         &self,
         app: AppHandle,
         _stream_settings: StreamSettings,
+        sdr_args: AvailableSDRArgs,
         modes_channel: Channel<ModeSState>,
     ) {
         let adbs_decoder_state = self.0.clone();
@@ -55,7 +56,10 @@ impl AdsbDecoderState {
                     .unwrap()
                     .block_on(async move {
                         // get SDR
-                        let rtlsdr_dev_result = get_current_sdr_dev(app.clone());
+                        let rtlsdr_dev_result = get_sdr_dev(
+                            app.clone(),
+                            sdr_args
+                        );
 
                         if rtlsdr_dev_result.is_err() {
                             // notify frontend of error

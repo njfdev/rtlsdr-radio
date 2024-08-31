@@ -120,7 +120,7 @@ export default function SdrSelector({
                           disconnectSdr(selectedSdr.args)
                     }
                     variant={
-                      selectedSdr.dev == "Connected" ? "secondary" : "default"
+                      selectedSdr.dev == "Available" ? "default" : "secondary"
                     }
                     disabled={selectedSdr.dev == "InUse"}
                     size="sm"

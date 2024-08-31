@@ -87,6 +87,7 @@ fn start_stream(
     app: AppHandle,
     state: State<AppState>,
     stream_settings: soapysdr_radio::StreamSettings,
+    sdr_args: AvailableSDRArgs,
 ) {
     if state.rtl_sdr_state.lock().unwrap().is_playing() {
         return;
@@ -95,7 +96,7 @@ fn start_stream(
         .rtl_sdr_state
         .lock()
         .unwrap()
-        .start_stream(app, stream_settings);
+        .start_stream(app, stream_settings, sdr_args);
 }
 
 #[tauri::command]
@@ -115,6 +116,7 @@ fn start_adsb_decoding(
     app: AppHandle,
     state: State<AppState>,
     stream_settings: soapysdr_adsb::StreamSettings,
+    sdr_args: AvailableSDRArgs,
     modes_channel: Channel<ModeSState>,
 ) {
     if state.adsb_state.lock().unwrap().is_running() {
@@ -124,7 +126,7 @@ fn start_adsb_decoding(
         .adsb_state
         .lock()
         .unwrap()
-        .start_decoding(app, stream_settings, modes_channel);
+        .start_decoding(app, stream_settings, sdr_args, modes_channel);
 }
 
 #[tauri::command]
@@ -157,7 +159,7 @@ async fn connect_to_sdr(
 ) -> Result<(), ()> {
     info!("Connecting to {}", args.label);
 
-    let result = sdr::connect_to_sdr(args, app, state);
+    let result = sdr::connect_to_sdr(args, app);
 
     if result.is_err() {
         return Err(());
