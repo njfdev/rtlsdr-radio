@@ -3,6 +3,7 @@ import RadioView from "@/components/Radio/RadioView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AvailableSdrArgs,
+  RbdsData,
   Station,
   StationType,
   StreamType,
@@ -26,7 +27,10 @@ interface ViewData {
   id: string;
   name: string;
   subviews?: ViewData[];
-  view?: (props: { defaultSdrArgs: AvailableSdrArgs | undefined }) => ReactNode;
+  view?: (props: {
+    globalState: GlobalState;
+    setGlobalState: React.Dispatch<React.SetStateAction<GlobalState>>;
+  }) => ReactNode;
 }
 
 const views: ViewData[] = [
@@ -85,11 +89,17 @@ function GetViewById(
   return null;
 }
 
+export interface GlobalState {
+  rbdsData: RbdsData;
+  defaultSdrArgs: AvailableSdrArgs | undefined;
+}
+
 export default function AppView() {
   const [currentViewId, setCurrentViewId] = useState<string>("fm-radio");
-  const [defaultSdrArgs, setDefaultSdrArgs] = useState<
-    AvailableSdrArgs | undefined
-  >(undefined);
+  const [globalState, setGlobalState] = useState<GlobalState>({
+    rbdsData: {} as RbdsData,
+    defaultSdrArgs: undefined,
+  } as GlobalState);
 
   return (
     <div className="flex flex-col w-screen h-screen">
@@ -114,7 +124,12 @@ export default function AppView() {
               const view = GetViewById(currentViewId);
 
               if (view?.view) {
-                return <view.view defaultSdrArgs={defaultSdrArgs} />;
+                return (
+                  <view.view
+                    globalState={globalState}
+                    setGlobalState={setGlobalState}
+                  />
+                );
               }
 
               return <></>;
@@ -122,7 +137,7 @@ export default function AppView() {
           </main>
         </ResizablePanel>
       </ResizablePanelGroup>
-      <BottomBar setDefaultSdrArgs={setDefaultSdrArgs} />
+      <BottomBar globalState={globalState} setGlobalState={setGlobalState} />
     </div>
   );
 }

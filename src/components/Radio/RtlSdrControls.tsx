@@ -20,7 +20,6 @@ import {
   RadioStreamSettings,
   StreamType,
   volumeStorageName,
-  AvailableSdrArgs,
 } from "@/lib/types";
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -41,6 +40,7 @@ import {
   getSecondsListenedTo,
   increaseListeningDuration,
 } from "@/lib/statsStorage";
+import { GlobalState } from "../AppView";
 const appWindow = getCurrentWebviewWindow();
 
 enum RtlSdrStatus {
@@ -56,14 +56,16 @@ export default function RtlSdrControls({
   requestedStation,
   setRequestedStation,
   streamType,
-  defaultSdrArgs,
+  globalState,
+  setGlobalState,
 }: {
   currentStation: Station | undefined;
   setCurrentStation: Dispatch<SetStateAction<Station | undefined>>;
   requestedStation: Station | undefined | null;
   setRequestedStation: Dispatch<SetStateAction<Station | undefined | null>>;
   streamType: StreamType;
-  defaultSdrArgs: AvailableSdrArgs | undefined;
+  globalState: GlobalState;
+  setGlobalState: React.Dispatch<React.SetStateAction<GlobalState>>;
 }) {
   const currentStationType =
     streamType == StreamType.FM ? StationType.FMRadio : StationType.AMRadio;
@@ -85,7 +87,7 @@ export default function RtlSdrControls({
   });
   const [isProcessingRequest, setIsProcessingRequest] = useState(false);
   const [error, setError] = useState("");
-  const [rbdsData, setRbdsData] = useState<RbdsData>({} as RbdsData);
+  //const [rbdsData, setRbdsData] = useState<RbdsData>({} as RbdsData);
   const [has10SecondsElapsed, set10SecondsElapsed] = useState(false);
   const [totalSecondsListened, setTotalSecondsListened] = useState(0);
   let counterId: NodeJS.Timeout | undefined;
@@ -133,7 +135,7 @@ export default function RtlSdrControls({
       setIsProcessingRequest(true);
       // If station is changed, reset RDBD date which is station specific
       if (streamSettings.freq != currentStation?.frequency) {
-        setRbdsData({} as RbdsData);
+        setGlobalState((old) => ({ ...old, rbdsData: {} as RbdsData }));
       }
       const newStation: Station = {
         type: currentStationType,
@@ -207,7 +209,7 @@ export default function RtlSdrControls({
 
   const rbdsChannel = new Channel<RbdsData>();
   rbdsChannel.onmessage = (message) => {
-    setRbdsData(message);
+    setGlobalState((old) => ({ ...old, rbdsData: message }));
   };
 
   const start_stream = async () => {
@@ -220,7 +222,7 @@ export default function RtlSdrControls({
     setError("");
     await invoke<string>("start_stream", {
       streamSettings,
-      sdrArgs: defaultSdrArgs,
+      sdrArgs: globalState.defaultSdrArgs,
       rbdsChannel,
     });
 
@@ -238,7 +240,7 @@ export default function RtlSdrControls({
     setCurrentStation(undefined);
     setRequestedStation(null);
     setStatus(RtlSdrStatus.Stopped);
-    await setRbdsData({} as RbdsData);
+    setGlobalState((old) => ({ ...old, rbdsData: {} as RbdsData }));
   };
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
@@ -340,7 +342,7 @@ export default function RtlSdrControls({
           disabled={
             status == RtlSdrStatus.Starting ||
             status == RtlSdrStatus.Pausing ||
-            (status == RtlSdrStatus.Stopped && !defaultSdrArgs)
+            (status == RtlSdrStatus.Stopped && !globalState.defaultSdrArgs)
           }
         >
           {status == RtlSdrStatus.Running ? (
@@ -353,7 +355,7 @@ export default function RtlSdrControls({
             <>
               <Loader2 className="animate-spin mr-2" /> Stopping...
             </>
-          ) : !defaultSdrArgs ? (
+          ) : !globalState.defaultSdrArgs ? (
             "Select an SDR Before Starting"
           ) : (
             `Start ${streamType.valueOf()} Stream`
@@ -371,8 +373,8 @@ export default function RtlSdrControls({
                 streamSettings.freq
               }`;
 
-              if (rbdsData.programType) {
-                stationTitle += ` - ${rbdsData.programType}`;
+              if (globalState.rbdsData.programType) {
+                stationTitle += ` - ${globalState.rbdsData.programType}`;
               }
 
               const stationData: StationDetails = {
@@ -426,13 +428,14 @@ export default function RtlSdrControls({
                 <TabsContent value="radioInfo">
                   <Card>
                     <CardHeader>
-                      {rbdsData.radioText ? (
+                      {globalState.rbdsData.radioText ? (
                         <CardTitle
                           className="whitespace-pre-wrap"
                           dangerouslySetInnerHTML={{
                             __html:
-                              rbdsData.radioText && rbdsData.radioText.trimEnd()
-                                ? rbdsData.radioText
+                              globalState.rbdsData.radioText &&
+                              globalState.rbdsData.radioText.trimEnd()
+                                ? globalState.rbdsData.radioText
                                     .trimEnd()
                                     .replace(
                                       /( {2,})/g,
@@ -445,15 +448,17 @@ export default function RtlSdrControls({
                         <Skeleton className="h-6 max-w-52" />
                       )}
                       <CardDescription>
-                        {rbdsData.programType ? (
-                          rbdsData.programType
+                        {globalState.rbdsData.programType ? (
+                          globalState.rbdsData.programType
                         ) : (
                           <Skeleton className="h-4 max-w-20" />
                         )}
                       </CardDescription>
                     </CardHeader>
                     {has10SecondsElapsed &&
-                      Object.values(rbdsData).every((x) => x === undefined) && (
+                      Object.values(globalState.rbdsData).every(
+                        (x) => x === undefined
+                      ) && (
                         <CardContent className="flex flex-col items-center align-middle justify-center">
                           <CardDescription className="text-center">
                             Cannot receive RBDS signal! It is either too weak or
@@ -476,10 +481,12 @@ export default function RtlSdrControls({
                       <span className="flex items-center gap-1">
                         <b>Program Service Name:</b>{" "}
                         <span className="font-mono">
-                          {rbdsData.serviceName != undefined ? (
+                          {globalState.rbdsData.serviceName != undefined ? (
                             <>
-                              {rbdsData.serviceName}
-                              {rbdsData.ptyName ? ` - ${rbdsData.ptyName}` : ""}
+                              {globalState.rbdsData.serviceName}
+                              {globalState.rbdsData.ptyName
+                                ? ` - ${globalState.rbdsData.ptyName}`
+                                : ""}
                             </>
                           ) : (
                             <div>
@@ -490,17 +497,18 @@ export default function RtlSdrControls({
                       </span>
                       <span className="flex items-center gap-1">
                         <b>Program Identification Code:</b>{" "}
-                        {rbdsData.pi != undefined ? (
-                          `0x${rbdsData.pi.toString(16)}`
+                        {globalState.rbdsData.pi != undefined ? (
+                          `0x${globalState.rbdsData.pi.toString(16)}`
                         ) : (
                           <Skeleton className="h-4 w-[3.5rem]" />
                         )}
                       </span>
                       <span className="flex items-center gap-1">
                         <b>Radio Type:</b>{" "}
-                        {rbdsData.decoderInfo &&
-                        rbdsData.decoderInfo.diIsStereo != undefined ? (
-                          rbdsData.msFlag ? (
+                        {globalState.rbdsData.decoderInfo &&
+                        globalState.rbdsData.decoderInfo.diIsStereo !=
+                          undefined ? (
+                          globalState.rbdsData.msFlag ? (
                             "Music"
                           ) : (
                             "Speech"
@@ -515,9 +523,10 @@ export default function RtlSdrControls({
                       <div className="indent-4 flex flex-col -mt-2">
                         <span className="flex items-center gap-1">
                           <b>Channels:</b>{" "}
-                          {rbdsData.decoderInfo &&
-                          rbdsData.decoderInfo.diIsStereo != undefined ? (
-                            rbdsData.decoderInfo.diIsStereo ? (
+                          {globalState.rbdsData.decoderInfo &&
+                          globalState.rbdsData.decoderInfo.diIsStereo !=
+                            undefined ? (
+                            globalState.rbdsData.decoderInfo.diIsStereo ? (
                               "Stereo"
                             ) : (
                               "Mono"
@@ -528,9 +537,10 @@ export default function RtlSdrControls({
                         </span>
                         <span className="flex items-center gap-1">
                           <b>Binaural Audio:</b>{" "}
-                          {rbdsData.decoderInfo &&
-                          rbdsData.decoderInfo.diIsBinaural != undefined ? (
-                            rbdsData.decoderInfo.diIsBinaural ? (
+                          {globalState.rbdsData.decoderInfo &&
+                          globalState.rbdsData.decoderInfo.diIsBinaural !=
+                            undefined ? (
+                            globalState.rbdsData.decoderInfo.diIsBinaural ? (
                               "Yes"
                             ) : (
                               "No"
@@ -541,9 +551,10 @@ export default function RtlSdrControls({
                         </span>
                         <span className="flex items-center gap-1">
                           <b>Compression:</b>{" "}
-                          {rbdsData.decoderInfo &&
-                          rbdsData.decoderInfo.diIsCompressed != undefined ? (
-                            rbdsData.decoderInfo.diIsCompressed ? (
+                          {globalState.rbdsData.decoderInfo &&
+                          globalState.rbdsData.decoderInfo.diIsCompressed !=
+                            undefined ? (
+                            globalState.rbdsData.decoderInfo.diIsCompressed ? (
                               "Yes"
                             ) : (
                               "No"
@@ -554,9 +565,10 @@ export default function RtlSdrControls({
                         </span>
                         <span className="flex items-center gap-1">
                           <b>PTY Type:</b>{" "}
-                          {rbdsData.decoderInfo &&
-                          rbdsData.decoderInfo.diIsPtyDynamic != undefined ? (
-                            rbdsData.decoderInfo.diIsPtyDynamic ? (
+                          {globalState.rbdsData.decoderInfo &&
+                          globalState.rbdsData.decoderInfo.diIsPtyDynamic !=
+                            undefined ? (
+                            globalState.rbdsData.decoderInfo.diIsPtyDynamic ? (
                               "Dynamic"
                             ) : (
                               "Static"
@@ -571,32 +583,33 @@ export default function RtlSdrControls({
                           <b>Traffic Info:</b>{" "}
                           {(() => {
                             if (
-                              rbdsData.ta != undefined &&
-                              rbdsData.tp != undefined
+                              globalState.rbdsData.ta != undefined &&
+                              globalState.rbdsData.tp != undefined
                             ) {
                               switch (true) {
-                                case rbdsData.tp == false &&
-                                  rbdsData.ta == false:
+                                case globalState.rbdsData.tp == false &&
+                                  globalState.rbdsData.ta == false:
                                   return "This radio station does not carry traffic announcements.";
-                                case rbdsData.tp == false &&
-                                  rbdsData.ta == true:
+                                case globalState.rbdsData.tp == false &&
+                                  globalState.rbdsData.ta == true:
                                   return "This radio station does not carry traffic announcements, but it carries EON information about a station that does.";
-                                case rbdsData.tp == true &&
-                                  rbdsData.ta == false:
+                                case globalState.rbdsData.tp == true &&
+                                  globalState.rbdsData.ta == false:
                                   return "This radio station carries traffic announcements, but none are ongoing presently.";
-                                case rbdsData.tp == true && rbdsData.ta == true:
+                                case globalState.rbdsData.tp == true &&
+                                  globalState.rbdsData.ta == true:
                                   return "There is an ongoing traffic announcement.";
                               }
                             }
                           })()}
                         </span>
-                        {(rbdsData.tp == undefined ||
-                          rbdsData.ta == undefined) && (
+                        {(globalState.rbdsData.tp == undefined ||
+                          globalState.rbdsData.ta == undefined) && (
                           <Skeleton className="h-4 grow" />
                         )}
                       </div>
-                      {(rbdsData.tp == undefined ||
-                        rbdsData.ta == undefined) && (
+                      {(globalState.rbdsData.tp == undefined ||
+                        globalState.rbdsData.ta == undefined) && (
                         <Skeleton className="h-4 w-64 -mt-0.5" />
                       )}
                     </CardContent>

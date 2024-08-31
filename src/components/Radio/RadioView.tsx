@@ -11,16 +11,19 @@ import {
 import { useState } from "react";
 import SaveStationsMenu from "@/components/Radio/SavedStationsMenu";
 import { areStationsEqual } from "@/lib/stationsStorage";
+import { GlobalState } from "../AppView";
 
 const isNrsc5Available =
   import.meta.env.VITE_EXCLUDE_SIDECAR == "true" ? false : true;
 
 export default function RadioView({
   type,
-  defaultSdrArgs,
+  globalState,
+  setGlobalState,
 }: {
   type: StationType;
-  defaultSdrArgs: AvailableSdrArgs | undefined;
+  globalState: GlobalState;
+  setGlobalState: React.Dispatch<React.SetStateAction<GlobalState>>;
 }) {
   const [requestedStation, setRequestedStation] = useState<
     undefined | null | Station
@@ -39,7 +42,6 @@ export default function RadioView({
               setCurrentStation={setCurrentStation}
               requestedStation={requestedStation}
               setRequestedStation={setRequestedStation}
-              defaultSdrArgs={defaultSdrArgs}
             />
           ) : (
             <div className="max-w-[32rem] text-center my-8 text-gray-400">
@@ -62,7 +64,8 @@ export default function RadioView({
             requestedStation={requestedStation}
             setRequestedStation={setRequestedStation}
             streamType={StreamType.FM}
-            defaultSdrArgs={defaultSdrArgs}
+            globalState={globalState}
+            setGlobalState={setGlobalState}
           />
         ) : (
           <RtlSdrControls
@@ -71,7 +74,8 @@ export default function RadioView({
             requestedStation={requestedStation}
             setRequestedStation={setRequestedStation}
             streamType={StreamType.AM}
-            defaultSdrArgs={defaultSdrArgs}
+            globalState={globalState}
+            setGlobalState={setGlobalState}
           />
         )}
       </div>

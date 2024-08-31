@@ -11,15 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { GlobalState } from "./AppView";
 
 const appWindow = getCurrentWebviewWindow();
 
 export default function SdrSelector({
-  setDefaultSdrArgs,
+  globalState,
+  setGlobalState,
 }: {
-  setDefaultSdrArgs: React.Dispatch<
-    React.SetStateAction<AvailableSdrArgs | undefined>
-  >;
+  globalState: GlobalState;
+  setGlobalState: React.Dispatch<React.SetStateAction<GlobalState>>;
 }) {
   const [sdrStates, setSDRState] = useState<SDRState[] | undefined>(undefined);
   const [selectedSdrSerial, setSelectedSdrSerial] = useState("none");
@@ -60,7 +61,10 @@ export default function SdrSelector({
 
   useEffect(() => {
     const currentSdrState = getSdrFromSerial(selectedSdrSerial);
-    setDefaultSdrArgs(currentSdrState?.args);
+    setGlobalState((old) => ({
+      ...old,
+      defaultSdrArgs: currentSdrState?.args,
+    }));
   }, [selectedSdrSerial]);
 
   useEffect(() => {
