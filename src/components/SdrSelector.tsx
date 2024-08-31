@@ -50,6 +50,8 @@ export default function SdrSelector({
       }
 
       setSelectedSdrSerial(newSdrStates[0].args.serial);
+    } else if (getSdrFromSerial(selectedSdrSerial) === undefined) {
+      setSelectedSdrSerial("none");
     }
   };
 
