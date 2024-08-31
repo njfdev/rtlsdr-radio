@@ -56,8 +56,8 @@ export default function Nrsc5Controls({
 }: {
   currentStation: Station | undefined;
   setCurrentStation: Dispatch<SetStateAction<Station | undefined>>;
-  requestedStation: Station | undefined;
-  setRequestedStation: Dispatch<SetStateAction<Station | undefined>>;
+  requestedStation: Station | null | undefined;
+  setRequestedStation: Dispatch<SetStateAction<Station | null | undefined>>;
 }) {
   const [freq, setFreq] = useState<number>(101.5);
   const [channel, setChannel] = useState<number>(1);

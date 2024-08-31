@@ -2,12 +2,7 @@
 
 import Nrsc5Controls from "@/components/Radio/Nrsc5Controls";
 import RtlSdrControls from "@/components/Radio/RtlSdrControls";
-import {
-  AvailableSdrArgs,
-  Station,
-  StationType,
-  StreamType,
-} from "@/lib/types";
+import { Station, StationType, StreamType } from "@/lib/types";
 import { useState } from "react";
 import SaveStationsMenu from "@/components/Radio/SavedStationsMenu";
 import { areStationsEqual } from "@/lib/stationsStorage";

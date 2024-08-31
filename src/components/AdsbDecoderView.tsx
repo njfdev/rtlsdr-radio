@@ -6,7 +6,6 @@ import {
   AircraftState,
   AirspeedType,
   AltitudeType,
-  AvailableSdrArgs,
   ModesState,
 } from "@/lib/types";
 import { Button } from "./ui/button";
@@ -59,10 +58,10 @@ const appWindow = getCurrentWebviewWindow();
 
 export default function AdsbDecoderView({
   globalState,
-  setGlobalState,
-}: {
+}: //setGlobalState,
+{
   globalState: GlobalState;
-  setGlobalState: React.Dispatch<React.SetStateAction<GlobalState>>;
+  //setGlobalState: React.Dispatch<React.SetStateAction<GlobalState>>;
 }) {
   const [modesState, setModesState] = useState<ModesState | undefined>(
     undefined

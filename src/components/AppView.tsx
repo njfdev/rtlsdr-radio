@@ -1,28 +1,14 @@
 import AdsbDecoderView from "@/components/AdsbDecoderView";
 import RadioView from "@/components/Radio/RadioView";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  AvailableSdrArgs,
-  RbdsData,
-  SDRState,
-  Station,
-  StationType,
-  StreamType,
-} from "@/lib/types";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { ReactNode, useEffect, useState } from "react";
-import SdrSelector from "./SdrSelector";
+import { AvailableSdrArgs, RbdsData, SDRState, StationType } from "@/lib/types";
+import { ReactNode, useState } from "react";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "./ui/resizable";
 import { Button } from "./ui/button";
-import Nrsc5Controls from "./Radio/Nrsc5Controls";
-import RtlSdrControls from "./Radio/RtlSdrControls";
 import BottomBar from "./BottomBar";
-
-const appWindow = getCurrentWebviewWindow();
 
 interface ViewData {
   id: string;
@@ -151,7 +137,7 @@ function MapViewData({
   topLevel = false,
 }: {
   viewData: ViewData[];
-  setCurrentViewId: any;
+  setCurrentViewId: React.Dispatch<React.SetStateAction<string>>;
   currentViewId: string;
   topLevel?: boolean;
 }) {
