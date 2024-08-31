@@ -210,7 +210,7 @@ export default function AdsbDecoderView({
                           className="w-[32px] h-[32px] hover:cursor-pointer"
                           style={{
                             // offset 90 degrees because icon is facing east
-                            rotate: `${aircraft.adsbState.heading - 90}deg`,
+                            rotate: `${aircraft.adsbState.heading - 45}deg`,
                           }}
                           onClick={() => focusOnAircraft(aircraft)}
                         />
