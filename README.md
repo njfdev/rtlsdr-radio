@@ -1,3 +1,7 @@
+<p align="center">
+  <img width="600" src="https://cloud-5azqpz64z-hack-club-bot.vercel.app/0screenshot_2024-09-01_at_8.31.59___am.png">
+</p>
+
 # RTL-SDR Radio
 
 Your one-stop shop for decoding/listening to radio frequencies!
