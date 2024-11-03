@@ -17,6 +17,7 @@ use crate::{
     radiorust_blocks::{
         am_demod::AmDemod,
         better_cpal,
+        hd_radio_decode::HdRadioDecode,
         pauseable::Pauseable,
         rbds_decode::{DownMixer, RbdsDecode, RbdsState},
     },
@@ -27,6 +28,7 @@ use crate::{
 pub enum StreamType {
     FM = 0,
     AM = 1,
+    HD = 2,
 }
 
 pub struct RtlSdrState(Arc<Mutex<RtlSdrData>>);
@@ -64,7 +66,7 @@ impl RtlSdrState {
 
         let shutdown_flag = rtlsdr_state.lock().unwrap().shutdown_flag.clone();
 
-        // set defaults for FM Radio
+        // set defaults for FM and HD Radio
         let mut freq_mul: f64 = 1_000_000.0;
         let mut required_bandwidth: f64 = 200_000.0;
 
@@ -307,6 +309,10 @@ impl RtlSdrState {
                             let demodulator = AmDemod::<f32>::new();
                             demodulator.feed_from(&filter1);
                             filter2.feed_from(&demodulator);
+                        } else if stream_settings.stream_type == StreamType::HD {
+                            let hd_radio_decoder = HdRadioDecode::<f32>::new(true);
+                            hd_radio_decoder.feed_from(&filter1);
+                            filter2.feed_from(&hd_radio_decoder);
                         }
 
                         let pauser = Pauseable::new(is_paused);
