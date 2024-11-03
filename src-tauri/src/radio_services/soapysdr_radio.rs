@@ -20,6 +20,7 @@ use crate::{
         hd_radio_decode::HdRadioDecode,
         pauseable::Pauseable,
         rbds_decode::{DownMixer, RbdsDecode, RbdsState},
+        wav_writer::WavWriterBlock,
     },
     sdr::{enumeration::AvailableSDRArgs, get_sdr_dev, release_sdr_dev},
 };
@@ -66,14 +67,22 @@ impl RtlSdrState {
 
         let shutdown_flag = rtlsdr_state.lock().unwrap().shutdown_flag.clone();
 
-        // set defaults for FM and HD Radio
+        // set defaults for FM Radio
         let mut freq_mul: f64 = 1_000_000.0;
+        let mut freq_offset: f64 = 0.0;
         let mut required_bandwidth: f64 = 200_000.0;
 
         // if AM Radio, use KHz instead
         if stream_settings.stream_type == StreamType::AM {
             freq_mul = 1_000.0;
             required_bandwidth = 10_000.0;
+        }
+
+        // TODO: properly use both sidebands of HD Radio signal
+        // if HD Radio, focus in on the lower sideband
+        if stream_settings.stream_type == StreamType::HD {
+            freq_offset = -163_500.0;
+            required_bandwidth = 69_000.0;
         }
 
         rtlsdr_state.lock().unwrap().radio_stream_thread =
@@ -192,7 +201,7 @@ impl RtlSdrState {
                         let _ = rtlsdr_dev.set_sample_rate(Direction::Rx, 0, sample_rate);
 
                         // set center frequency
-                        let sdr_freq = stream_settings.freq * freq_mul;
+                        let sdr_freq = stream_settings.freq * freq_mul + freq_offset;
                         debug!("{}hz", sdr_freq);
                         rtlsdr_dev
                             .set_frequency(Direction::Rx, 0, sdr_freq, "")
@@ -312,7 +321,15 @@ impl RtlSdrState {
                         } else if stream_settings.stream_type == StreamType::HD {
                             let hd_radio_decoder = HdRadioDecode::<f32>::new(true);
                             hd_radio_decoder.feed_from(&filter1);
-                            filter2.feed_from(&hd_radio_decoder);
+
+                            let hdwavwriter = WavWriterBlock::new(
+                                String::from("../hd_radio_output.wav"),
+                                false,
+                                Some(10.0),
+                            );
+                            hdwavwriter.feed_from(&hd_radio_decoder);
+
+                            filter2.feed_from(&hdwavwriter);
                         }
 
                         let pauser = Pauseable::new(is_paused);
