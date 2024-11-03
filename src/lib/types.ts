@@ -17,6 +17,7 @@ export enum StationType {
 export enum StreamType {
   FM = "FM",
   AM = "AM",
+  HD = "HD",
 }
 
 export enum StationSortOption {

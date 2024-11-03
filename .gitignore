@@ -36,8 +36,7 @@ yarn-error.log*
 next-env.d.ts
 
 # debug wav files
-rbds_output.wav
-adsb_output.wav
+*.wav
 *.pkf
 
 # Logs

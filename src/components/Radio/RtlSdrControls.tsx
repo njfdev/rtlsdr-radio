@@ -69,18 +69,22 @@ export default function RtlSdrControls({
   setGlobalState: React.Dispatch<React.SetStateAction<GlobalState>>;
 }) {
   const currentStationType =
-    streamType == StreamType.FM ? StationType.FMRadio : StationType.AMRadio;
+    streamType == StreamType.FM
+      ? StationType.FMRadio
+      : StreamType.HD
+      ? StationType.HDRadio
+      : StationType.AMRadio;
 
   const [status, setStatus] = useState(RtlSdrStatus.Stopped);
   const [streamSettings, setStreamSettings] = useState<RadioStreamSettings>({
     freq: parseFloat(
       localStorage.getItem(streamType.toString() + freqStorageName) ||
-        (streamType == StreamType.FM ? "101.5" : "850")
+        (streamType == StreamType.AM ? "850" : "101.5")
     ),
     volume: parseFloat(
       localStorage.getItem(streamType.toString() + volumeStorageName) || "0.5"
     ),
-    gain: streamType == StreamType.FM ? 1.0 : 2000.0,
+    gain: streamType == StreamType.AM ? 2000.0 : 1.0,
     sample_rate: parseFloat(
       localStorage.getItem(streamType.toString() + srStorageName) || "48000.0"
     ),
@@ -334,9 +338,9 @@ export default function RtlSdrControls({
           <Label htmlFor="freq_slider">{streamType.valueOf()} Station</Label>
           <Input
             type="number"
-            step={streamType == StreamType.FM ? 0.2 : 10}
-            min={streamType == StreamType.FM ? 88.1 : 540}
-            max={streamType == StreamType.FM ? 107.9 : 1700}
+            step={streamType == StreamType.AM ? 10 : 0.2}
+            min={streamType == StreamType.AM ? 540 : 88.1}
+            max={streamType == StreamType.AM ? 1700 : 107.9}
             placeholder="#"
             value={streamSettings.freq}
             onChange={(e) =>

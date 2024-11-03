@@ -31,6 +31,16 @@ export default function RadioView({
     <div className="flex h-full w-full gap-4 p-4">
       <div className="flex align-middle justify-center w-full h-full overflow-y-auto">
         {type == StationType.HDRadio ? (
+          <RtlSdrControls
+            currentStation={currentStation}
+            setCurrentStation={setCurrentStation}
+            requestedStation={requestedStation}
+            setRequestedStation={setRequestedStation}
+            streamType={StreamType.HD}
+            globalState={globalState}
+            setGlobalState={setGlobalState}
+          />
+        ) : /*
           isNrsc5Available ? (
             <Nrsc5Controls
               currentStation={currentStation}
@@ -52,7 +62,8 @@ export default function RadioView({
               to enable HD Radio features.
             </div>
           )
-        ) : type == StationType.FMRadio ? (
+          */
+        type == StationType.FMRadio ? (
           <RtlSdrControls
             currentStation={currentStation}
             setCurrentStation={setCurrentStation}
