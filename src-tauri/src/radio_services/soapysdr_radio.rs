@@ -233,7 +233,7 @@ impl RtlSdrState {
 
                         // add downsampler
                         let downsample1 =
-                            blocks::Downsampler::<f32>::new(16384, 384000.0, required_bandwidth);
+                            blocks::Downsampler::<f32>::new(16384, 432000.0, required_bandwidth);
                         downsample1.feed_from(&freq_shifter);
 
                         // add gain
@@ -321,14 +321,7 @@ impl RtlSdrState {
                             let hd_radio_decoder = HdRadioDecode::<f32>::new(true);
                             hd_radio_decoder.feed_from(&filter1);
 
-                            let hdwavwriter = WavWriterBlock::new(
-                                String::from("../hd_radio_output.wav"),
-                                false,
-                                Some(10.0),
-                            );
-                            hdwavwriter.feed_from(&hd_radio_decoder);
-
-                            filter2.feed_from(&hdwavwriter);
+                            filter2.feed_from(&hd_radio_decoder);
                         }
 
                         let pauser = Pauseable::new(is_paused);
@@ -338,7 +331,7 @@ impl RtlSdrState {
                         let downsample2 = blocks::Downsampler::<f32>::new(
                             4096,
                             stream_settings.sample_rate,
-                            2.0 * (required_bandwidth / 10.0),
+                            stream_settings.sample_rate / 2.0,
                         );
                         downsample2.feed_from(&pauser);
 
