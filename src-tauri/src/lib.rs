@@ -10,7 +10,7 @@ mod utils;
 
 use log::info;
 use modes::types::ModeSState;
-use nrsc5::get_nrsc5_version;
+use nrsc5::{get_nrsc5_version, Nrsc5};
 use radio_services::{
     nrsc5::Nrsc5State,
     soapysdr_adsb::{self, AdsbDecoderState},
@@ -55,7 +55,9 @@ pub async fn run() {
         .setup(|app| {
             setup_dependencies(app);
             setup_callbacks(app);
-            get_nrsc5_version();
+
+            let test: Nrsc5 = Nrsc5::new();
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
