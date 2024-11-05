@@ -6,6 +6,7 @@ fn main() {
     // for macos
     println!("cargo:rustc-link-arg=-Wl,-rpath,@loader_path/resources/lib");
     println!("cargo:rustc-link-arg=-Wl,-rpath,@loader_path/../Resources/resources/lib");
+    println!("cargo:rustc-link-lib=nrsc5");
 
     tauri_build::build()
 }

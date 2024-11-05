@@ -5333,6 +5333,7 @@ dependencies = [
  "crc",
  "fundsp",
  "hound",
+ "libc",
  "libloading 0.8.5",
  "log",
  "nalgebra",

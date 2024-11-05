@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod modes;
+mod nrsc5;
 mod radio_services;
 mod radiorust_blocks;
 mod sdr;
@@ -9,6 +10,7 @@ mod utils;
 
 use log::info;
 use modes::types::ModeSState;
+use nrsc5::get_nrsc5_version;
 use radio_services::{
     nrsc5::Nrsc5State,
     soapysdr_adsb::{self, AdsbDecoderState},
@@ -53,6 +55,7 @@ pub async fn run() {
         .setup(|app| {
             setup_dependencies(app);
             setup_callbacks(app);
+            get_nrsc5_version();
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
