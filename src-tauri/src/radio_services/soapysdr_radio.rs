@@ -81,8 +81,7 @@ impl RtlSdrState {
         // TODO: properly use both sidebands of HD Radio signal
         // if HD Radio, focus in on the lower sideband
         if stream_settings.stream_type == StreamType::HD {
-            freq_offset = -163_500.0;
-            required_bandwidth = 69_000.0;
+            required_bandwidth = 400_000.0;
         }
 
         rtlsdr_state.lock().unwrap().radio_stream_thread =
@@ -383,8 +382,10 @@ impl RtlSdrState {
 
                         if stream_settings.stream_type == StreamType::FM {
                             prefix = "fm";
-                        } else {
+                        } else if stream_settings.stream_type == StreamType::AM {
                             prefix = "am";
+                        } else {
+                            prefix = "hd";
                         }
 
                         while !shutdown_flag.load(Ordering::SeqCst) {
