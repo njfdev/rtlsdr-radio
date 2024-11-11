@@ -294,9 +294,8 @@ export default function RtlSdrControls({
   };
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
-    const fixed_payload = event.payload.replace("fm_", "").replace("am_", "");
-
-    if (event.payload.startsWith(streamType.toString().toLowerCase())) {
+    if (event.payload.startsWith(streamType.toString().toLowerCase() + "_")) {
+      const fixed_payload = event.payload.split("_").slice(1).join("_");
       setStatus(
         RtlSdrStatus[
           Object.keys(RtlSdrStatus)[
