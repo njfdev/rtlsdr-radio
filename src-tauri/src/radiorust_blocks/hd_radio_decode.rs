@@ -1,12 +1,13 @@
 use std::{
     ffi::{c_char, c_void, CStr},
+    ptr,
     sync::{Arc, Mutex},
 };
 
 use crate::{
     modes::*,
     nrsc5::{
-        bindings::{nrsc5_event_t, NRSC5_EVENT_ID3},
+        bindings::{nrsc5_event_t, NRSC5_EVENT_AUDIO, NRSC5_EVENT_ID3, NRSC5_SAMPLE_RATE_AUDIO},
         Nrsc5,
     },
 };
@@ -20,6 +21,13 @@ use radiorust::{
 use tauri::ipc::Channel;
 use tokio::spawn;
 
+pub struct HdRadioDecode<Flt> {
+    receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
+    sender_connector: SenderConnector<Signal<Complex<Flt>>>,
+}
+
+static mut AUDIO_SAMPLES: Vec<i16> = vec![];
+
 unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: *mut c_void) {
     if (*event).event == NRSC5_EVENT_ID3 && (*event).__bindgen_anon_1.id3.program == 0 {
         let title_ptr: *const c_char = (*event).__bindgen_anon_1.id3.title;
@@ -27,12 +35,15 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
             let title = CStr::from_ptr(title_ptr).to_string_lossy();
             println!("Title: {}", title);
         }
-    }
-}
+    } else if (*event).event == NRSC5_EVENT_AUDIO && (*event).__bindgen_anon_1.audio.program == 0 {
+        let data_ptr = (*event).__bindgen_anon_1.audio.data;
+        let data_len = (*event).__bindgen_anon_1.audio.count as usize;
+        // Safety: We assume that the data pointer is valid and has the correct length.
+        let audio_data = std::slice::from_raw_parts(data_ptr, data_len);
 
-pub struct HdRadioDecode<Flt> {
-    receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
-    sender_connector: SenderConnector<Signal<Complex<Flt>>>,
+        // update AUDIO_SAMPLES
+        AUDIO_SAMPLES.extend_from_slice(audio_data);
+    }
 }
 
 impl_block_trait! { <Flt> Consumer<Signal<Complex<Flt>>> for HdRadioDecode<Flt> }
@@ -48,7 +59,7 @@ where
 
         let mut buf_pool = ChunkBufPool::<Complex<Flt>>::new();
 
-        let nrsc5_decoder = Nrsc5::new(Some(nrsc5_custom_callback));
+        let nrsc5_decoder = Nrsc5::new(Some(nrsc5_custom_callback), ptr::null_mut());
 
         spawn(async move {
             loop {
@@ -67,17 +78,48 @@ where
                             .as_slice(),
                         );
 
-                        if pass_along {
-                            let Ok(()) = sender
-                                .send(Signal::Samples {
-                                    sample_rate,
-                                    chunk: input_chunk,
-                                })
-                                .await
-                            else {
-                                return;
-                            };
+                        let mut new_audio_samples: Vec<i16> = vec![];
+
+                        unsafe {
+                            if AUDIO_SAMPLES.len() == 0 {
+                                continue;
+                            }
+
+                            println!("Audio Samples length: {}", AUDIO_SAMPLES.len());
+
+                            new_audio_samples = AUDIO_SAMPLES.clone();
+                            AUDIO_SAMPLES.clear();
                         }
+
+                        let mut output_chunk = buf_pool.get();
+
+                        for sample in new_audio_samples.iter() {
+                            output_chunk.push(Complex {
+                                re: Flt::from((*sample) as f32 / i16::MAX as f32).unwrap(),
+                                im: Flt::from(0.0).unwrap(),
+                            });
+                        }
+
+                        let Ok(()) = sender
+                            .send(Signal::Samples {
+                                sample_rate: NRSC5_SAMPLE_RATE_AUDIO as f64,
+                                chunk: output_chunk.finalize(),
+                            })
+                            .await
+                        else {
+                            return;
+                        };
+                        // if pass_along {
+                        //     let Ok(()) = sender
+                        //         .send(Signal::Samples {
+                        //             sample_rate,
+                        //             chunk: input_chunk,
+                        //         })
+                        //         .await
+                        //     else {
+                        //         return;
+                        //     };
+                        // }
                     }
                     Signal::Event(event) => {
                         if pass_along {

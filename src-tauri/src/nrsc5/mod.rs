@@ -5,10 +5,10 @@ pub mod bindings {
 use bindings::{
     nrsc5_callback_t, nrsc5_close, nrsc5_event_t, nrsc5_get_version, nrsc5_open, nrsc5_open_pipe,
     nrsc5_pipe_samples_cs16, nrsc5_set_callback, nrsc5_set_frequency, nrsc5_start, nrsc5_stop,
-    nrsc5_t, NRSC5_EVENT_ID3,
+    nrsc5_t, NRSC5_EVENT_AUDIO, NRSC5_EVENT_ID3,
 };
 use std::env;
-use std::ffi::CStr;
+use std::ffi::{c_void, CStr};
 use std::os::raw::c_char;
 use std::ptr;
 
@@ -16,12 +16,13 @@ use std::ptr;
 
 pub struct Nrsc5 {
     pub nrsc5_state: *mut nrsc5_t,
+    pub current_program: u32,
 }
 
 unsafe impl Send for Nrsc5 {}
 
 impl Nrsc5 {
-    pub fn new(callback: nrsc5_callback_t) -> Self {
+    pub fn new(callback: nrsc5_callback_t, opaque: *mut c_void) -> Self {
         unsafe {
             // Declare a mutable pointer to c_void
             let mut nrsc5_state: *mut nrsc5_t = ptr::null_mut();
@@ -31,7 +32,7 @@ impl Nrsc5 {
 
             if result == 0 {
                 // set the callback
-                nrsc5_set_callback(nrsc5_state, callback, ptr::null_mut());
+                nrsc5_set_callback(nrsc5_state, callback, opaque);
 
                 if result != 0 {
                     eprintln!("Could not set nrsc5 mode!");
@@ -45,7 +46,10 @@ impl Nrsc5 {
                 let cstr = unsafe { CStr::from_ptr(nrsc5_state as *const _) }.to_string_lossy();
                 println!("{}", cstr);
 
-                Self { nrsc5_state }
+                Self {
+                    nrsc5_state,
+                    current_program: 0,
+                }
             } else {
                 panic!("Failed to open pipe");
             }
@@ -59,10 +63,6 @@ impl Nrsc5 {
             // Call the C function
             nrsc5_pipe_samples_cs16(self.nrsc5_state, samples_ptr, samples.len() as u32)
         }
-    }
-
-    pub fn set_callback(&self) {
-        unsafe {}
     }
 }
 

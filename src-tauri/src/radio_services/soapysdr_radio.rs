@@ -14,6 +14,7 @@ use tauri::{async_runtime, ipc::Channel, AppHandle, Emitter, Listener, Manager};
 use tokio::{self, time};
 
 use crate::{
+    nrsc5::bindings::NRSC5_SAMPLE_RATE_CS16_FM,
     radiorust_blocks::{
         am_demod::AmDemod,
         better_cpal,
@@ -83,8 +84,8 @@ impl RtlSdrState {
         // TODO: properly use both sidebands of HD Radio signal
         // if HD Radio, focus in on the lower sideband
         if stream_settings.stream_type == StreamType::HD {
-            required_bandwidth = 200_000.0;
-            downsampled_rate = 744187.5;
+            required_bandwidth = 405_000.0;
+            downsampled_rate = NRSC5_SAMPLE_RATE_CS16_FM;
         }
 
         rtlsdr_state.lock().unwrap().radio_stream_thread =
@@ -257,20 +258,13 @@ impl RtlSdrState {
                         });
                         filter1.feed_from(&gain);
 
-                        // filter frequencies beyond normal human hearing range (20hz to 16 kHz)
-                        let filter2 = blocks::filters::Filter::new_rectangular(|bin, freq| {
-                            if bin.abs() >= 1 && freq.abs() >= 20.0 && freq.abs() <= 16000.0 {
-                                blocks::filters::deemphasis_factor(50e-6, freq)
-                            } else {
-                                Complex::from(0.0)
-                            }
-                        });
+                        let pauser = Pauseable::new(is_paused);
 
                         if stream_settings.stream_type == StreamType::FM {
                             // demodulate fm signal
                             let demodulator = blocks::modulation::FmDemod::<f32>::new(150000.0);
                             demodulator.feed_from(&filter1);
-                            filter2.feed_from(&demodulator);
+                            pauser.feed_from(&demodulator);
 
                             // add a buffer
                             let rbds_buffer = blocks::Buffer::new(0.0, 0.0, 0.0, 5.0);
@@ -323,7 +317,7 @@ impl RtlSdrState {
                         } else if stream_settings.stream_type == StreamType::AM {
                             let demodulator = AmDemod::<f32>::new();
                             demodulator.feed_from(&filter1);
-                            filter2.feed_from(&demodulator);
+                            pauser.feed_from(&demodulator);
                         } else if stream_settings.stream_type == StreamType::HD {
                             let hd_radio_decoder = HdRadioDecode::<f32>::new(true);
                             hd_radio_decoder.feed_from(&downsample1);
@@ -331,15 +325,22 @@ impl RtlSdrState {
                             let test_recorder = WavWriterBlock::<f32>::new(
                                 "nrsc5_test_direct_output.wav".to_string(),
                                 false,
-                                Some(3.0),
+                                None,
                             );
                             test_recorder.feed_from(&hd_radio_decoder);
 
-                            //filter2.feed_from(&hd_radio_decoder);
+                            pauser.feed_from(&hd_radio_decoder);
                         }
 
-                        let pauser = Pauseable::new(is_paused);
-                        pauser.feed_from(&filter2);
+                        // filter frequencies beyond normal human hearing range (20hz to 16 kHz)
+                        let filter2 = blocks::filters::Filter::new_rectangular(|bin, freq| {
+                            if bin.abs() >= 1 && freq.abs() >= 20.0 && freq.abs() <= 16000.0 {
+                                blocks::filters::deemphasis_factor(50e-6, freq)
+                            } else {
+                                Complex::from(0.0)
+                            }
+                        });
+                        filter2.feed_from(&pauser);
 
                         // downsample so the output device can play the audio
                         let downsample2 = blocks::Downsampler::<f32>::new(
@@ -347,11 +348,15 @@ impl RtlSdrState {
                             stream_settings.sample_rate,
                             stream_settings.sample_rate / 2.0,
                         );
-                        downsample2.feed_from(&pauser);
+                        downsample2.feed_from(&filter2);
 
                         // add a volume block
                         let volume = blocks::GainControl::<f32>::new(stream_settings.volume);
-                        volume.feed_from(&downsample2);
+                        if stream_settings.stream_type == StreamType::HD {
+                            volume.feed_from(&pauser);
+                        } else {
+                            volume.feed_from(&downsample2);
+                        }
 
                         // add a buffer
                         let buffer = blocks::Buffer::new(0.0, 0.0, 0.0, 1.0);
@@ -362,7 +367,11 @@ impl RtlSdrState {
                             stream_settings.sample_rate,
                             None,
                             2,
-                            Some(true),
+                            Some(if stream_settings.stream_type == StreamType::HD {
+                                false
+                            } else {
+                                true
+                            }),
                         )
                         .unwrap();
                         playback.feed_from(&buffer);
