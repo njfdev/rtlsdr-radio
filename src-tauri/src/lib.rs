@@ -10,7 +10,10 @@ mod utils;
 
 use log::info;
 use modes::types::ModeSState;
-use nrsc5::{get_nrsc5_version, Nrsc5};
+use nrsc5::{
+    bindings::{nrsc5_event_t, NRSC5_EVENT_ID3},
+    get_nrsc5_version, Nrsc5,
+};
 use radio_services::{
     nrsc5::Nrsc5State,
     soapysdr_adsb::{self, AdsbDecoderState},
@@ -21,7 +24,10 @@ use sdr::{enumeration::AvailableSDRArgs, SDRState};
 use serde::Serialize;
 use std::{
     env,
+    ffi::{c_char, c_void, CStr},
     sync::{Arc, Mutex},
+    thread::sleep,
+    time::Duration,
 };
 use tauri::{async_runtime::block_on, ipc::Channel, AppHandle, State};
 use utils::{setup_callbacks, setup_dependencies};
@@ -52,11 +58,9 @@ pub async fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .manage(AppState::new())
-        .setup(|app| {
+        .setup(move |app| {
             setup_dependencies(app);
             setup_callbacks(app);
-
-            let test: Nrsc5 = Nrsc5::new();
 
             Ok(())
         })

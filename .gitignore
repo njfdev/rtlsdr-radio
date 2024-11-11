@@ -63,3 +63,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# testing
+experiments

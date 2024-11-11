@@ -71,6 +71,8 @@ impl RtlSdrState {
         let mut freq_mul: f64 = 1_000_000.0;
         let mut freq_offset: f64 = 0.0;
         let mut required_bandwidth: f64 = 200_000.0;
+        let mut sample_rate = 1.024e6;
+        let mut downsampled_rate = 336000.0;
 
         // if AM Radio, use KHz instead
         if stream_settings.stream_type == StreamType::AM {
@@ -81,7 +83,8 @@ impl RtlSdrState {
         // TODO: properly use both sidebands of HD Radio signal
         // if HD Radio, focus in on the lower sideband
         if stream_settings.stream_type == StreamType::HD {
-            required_bandwidth = 400_000.0;
+            required_bandwidth = 200_000.0;
+            downsampled_rate = 744187.5;
         }
 
         rtlsdr_state.lock().unwrap().radio_stream_thread =
@@ -196,7 +199,6 @@ impl RtlSdrState {
                         let (rtlsdr_dev, sdr_args) = rtlsdr_dev_result.unwrap();
 
                         // set sample rate
-                        let sample_rate = 1.024e6;
                         let _ = rtlsdr_dev.set_sample_rate(Direction::Rx, 0, sample_rate);
 
                         // set center frequency
@@ -232,13 +234,18 @@ impl RtlSdrState {
                         freq_shifter.feed_from(&sdr_rx);
 
                         // add downsampler
-                        let downsample1 =
-                            blocks::Downsampler::<f32>::new(16384, 432000.0, required_bandwidth);
+                        let downsample1 = blocks::Downsampler::<f32>::new(
+                            16384,
+                            downsampled_rate,
+                            required_bandwidth,
+                        );
                         downsample1.feed_from(&freq_shifter);
 
                         // add gain
                         let gain = blocks::GainControl::<f32>::new(stream_settings.gain);
-                        gain.feed_from(&downsample1);
+                        if !(stream_settings.stream_type == StreamType::HD) {
+                            gain.feed_from(&downsample1);
+                        }
 
                         // add lowpass filter
                         let filter1 = blocks::Filter::new(|_, freq| {
@@ -319,9 +326,16 @@ impl RtlSdrState {
                             filter2.feed_from(&demodulator);
                         } else if stream_settings.stream_type == StreamType::HD {
                             let hd_radio_decoder = HdRadioDecode::<f32>::new(true);
-                            hd_radio_decoder.feed_from(&filter1);
+                            hd_radio_decoder.feed_from(&downsample1);
 
-                            filter2.feed_from(&hd_radio_decoder);
+                            let test_recorder = WavWriterBlock::<f32>::new(
+                                "nrsc5_test_direct_output.wav".to_string(),
+                                false,
+                                Some(3.0),
+                            );
+                            test_recorder.feed_from(&hd_radio_decoder);
+
+                            //filter2.feed_from(&hd_radio_decoder);
                         }
 
                         let pauser = Pauseable::new(is_paused);

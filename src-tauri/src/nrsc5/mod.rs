@@ -1,30 +1,49 @@
-mod nrsc5_header;
+pub mod bindings {
+    include!(concat!(env!("OUT_DIR"), "/nrsc5_bindings.rs"));
+}
 
-use nrsc5_header::*;
-use std::ffi::{c_void, CStr};
+use bindings::{
+    nrsc5_callback_t, nrsc5_close, nrsc5_event_t, nrsc5_get_version, nrsc5_open, nrsc5_open_pipe,
+    nrsc5_pipe_samples_cs16, nrsc5_set_callback, nrsc5_set_frequency, nrsc5_start, nrsc5_stop,
+    nrsc5_t, NRSC5_EVENT_ID3,
+};
+use std::env;
+use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::ptr;
 
 ///--------------------- nrsc5 Function Handling ---------------------///
 
 pub struct Nrsc5 {
-    pub nrsc5_state: *mut c_void,
+    pub nrsc5_state: *mut nrsc5_t,
 }
 
 unsafe impl Send for Nrsc5 {}
 
 impl Nrsc5 {
-    pub fn new() -> Self {
+    pub fn new(callback: nrsc5_callback_t) -> Self {
         unsafe {
             // Declare a mutable pointer to c_void
-            let mut nrsc5_state: *mut c_void = ptr::null_mut();
+            let mut nrsc5_state: *mut nrsc5_t = ptr::null_mut();
 
-            // Pass a pointer to the mutable variable `nrsc5_state`
-            let result = nrsc5_open_pipe(&mut nrsc5_state);
+            // Pass a pointer to the mutable variable `nrsc5_state` to create the object
+            let mut result = nrsc5_open_pipe(&mut nrsc5_state);
 
             if result == 0 {
+                // set the callback
+                nrsc5_set_callback(nrsc5_state, callback, ptr::null_mut());
+
+                if result != 0 {
+                    eprintln!("Could not set nrsc5 mode!");
+                } else {
+                    println!("Set nrsc5 mode to FM.")
+                }
+
                 // If the function succeeds, start and assign `nrsc5_state` to the struct
                 nrsc5_start(nrsc5_state);
+
+                let cstr = unsafe { CStr::from_ptr(nrsc5_state as *const _) }.to_string_lossy();
+                println!("{}", cstr);
 
                 Self { nrsc5_state }
             } else {
@@ -40,6 +59,10 @@ impl Nrsc5 {
             // Call the C function
             nrsc5_pipe_samples_cs16(self.nrsc5_state, samples_ptr, samples.len() as u32)
         }
+    }
+
+    pub fn set_callback(&self) {
+        unsafe {}
     }
 }
 

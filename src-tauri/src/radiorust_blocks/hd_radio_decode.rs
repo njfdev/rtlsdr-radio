@@ -1,6 +1,15 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    ffi::{c_char, c_void, CStr},
+    sync::{Arc, Mutex},
+};
 
-use crate::{modes::*, nrsc5::Nrsc5};
+use crate::{
+    modes::*,
+    nrsc5::{
+        bindings::{nrsc5_event_t, NRSC5_EVENT_ID3},
+        Nrsc5,
+    },
+};
 use radiorust::{
     flow::{new_receiver, new_sender, ReceiverConnector, SenderConnector},
     impl_block_trait,
@@ -10,6 +19,16 @@ use radiorust::{
 };
 use tauri::ipc::Channel;
 use tokio::spawn;
+
+unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: *mut c_void) {
+    if (*event).event == NRSC5_EVENT_ID3 && (*event).__bindgen_anon_1.id3.program == 0 {
+        let title_ptr: *const c_char = (*event).__bindgen_anon_1.id3.title;
+        if !title_ptr.is_null() {
+            let title = CStr::from_ptr(title_ptr).to_string_lossy();
+            println!("Title: {}", title);
+        }
+    }
+}
 
 pub struct HdRadioDecode<Flt> {
     receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
@@ -29,9 +48,9 @@ where
 
         let mut buf_pool = ChunkBufPool::<Complex<Flt>>::new();
 
-        spawn(async move {
-            let nrsc5_decoder = Nrsc5::new();
+        let nrsc5_decoder = Nrsc5::new(Some(nrsc5_custom_callback));
 
+        spawn(async move {
             loop {
                 let Ok(signal) = receiver.recv().await else {
                     return;
@@ -84,8 +103,8 @@ where
             let q = sample.im; // Imaginary part (Q)
 
             // Convert to i16 and push to the output vector (assuming we want to keep the precision)
-            iq_samples.push(i.to_i16().unwrap());
-            iq_samples.push(q.to_i16().unwrap());
+            iq_samples.push((i.to_f32().unwrap() * 32767.0) as i16);
+            iq_samples.push((q.to_f32().unwrap() * 32767.0) as i16);
         }
 
         iq_samples
