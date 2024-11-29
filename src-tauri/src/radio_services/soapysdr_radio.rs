@@ -14,7 +14,7 @@ use tauri::{async_runtime, ipc::Channel, AppHandle, Emitter, Listener, Manager};
 use tokio::{self, time};
 
 use crate::{
-    nrsc5::bindings::NRSC5_SAMPLE_RATE_CS16_FM,
+    nrsc5::bindings::{NRSC5_SAMPLE_RATE_CS16_FM, NRSC5_SAMPLE_RATE_CU8},
     radiorust_blocks::{
         am_demod::AmDemod,
         better_cpal,
@@ -84,7 +84,7 @@ impl RtlSdrState {
         // TODO: properly use both sidebands of HD Radio signal
         // if HD Radio, focus in on the lower sideband
         if stream_settings.stream_type == StreamType::HD {
-            required_bandwidth = 405_000.0;
+            required_bandwidth = 400_000.0;
             downsampled_rate = NRSC5_SAMPLE_RATE_CS16_FM;
         }
 
@@ -220,10 +220,16 @@ impl RtlSdrState {
                             let _ = rtlsdr_dev.write_setting("direct_samp", "0");
                         }
 
-                        // enable automatic gain mode
+                        // disable automatic gain mode (does not work that well)
                         rtlsdr_dev
                             .set_gain_mode(Direction::Rx, 0, true)
                             .expect("Failed to set automatic gain");
+
+                        // set a predetermined gain value
+                        // TODO: figure out a better automatic way to set this, or let the user set it
+                        rtlsdr_dev
+                            .set_gain(Direction::Rx, 0, 12.0)
+                            .expect("Failed to set a gain value");
 
                         // start sdr rx stream
                         let rx_stream = rtlsdr_dev.rx_stream::<Complex<f32>>(&[0]).unwrap();

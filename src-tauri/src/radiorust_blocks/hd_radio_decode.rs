@@ -7,7 +7,10 @@ use std::{
 use crate::{
     modes::*,
     nrsc5::{
-        bindings::{nrsc5_event_t, NRSC5_EVENT_AUDIO, NRSC5_EVENT_ID3, NRSC5_SAMPLE_RATE_AUDIO},
+        bindings::{
+            nrsc5_event_t, NRSC5_EVENT_AUDIO, NRSC5_EVENT_ID3, NRSC5_EVENT_LOST_SYNC,
+            NRSC5_EVENT_LOT, NRSC5_EVENT_SYNC, NRSC5_SAMPLE_RATE_AUDIO,
+        },
         Nrsc5,
     },
 };
@@ -43,6 +46,19 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
 
         // update AUDIO_SAMPLES
         AUDIO_SAMPLES.extend_from_slice(audio_data);
+    } else if (*event).event == NRSC5_EVENT_LOT && (*event).__bindgen_anon_1.audio.program == 0 {
+        println!(
+            "Name: {}",
+            CStr::from_ptr((*event).__bindgen_anon_1.lot.name)
+                .to_str()
+                .unwrap()
+        );
+    } else if (*event).event == NRSC5_EVENT_SYNC && (*event).__bindgen_anon_1.audio.program == 0 {
+        println!("Synced to Station");
+    } else if (*event).event == NRSC5_EVENT_LOST_SYNC
+        && (*event).__bindgen_anon_1.audio.program == 0
+    {
+        println!("Lost Sync to Station");
     }
 }
 
