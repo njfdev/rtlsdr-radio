@@ -48,7 +48,7 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
         AUDIO_SAMPLES.extend_from_slice(audio_data);
     } else if (*event).event == NRSC5_EVENT_LOT && (*event).__bindgen_anon_1.audio.program == 0 {
         println!(
-            "Name: {}",
+            "-----------------Name: {}",
             CStr::from_ptr((*event).__bindgen_anon_1.lot.name)
                 .to_str()
                 .unwrap()
@@ -59,6 +59,8 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
         && (*event).__bindgen_anon_1.audio.program == 0
     {
         println!("Lost Sync to Station");
+    } else if (*event).event == NRSC5_EVENT_LOT && (*event).__bindgen_anon_1.audio.program == 0 {
+        println!("Synced to Station");
     }
 }
 
@@ -123,6 +125,7 @@ where
                             })
                             .await
                         else {
+                            println!("Receiver is no longer available");
                             return;
                         };
                         // if pass_along {

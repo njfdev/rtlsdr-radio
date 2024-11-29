@@ -1,6 +1,6 @@
 "use client";
 
-import Nrsc5Controls from "@/components/Radio/Nrsc5Controls";
+//import Nrsc5Controls from "@/components/Radio/Nrsc5Controls";
 import RtlSdrControls from "@/components/Radio/RtlSdrControls";
 import { Station, StationType, StreamType } from "@/lib/types";
 import { useState } from "react";
@@ -8,8 +8,7 @@ import SaveStationsMenu from "@/components/Radio/SavedStationsMenu";
 import { areStationsEqual } from "@/lib/stationsStorage";
 import { GlobalState } from "../AppView";
 
-const isNrsc5Available =
-  import.meta.env.VITE_EXCLUDE_SIDECAR == "true" ? false : true;
+//const isNrsc5Available = import.meta.env.VITE_EXCLUDE_SIDECAR == "true" ? false : true;
 
 export default function RadioView({
   type,

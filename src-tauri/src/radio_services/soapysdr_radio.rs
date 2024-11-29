@@ -228,7 +228,7 @@ impl RtlSdrState {
                         // set a predetermined gain value
                         // TODO: figure out a better automatic way to set this, or let the user set it
                         rtlsdr_dev
-                            .set_gain(Direction::Rx, 0, 12.0)
+                            .set_gain(Direction::Rx, 0, stream_settings.gain)
                             .expect("Failed to set a gain value");
 
                         // start sdr rx stream
@@ -248,12 +248,6 @@ impl RtlSdrState {
                         );
                         downsample1.feed_from(&freq_shifter);
 
-                        // add gain
-                        let gain = blocks::GainControl::<f32>::new(stream_settings.gain);
-                        if !(stream_settings.stream_type == StreamType::HD) {
-                            gain.feed_from(&downsample1);
-                        }
-
                         // add lowpass filter
                         let filter1 = blocks::Filter::new(|_, freq| {
                             if freq.abs() <= 100000.0 {
@@ -262,7 +256,7 @@ impl RtlSdrState {
                                 Complex::from(0.0)
                             }
                         });
-                        filter1.feed_from(&gain);
+                        filter1.feed_from(&downsample1);
 
                         let pauser = Pauseable::new(is_paused);
 
@@ -346,7 +340,9 @@ impl RtlSdrState {
                                 Complex::from(0.0)
                             }
                         });
-                        filter2.feed_from(&pauser);
+                        if stream_settings.stream_type != StreamType::HD {
+                            filter2.feed_from(&pauser);
+                        }
 
                         // downsample so the output device can play the audio
                         let downsample2 = blocks::Downsampler::<f32>::new(
@@ -395,7 +391,13 @@ impl RtlSdrState {
                                     // set center frequency
                                     sdr_clone
                                         .set_frequency(Direction::Rx, 0, sdr_freq, "")
-                                        .expect("Failed to set frequency");
+                                        .expect("Failed to set new frequency");
+                                }
+                                if sdr_clone.gain(Direction::Rx, 0).unwrap() != new_settings.gain {
+                                    // set center frequency
+                                    sdr_clone
+                                        .set_gain(Direction::Rx, 0, new_settings.gain)
+                                        .expect("Failed to set new gain");
                                 }
                             }
                         });

@@ -84,7 +84,7 @@ export default function RtlSdrControls({
     volume: parseFloat(
       localStorage.getItem(streamType.toString() + volumeStorageName) || "0.5"
     ),
-    gain: streamType == StreamType.AM ? 2000.0 : 1.0,
+    gain: streamType == StreamType.AM ? 0.0 : 12.0,
     sample_rate: parseFloat(
       localStorage.getItem(streamType.toString() + srStorageName) || "48000.0"
     ),
@@ -369,7 +369,9 @@ export default function RtlSdrControls({
           />
         </div>
         <div className="grid w-full gap-1.5">
-          <Label htmlFor="volume_slider">Volume</Label>
+          <Label htmlFor="volume_slider">
+            Volume - {Math.round(streamSettings.volume * 100)}%
+          </Label>
           <Slider
             min={0.0}
             max={1.0}
@@ -379,6 +381,20 @@ export default function RtlSdrControls({
             className="py-[2px]"
             onValueChange={(values) => {
               setStreamSettings((old) => ({ ...old, volume: values[0] }));
+            }}
+          />
+        </div>
+        <div className="grid w-full gap-1.5">
+          <Label htmlFor="gain_slider">Gain - {streamSettings.gain} dB</Label>
+          <Slider
+            min={0.0}
+            max={50.0}
+            step={0.1}
+            value={[streamSettings.gain]}
+            id="gain_slider"
+            className="py-[2px]"
+            onValueChange={(values) => {
+              setStreamSettings((old) => ({ ...old, gain: values[0] }));
             }}
           />
         </div>
@@ -445,7 +461,7 @@ export default function RtlSdrControls({
             {isSaved ? "Remove " : "Save "} Station
           </Button>
         )}
-        {streamType == StreamType.AM && (
+        {streamType != StreamType.FM && (
           <HoursListenedToRadioView listenedForSeconds={totalSecondsListened} />
         )}
       </form>
