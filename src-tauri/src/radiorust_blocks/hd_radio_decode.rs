@@ -1,6 +1,8 @@
 use std::{
     ffi::{c_char, c_void, CStr},
-    ptr,
+    fs,
+    path::Path,
+    ptr::{self, null, null_mut},
     sync::{Arc, Mutex},
 };
 
@@ -8,8 +10,12 @@ use crate::{
     modes::*,
     nrsc5::{
         bindings::{
-            nrsc5_event_t, NRSC5_EVENT_AUDIO, NRSC5_EVENT_ID3, NRSC5_EVENT_LOST_SYNC,
-            NRSC5_EVENT_LOT, NRSC5_EVENT_SYNC, NRSC5_SAMPLE_RATE_AUDIO,
+            nrsc5_event_t, nrsc5_program_type_name, nrsc5_service_data_type_name,
+            NRSC5_ACCESS_PUBLIC, NRSC5_EVENT_AUDIO, NRSC5_EVENT_BER, NRSC5_EVENT_ID3,
+            NRSC5_EVENT_LOST_SYNC, NRSC5_EVENT_LOT, NRSC5_EVENT_MER, NRSC5_EVENT_PACKET,
+            NRSC5_EVENT_SIG, NRSC5_EVENT_SIS, NRSC5_EVENT_STREAM, NRSC5_EVENT_SYNC,
+            NRSC5_MIME_JPEG, NRSC5_SAMPLE_RATE_AUDIO, NRSC5_SIG_COMPONENT_AUDIO,
+            NRSC5_SIG_SERVICE_AUDIO,
         },
         Nrsc5,
     },
@@ -33,11 +39,28 @@ static mut AUDIO_SAMPLES: Vec<i16> = vec![];
 
 unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: *mut c_void) {
     if (*event).event == NRSC5_EVENT_ID3 && (*event).__bindgen_anon_1.id3.program == 0 {
-        let title_ptr: *const c_char = (*event).__bindgen_anon_1.id3.title;
-        if !title_ptr.is_null() {
-            let title = CStr::from_ptr(title_ptr).to_string_lossy();
+        let raw_title = (*event).__bindgen_anon_1.id3.title;
+        if !raw_title.is_null() {
+            let title = CStr::from_ptr(raw_title).to_string_lossy();
             println!("Title: {}", title);
         }
+        let raw_artist = (*event).__bindgen_anon_1.id3.artist;
+        if !raw_artist.is_null() {
+            let artist = CStr::from_ptr(raw_artist).to_string_lossy();
+            println!("Artist: {}", artist);
+        }
+        let raw_album = (*event).__bindgen_anon_1.id3.album;
+        if !raw_album.is_null() {
+            let album = CStr::from_ptr(raw_album).to_string_lossy();
+            println!("Album: {}", album);
+        }
+        let raw_genre = (*event).__bindgen_anon_1.id3.genre;
+        if !raw_genre.is_null() {
+            let genre = CStr::from_ptr(raw_genre).to_string_lossy();
+            println!("Genre: {}", genre);
+        }
+        let lot_id = (*event).__bindgen_anon_1.id3.xhdr.lot;
+        println!("LOT ID: {}", lot_id);
     } else if (*event).event == NRSC5_EVENT_AUDIO && (*event).__bindgen_anon_1.audio.program == 0 {
         let data_ptr = (*event).__bindgen_anon_1.audio.data;
         let data_len = (*event).__bindgen_anon_1.audio.count as usize;
@@ -46,21 +69,150 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
 
         // update AUDIO_SAMPLES
         AUDIO_SAMPLES.extend_from_slice(audio_data);
-    } else if (*event).event == NRSC5_EVENT_LOT && (*event).__bindgen_anon_1.audio.program == 0 {
+    } else if (*event).event == NRSC5_EVENT_LOT {
         println!(
             "-----------------Name: {}",
             CStr::from_ptr((*event).__bindgen_anon_1.lot.name)
                 .to_str()
                 .unwrap()
         );
-    } else if (*event).event == NRSC5_EVENT_SYNC && (*event).__bindgen_anon_1.audio.program == 0 {
+        let path_string = ("../temp/".to_owned()
+            + CStr::from_ptr((*event).__bindgen_anon_1.lot.name)
+                .to_str()
+                .unwrap());
+        let image_path = Path::new(path_string.as_str());
+        fs::write(
+            image_path,
+            std::slice::from_raw_parts(
+                (*event).__bindgen_anon_1.lot.data,
+                (*event).__bindgen_anon_1.lot.size as usize,
+            ),
+        );
+        println!(
+            "  LOT: {}, MIME: {:#x}, Port: {}, Size: {}",
+            (*event).__bindgen_anon_1.lot.lot,
+            (*event).__bindgen_anon_1.lot.mime,
+            (*event).__bindgen_anon_1.lot.port,
+            (*event).__bindgen_anon_1.lot.size
+        );
+    } else if (*event).event == NRSC5_EVENT_SYNC {
         println!("Synced to Station");
-    } else if (*event).event == NRSC5_EVENT_LOST_SYNC
-        && (*event).__bindgen_anon_1.audio.program == 0
-    {
+    } else if (*event).event == NRSC5_EVENT_LOST_SYNC {
         println!("Lost Sync to Station");
-    } else if (*event).event == NRSC5_EVENT_LOT && (*event).__bindgen_anon_1.audio.program == 0 {
-        println!("Synced to Station");
+    } else if (*event).event == NRSC5_EVENT_BER {
+        println!(
+            "Bit Error Ratio: {}%",
+            (*event).__bindgen_anon_1.ber.cber * 100.0
+        );
+    } else if (*event).event == NRSC5_EVENT_MER {
+        println!(
+            "Modulation Error Ratio: Lower {}, Upper {}",
+            (*event).__bindgen_anon_1.mer.lower,
+            (*event).__bindgen_anon_1.mer.upper
+        );
+    } else if (*event).event == NRSC5_EVENT_SIG {
+        println!("Station Channels:");
+        let mut cur_sig = (*event).__bindgen_anon_1.sig.services;
+        while !cur_sig.is_null() {
+            let raw_name = (*cur_sig).name;
+            if !raw_name.is_null() {
+                let name = CStr::from_ptr(raw_name).to_string_lossy();
+                println!(
+                    "  {}. {} ({})",
+                    (*cur_sig).number,
+                    name,
+                    if (*cur_sig).type_ == NRSC5_SIG_SERVICE_AUDIO as u8 {
+                        "Audio"
+                    } else {
+                        "Data"
+                    }
+                );
+
+                let mut cur_component = (*cur_sig).components;
+                while !cur_component.is_null() {
+                    if (*cur_component).type_ == NRSC5_SIG_COMPONENT_AUDIO as u8 {
+                        println!(
+                            "      Audio Component (MIME {:#x})",
+                            (*cur_component).__bindgen_anon_1.audio.mime
+                        );
+                    } else {
+                        println!(
+                            "      Data Component (MIME {:#x})",
+                            (*cur_component).__bindgen_anon_1.data.mime
+                        );
+                    }
+                    cur_component = (*cur_component).next;
+                }
+            }
+            cur_sig = (*cur_sig).next;
+        }
+    } else if (*event).event == NRSC5_EVENT_SIS {
+        let sis: crate::nrsc5::bindings::nrsc5_event_t__bindgen_ty_1__bindgen_ty_11 =
+            (*event).__bindgen_anon_1.sis;
+        let raw_name = sis.name;
+        if !raw_name.is_null() {
+            let name = CStr::from_ptr(raw_name).to_string_lossy();
+            println!("{} Station Info", name);
+
+            let raw_country = sis.country_code;
+            if !raw_country.is_null() {
+                let country = CStr::from_ptr(raw_country).to_string_lossy();
+                println!(
+                    "  Country: {} - FCC Facility ID: {}",
+                    country, sis.fcc_facility_id
+                );
+            }
+
+            let raw_slogan = sis.slogan;
+            if !raw_slogan.is_null() {
+                let slogan = CStr::from_ptr(raw_slogan).to_string_lossy();
+                println!("  Slogan: {}", slogan);
+            }
+
+            let raw_message = sis.message;
+            if !raw_message.is_null() {
+                let message = CStr::from_ptr(raw_message).to_string_lossy();
+                println!("  Message: {}", message);
+            }
+
+            let raw_alert = sis.alert;
+            if !raw_alert.is_null() {
+                let alert = CStr::from_ptr(raw_alert).to_string_lossy();
+                println!("  Alert: {}", alert);
+            }
+
+            println!(
+                "  Location: {}, {} - Altitude: {}ft",
+                sis.latitude, sis.longitude, sis.altitude
+            );
+
+            println!("  Audio Services:");
+            let mut cur_aud = sis.audio_services;
+            while !cur_aud.is_null() {
+                let mut service_type_name: *const c_char = ptr::null();
+                let service_type_name_ptr: *mut *const c_char = &mut service_type_name;
+                nrsc5_program_type_name((*cur_aud).type_, service_type_name_ptr);
+                if !service_type_name.is_null() {
+                    let service_type = CStr::from_ptr(service_type_name).to_string_lossy();
+                    println!(
+                        "      {}. {} ({}) w/ {}",
+                        (*cur_aud).program,
+                        service_type,
+                        if (*cur_aud).access == NRSC5_ACCESS_PUBLIC {
+                            "public"
+                        } else {
+                            "restricted"
+                        },
+                        if (*cur_aud).sound_exp == 2 {
+                            "Dolby Pro Logic II Surround"
+                        } else {
+                            "stereo"
+                        }
+                    );
+                }
+                cur_aud = (*cur_aud).next;
+            }
+        }
     }
 }
 

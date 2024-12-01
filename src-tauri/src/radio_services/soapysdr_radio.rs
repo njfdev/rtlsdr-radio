@@ -256,7 +256,9 @@ impl RtlSdrState {
                                 Complex::from(0.0)
                             }
                         });
-                        filter1.feed_from(&downsample1);
+                        if !(stream_settings.stream_type == StreamType::HD) {
+                            filter1.feed_from(&downsample1);
+                        }
 
                         let pauser = Pauseable::new(is_paused);
 
@@ -322,12 +324,12 @@ impl RtlSdrState {
                             let hd_radio_decoder = HdRadioDecode::<f32>::new(true);
                             hd_radio_decoder.feed_from(&downsample1);
 
-                            let test_recorder = WavWriterBlock::<f32>::new(
-                                "nrsc5_test_direct_output.wav".to_string(),
-                                false,
-                                None,
-                            );
-                            test_recorder.feed_from(&hd_radio_decoder);
+                            // let test_recorder = WavWriterBlock::<f32>::new(
+                            //     "nrsc5_test_direct_output.wav".to_string(),
+                            //     false,
+                            //     None,
+                            // );
+                            // test_recorder.feed_from(&hd_radio_decoder);
 
                             pauser.feed_from(&hd_radio_decoder);
                         }
