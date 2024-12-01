@@ -132,13 +132,15 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
                 while !cur_component.is_null() {
                     if (*cur_component).type_ == NRSC5_SIG_COMPONENT_AUDIO as u8 {
                         println!(
-                            "      Audio Component (MIME {:#x})",
-                            (*cur_component).__bindgen_anon_1.audio.mime
+                            "      Audio Component (MIME {:#x} - PORT {})",
+                            (*cur_component).__bindgen_anon_1.audio.mime,
+                            (*cur_component).__bindgen_anon_1.audio.port
                         );
                     } else {
                         println!(
-                            "      Data Component (MIME {:#x})",
-                            (*cur_component).__bindgen_anon_1.data.mime
+                            "      Data Component (MIME {:#x} - PORT {})",
+                            (*cur_component).__bindgen_anon_1.data.mime,
+                            (*cur_component).__bindgen_anon_1.data.port
                         );
                     }
                     cur_component = (*cur_component).next;
