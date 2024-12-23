@@ -146,6 +146,8 @@ impl RtlSdrState {
                         let radio_type_name =
                             Some(if stream_settings.stream_type == StreamType::FM {
                                 "FM Radio"
+                            } else if stream_settings.stream_type == StreamType::HD {
+                                "HD Radio"
                             } else {
                                 "AM Radio"
                             });
