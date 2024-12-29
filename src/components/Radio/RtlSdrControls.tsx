@@ -21,6 +21,7 @@ import {
   StreamType,
   volumeStorageName,
   AvailableSdrArgs,
+  HdRadioState,
 } from "@/lib/types";
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -225,6 +226,11 @@ export default function RtlSdrControls({
     }
   };
 
+  const hdRadioChannel = new Channel<HdRadioState>();
+  hdRadioChannel.onmessage = (message) => {
+    console.log(message);
+  };
+
   const updateSdrGlobalState = (
     sdrArgs: AvailableSdrArgs,
     changes: { functionName?: string; statusText?: string }
@@ -264,6 +270,7 @@ export default function RtlSdrControls({
       streamSettings,
       sdrArgs: globalState.defaultSdrArgs,
       rbdsChannel,
+      hdRadioChannel,
     });
     setCurrentSdrArgs(globalState.defaultSdrArgs);
     updateSdrGlobalState(globalState.defaultSdrArgs, {

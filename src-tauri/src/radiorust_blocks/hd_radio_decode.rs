@@ -27,6 +27,7 @@ use radiorust::{
     prelude::{ChunkBufPool, Complex},
     signal::Signal,
 };
+use serde::Serialize;
 use tauri::ipc::Channel;
 use tokio::spawn;
 
@@ -35,31 +36,68 @@ pub struct HdRadioDecode<Flt> {
     sender_connector: SenderConnector<Signal<Complex<Flt>>>,
 }
 
+#[derive(Clone, Debug, Serialize)]
+pub struct HdRadioState {
+    pub title: String,
+    pub artist: String,
+    pub album: String,
+    pub genre: String,
+    pub lot_id: i32,
+}
+
+impl HdRadioState {
+    pub fn new() -> Self {
+        Self {
+            title: String::new(),
+            artist: String::new(),
+            album: String::new(),
+            genre: String::new(),
+            lot_id: -1,
+        }
+    }
+}
+
+pub struct Nrsc5CallbackOpaque {
+    state: HdRadioState,
+    callback: Arc<dyn Fn(HdRadioState) + Send + Sync>,
+}
+
 static mut AUDIO_SAMPLES: Vec<i16> = vec![];
 
 unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: *mut c_void) {
+    if opaque.is_null() {
+        println!("The nrsc5 callback opaque value is empty!");
+        return;
+    }
+    let callback_opaque = &mut *(opaque as *mut Nrsc5CallbackOpaque);
+
     if (*event).event == NRSC5_EVENT_ID3 && (*event).__bindgen_anon_1.id3.program == 0 {
         let raw_title = (*event).__bindgen_anon_1.id3.title;
         if !raw_title.is_null() {
             let title = CStr::from_ptr(raw_title).to_string_lossy();
-            println!("Title: {}", title);
+            callback_opaque.state.title = title.to_string();
+            //println!("Title: {}", title);
         }
         let raw_artist = (*event).__bindgen_anon_1.id3.artist;
         if !raw_artist.is_null() {
             let artist = CStr::from_ptr(raw_artist).to_string_lossy();
-            println!("Artist: {}", artist);
+            callback_opaque.state.artist = artist.to_string();
+            //println!("Artist: {}", artist);
         }
         let raw_album = (*event).__bindgen_anon_1.id3.album;
         if !raw_album.is_null() {
             let album = CStr::from_ptr(raw_album).to_string_lossy();
-            println!("Album: {}", album);
+            callback_opaque.state.album = album.to_string();
+            //println!("Album: {}", album);
         }
         let raw_genre = (*event).__bindgen_anon_1.id3.genre;
         if !raw_genre.is_null() {
             let genre = CStr::from_ptr(raw_genre).to_string_lossy();
-            println!("Genre: {}", genre);
+            callback_opaque.state.genre = genre.to_string();
+            //println!("Genre: {}", genre);
         }
         let lot_id = (*event).__bindgen_anon_1.id3.xhdr.lot;
+        callback_opaque.state.lot_id = lot_id;
         println!("LOT ID: {}", lot_id);
     } else if (*event).event == NRSC5_EVENT_AUDIO && (*event).__bindgen_anon_1.audio.program == 0 {
         let data_ptr = (*event).__bindgen_anon_1.audio.data;
@@ -216,6 +254,8 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
             }
         }
     }
+
+    (callback_opaque.callback)(callback_opaque.state.clone());
 }
 
 impl_block_trait! { <Flt> Consumer<Signal<Complex<Flt>>> for HdRadioDecode<Flt> }
@@ -225,15 +265,25 @@ impl<Flt> HdRadioDecode<Flt>
 where
     Flt: Float + Into<f64>,
 {
-    pub fn new(pass_along: bool) -> Self {
+    pub fn new(
+        pass_along: bool,
+        hdradio_callback: impl Fn(HdRadioState) + Send + Sync + 'static,
+    ) -> Self {
         let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
         let (sender, sender_connector) = new_sender::<Signal<Complex<Flt>>>();
 
         let mut buf_pool = ChunkBufPool::<Complex<Flt>>::new();
 
-        let nrsc5_decoder = Nrsc5::new(Some(nrsc5_custom_callback), ptr::null_mut());
-
         spawn(async move {
+            let mut nrsc5_opaque = Box::new(Nrsc5CallbackOpaque {
+                state: HdRadioState::new(),
+                callback: Arc::new(hdradio_callback),
+            });
+            let nrsc5_decoder = Nrsc5::new(
+                Some(nrsc5_custom_callback),
+                &mut *nrsc5_opaque as *mut _ as *mut c_void,
+            );
+
             loop {
                 let Ok(signal) = receiver.recv().await else {
                     return;

@@ -18,7 +18,7 @@ use crate::{
     radiorust_blocks::{
         am_demod::AmDemod,
         better_cpal,
-        hd_radio_decode::HdRadioDecode,
+        hd_radio_decode::{HdRadioDecode, HdRadioState},
         pauseable::Pauseable,
         rbds_decode::{DownMixer, RbdsDecode, RbdsState},
         wav_writer::WavWriterBlock,
@@ -62,6 +62,7 @@ impl RtlSdrState {
         stream_settings: StreamSettings,
         default_sdr_args: AvailableSDRArgs,
         rbds_channel: Channel<RbdsState>,
+        hd_radio_channel: Channel<HdRadioState>,
     ) {
         let rtlsdr_state = self.0.clone();
         let rtlsdr_state_clone = rtlsdr_state.clone();
@@ -323,7 +324,24 @@ impl RtlSdrState {
                             demodulator.feed_from(&filter1);
                             pauser.feed_from(&demodulator);
                         } else if stream_settings.stream_type == StreamType::HD {
-                            let hd_radio_decoder = HdRadioDecode::<f32>::new(true);
+                            let controls_clone2 = controls_arc.clone();
+
+                            let hd_radio_decoder =
+                                HdRadioDecode::<f32>::new(true, move |state: HdRadioState| {
+                                    let _ = controls_clone2.lock().unwrap().set_metadata(
+                                        MediaMetadata {
+                                            title: Some(&state.title),
+                                            artist: Some(&state.artist),
+                                            album: Some(&state.album),
+                                            cover_url: Some(icon_url.as_str()),
+                                            ..Default::default()
+                                        },
+                                    );
+
+                                    println!("HD Radio State: {:#?}", state);
+
+                                    hd_radio_channel.send(state);
+                                });
                             hd_radio_decoder.feed_from(&downsample1);
 
                             // let test_recorder = WavWriterBlock::<f32>::new(

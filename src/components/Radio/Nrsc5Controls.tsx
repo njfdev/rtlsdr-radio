@@ -1,7 +1,7 @@
 "use client";
 
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,12 @@ import {
   removeStation,
   saveStation,
 } from "@/lib/stationsStorage";
-import { Station, StationDetails, StationType } from "@/lib/types";
+import {
+  HdRadioState,
+  Station,
+  StationDetails,
+  StationType,
+} from "@/lib/types";
 const appWindow = getCurrentWebviewWindow();
 
 enum Nrsc5Status {
@@ -93,12 +98,18 @@ export default function Nrsc5Controls({
     })();
   });
 
+  const hdRadioChannel = new Channel<HdRadioState>();
+  hdRadioChannel.onmessage = (message) => {
+    console.log(message);
+  };
+
   const start_nrsc5 = () => {
     setNrsc5Status(Nrsc5Status.Starting);
     setStreamDetails({ frequency: freq, channel });
     invoke<string>("start_nrsc5", {
       fmFreq: freq.toString(),
       channel: (channel - 1).toString(),
+      hdRadioChannel,
     })
       .then((_result) => {
         setStreamDetails((old) => ({

@@ -85,6 +85,14 @@ export interface RbdsData {
   } | null;
 }
 
+export interface HdRadioState {
+  title: string;
+  artist: string;
+  album: string;
+  genre: string;
+  lotId: number;
+}
+
 export interface AdsbDecodeSettings {
   gain?: number;
 }
