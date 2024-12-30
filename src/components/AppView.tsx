@@ -1,6 +1,12 @@
 import AdsbDecoderView from "@/components/AdsbDecoderView";
 import RadioView from "@/components/Radio/RadioView";
-import { AvailableSdrArgs, RbdsData, SDRState, StationType } from "@/lib/types";
+import {
+  AvailableSdrArgs,
+  HdRadioState,
+  RbdsData,
+  SDRState,
+  StationType,
+} from "@/lib/types";
 import { ReactNode, useState } from "react";
 import {
   ResizableHandle,
@@ -78,6 +84,7 @@ function GetViewById(
 
 export interface GlobalState {
   rbdsData: RbdsData;
+  hdRadioState: HdRadioState;
   defaultSdrArgs: AvailableSdrArgs | undefined;
   sdrStates: SDRState[];
 }
@@ -86,6 +93,7 @@ export default function AppView() {
   const [currentViewId, setCurrentViewId] = useState<string>("fm-radio");
   const [globalState, setGlobalState] = useState<GlobalState>({
     rbdsData: {} as RbdsData,
+    hdRadioState: {} as HdRadioState,
     defaultSdrArgs: undefined,
   } as GlobalState);
 

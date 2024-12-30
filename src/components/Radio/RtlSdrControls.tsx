@@ -228,7 +228,12 @@ export default function RtlSdrControls({
 
   const hdRadioChannel = new Channel<HdRadioState>();
   hdRadioChannel.onmessage = (message) => {
-    console.log(message);
+    setGlobalState((old) => ({ ...old, hdRadioState: message }));
+    if (currentSdrArgs) {
+      updateSdrGlobalState(currentSdrArgs!, {
+        statusText: message.title || "",
+      });
+    }
   };
 
   const updateSdrGlobalState = (
@@ -472,7 +477,7 @@ export default function RtlSdrControls({
           <HoursListenedToRadioView listenedForSeconds={totalSecondsListened} />
         )}
       </form>
-      {streamType == StreamType.FM && (
+      {streamType != StreamType.AM && (
         <div className="max-w-[24rem] w-full xl-grow">
           <Tabs
             defaultValue="radioInfo"
@@ -497,196 +502,14 @@ export default function RtlSdrControls({
             </TabsList>
             {status != RtlSdrStatus.Stopped ? (
               <>
-                <TabsContent value="radioInfo">
-                  <Card>
-                    <CardHeader>
-                      {globalState.rbdsData.radioText ? (
-                        <CardTitle
-                          className="whitespace-pre-wrap"
-                          dangerouslySetInnerHTML={{
-                            __html:
-                              globalState.rbdsData.radioText &&
-                              globalState.rbdsData.radioText.trimEnd()
-                                ? globalState.rbdsData.radioText
-                                    .trimEnd()
-                                    .replace(
-                                      /( {2,})/g,
-                                      '<span class="font-mono">$1</span>'
-                                    )
-                                : "",
-                          }}
-                        ></CardTitle>
-                      ) : (
-                        <Skeleton className="h-6 max-w-52" />
-                      )}
-                      <CardDescription>
-                        {globalState.rbdsData.programType ? (
-                          globalState.rbdsData.programType
-                        ) : (
-                          <Skeleton className="h-4 max-w-20" />
-                        )}
-                      </CardDescription>
-                    </CardHeader>
-                    {has10SecondsElapsed &&
-                      Object.values(globalState.rbdsData).every(
-                        (x) => x === undefined
-                      ) && (
-                        <CardContent className="flex flex-col items-center align-middle justify-center">
-                          <CardDescription className="text-center">
-                            Cannot receive RBDS signal! It is either too weak or
-                            the station does not support RBDS.
-                          </CardDescription>
-                        </CardContent>
-                      )}
-                  </Card>
-                </TabsContent>
-                <TabsContent value="advancedInfo">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Advanced Info</CardTitle>
-                      <CardDescription>
-                        This is all the other RBDS/RDS data that RTL-SDR Radio
-                        can decode.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-2">
-                      <span className="flex items-center gap-1">
-                        <b>Program Service Name:</b>{" "}
-                        <span className="font-mono">
-                          {globalState.rbdsData.serviceName != undefined ? (
-                            <>
-                              {globalState.rbdsData.serviceName}
-                              {globalState.rbdsData.ptyName
-                                ? ` - ${globalState.rbdsData.ptyName}`
-                                : ""}
-                            </>
-                          ) : (
-                            <div>
-                              <Skeleton className="h-5 w-24" />
-                            </div>
-                          )}
-                        </span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <b>Program Identification Code:</b>{" "}
-                        {globalState.rbdsData.pi != undefined ? (
-                          `0x${globalState.rbdsData.pi.toString(16)}`
-                        ) : (
-                          <Skeleton className="h-4 w-[3.5rem]" />
-                        )}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <b>Radio Type:</b>{" "}
-                        {globalState.rbdsData.decoderInfo &&
-                        globalState.rbdsData.decoderInfo.diIsStereo !=
-                          undefined ? (
-                          globalState.rbdsData.msFlag ? (
-                            "Music"
-                          ) : (
-                            "Speech"
-                          )
-                        ) : (
-                          <Skeleton className="h-4 w-[3.5rem]" />
-                        )}
-                      </span>
-                      <span className="font-bold">
-                        Decoder Identification Info
-                      </span>
-                      <div className="indent-4 flex flex-col -mt-2">
-                        <span className="flex items-center gap-1">
-                          <b>Channels:</b>{" "}
-                          {globalState.rbdsData.decoderInfo &&
-                          globalState.rbdsData.decoderInfo.diIsStereo !=
-                            undefined ? (
-                            globalState.rbdsData.decoderInfo.diIsStereo ? (
-                              "Stereo"
-                            ) : (
-                              "Mono"
-                            )
-                          ) : (
-                            <Skeleton className="h-4 w-[4.25rem]" />
-                          )}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <b>Binaural Audio:</b>{" "}
-                          {globalState.rbdsData.decoderInfo &&
-                          globalState.rbdsData.decoderInfo.diIsBinaural !=
-                            undefined ? (
-                            globalState.rbdsData.decoderInfo.diIsBinaural ? (
-                              "Yes"
-                            ) : (
-                              "No"
-                            )
-                          ) : (
-                            <Skeleton className="h-4 w-8" />
-                          )}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <b>Compression:</b>{" "}
-                          {globalState.rbdsData.decoderInfo &&
-                          globalState.rbdsData.decoderInfo.diIsCompressed !=
-                            undefined ? (
-                            globalState.rbdsData.decoderInfo.diIsCompressed ? (
-                              "Yes"
-                            ) : (
-                              "No"
-                            )
-                          ) : (
-                            <Skeleton className="h-4 w-8" />
-                          )}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <b>PTY Type:</b>{" "}
-                          {globalState.rbdsData.decoderInfo &&
-                          globalState.rbdsData.decoderInfo.diIsPtyDynamic !=
-                            undefined ? (
-                            globalState.rbdsData.decoderInfo.diIsPtyDynamic ? (
-                              "Dynamic"
-                            ) : (
-                              "Static"
-                            )
-                          ) : (
-                            <Skeleton className="h-4 w-[4.25rem]" />
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex gap-1 items-center">
-                        <span className="items-center gap-1">
-                          <b>Traffic Info:</b>{" "}
-                          {(() => {
-                            if (
-                              globalState.rbdsData.ta != undefined &&
-                              globalState.rbdsData.tp != undefined
-                            ) {
-                              switch (true) {
-                                case globalState.rbdsData.tp == false &&
-                                  globalState.rbdsData.ta == false:
-                                  return "This radio station does not carry traffic announcements.";
-                                case globalState.rbdsData.tp == false &&
-                                  globalState.rbdsData.ta == true:
-                                  return "This radio station does not carry traffic announcements, but it carries EON information about a station that does.";
-                                case globalState.rbdsData.tp == true &&
-                                  globalState.rbdsData.ta == false:
-                                  return "This radio station carries traffic announcements, but none are ongoing presently.";
-                                case globalState.rbdsData.tp == true &&
-                                  globalState.rbdsData.ta == true:
-                                  return "There is an ongoing traffic announcement.";
-                              }
-                            }
-                          })()}
-                        </span>
-                        {(globalState.rbdsData.tp == undefined ||
-                          globalState.rbdsData.ta == undefined) && (
-                          <Skeleton className="h-4 grow" />
-                        )}
-                      </div>
-                      {(globalState.rbdsData.tp == undefined ||
-                        globalState.rbdsData.ta == undefined) && (
-                        <Skeleton className="h-4 w-64 -mt-0.5" />
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
+                {streamType == StreamType.FM ? (
+                  <RbdsDataView
+                    globalState={globalState}
+                    has10SecondsElapsed={has10SecondsElapsed}
+                  />
+                ) : (
+                  <HdRadioStateView globalState={globalState} />
+                )}
               </>
             ) : (
               <Card>
@@ -705,6 +528,241 @@ export default function RtlSdrControls({
         </div>
       )}
     </div>
+  );
+}
+
+function HdRadioStateView({ globalState }: { globalState: GlobalState }) {
+  return (
+    <>
+      <TabsContent value="radioInfo">
+        <Card>
+          <CardHeader>
+            {globalState.hdRadioState.title ? (
+              <CardTitle className="whitespace-pre-wrap">
+                {globalState.hdRadioState.title}
+              </CardTitle>
+            ) : (
+              <Skeleton className="h-6 max-w-52" />
+            )}
+            <CardDescription>
+              {globalState.hdRadioState.artist ? (
+                globalState.hdRadioState.artist
+              ) : (
+                <Skeleton className="h-4 max-w-20" />
+              )}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </TabsContent>
+      <TabsContent value="advancedInfo">
+        <Card>
+          <CardHeader>
+            <CardTitle>Advanced Info</CardTitle>
+            <CardDescription>
+              This is all the other HD Radio data that RTL-SDR Radio can decode.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            Coming Soon...
+          </CardContent>
+        </Card>
+      </TabsContent>
+    </>
+  );
+}
+
+function RbdsDataView({
+  globalState,
+  has10SecondsElapsed,
+}: {
+  globalState: GlobalState;
+  has10SecondsElapsed: boolean;
+}) {
+  return (
+    <>
+      <TabsContent value="radioInfo">
+        <Card>
+          <CardHeader>
+            {globalState.rbdsData.radioText ? (
+              <CardTitle
+                className="whitespace-pre-wrap"
+                dangerouslySetInnerHTML={{
+                  __html:
+                    globalState.rbdsData.radioText &&
+                    globalState.rbdsData.radioText.trimEnd()
+                      ? globalState.rbdsData.radioText
+                          .trimEnd()
+                          .replace(
+                            /( {2,})/g,
+                            '<span class="font-mono">$1</span>'
+                          )
+                      : "",
+                }}
+              ></CardTitle>
+            ) : (
+              <Skeleton className="h-6 max-w-52" />
+            )}
+            <CardDescription>
+              {globalState.rbdsData.programType ? (
+                globalState.rbdsData.programType
+              ) : (
+                <Skeleton className="h-4 max-w-20" />
+              )}
+            </CardDescription>
+          </CardHeader>
+          {has10SecondsElapsed &&
+            Object.values(globalState.rbdsData).every(
+              (x) => x === undefined
+            ) && (
+              <CardContent className="flex flex-col items-center align-middle justify-center">
+                <CardDescription className="text-center">
+                  Cannot receive RBDS signal! It is either too weak or the
+                  station does not support RBDS.
+                </CardDescription>
+              </CardContent>
+            )}
+        </Card>
+      </TabsContent>
+      <TabsContent value="advancedInfo">
+        <Card>
+          <CardHeader>
+            <CardTitle>Advanced Info</CardTitle>
+            <CardDescription>
+              This is all the other RBDS/RDS data that RTL-SDR Radio can decode.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            <span className="flex items-center gap-1">
+              <b>Program Service Name:</b>{" "}
+              <span className="font-mono">
+                {globalState.rbdsData.serviceName != undefined ? (
+                  <>
+                    {globalState.rbdsData.serviceName}
+                    {globalState.rbdsData.ptyName
+                      ? ` - ${globalState.rbdsData.ptyName}`
+                      : ""}
+                  </>
+                ) : (
+                  <div>
+                    <Skeleton className="h-5 w-24" />
+                  </div>
+                )}
+              </span>
+            </span>
+            <span className="flex items-center gap-1">
+              <b>Program Identification Code:</b>{" "}
+              {globalState.rbdsData.pi != undefined ? (
+                `0x${globalState.rbdsData.pi.toString(16)}`
+              ) : (
+                <Skeleton className="h-4 w-[3.5rem]" />
+              )}
+            </span>
+            <span className="flex items-center gap-1">
+              <b>Radio Type:</b>{" "}
+              {globalState.rbdsData.decoderInfo &&
+              globalState.rbdsData.decoderInfo.diIsStereo != undefined ? (
+                globalState.rbdsData.msFlag ? (
+                  "Music"
+                ) : (
+                  "Speech"
+                )
+              ) : (
+                <Skeleton className="h-4 w-[3.5rem]" />
+              )}
+            </span>
+            <span className="font-bold">Decoder Identification Info</span>
+            <div className="indent-4 flex flex-col -mt-2">
+              <span className="flex items-center gap-1">
+                <b>Channels:</b>{" "}
+                {globalState.rbdsData.decoderInfo &&
+                globalState.rbdsData.decoderInfo.diIsStereo != undefined ? (
+                  globalState.rbdsData.decoderInfo.diIsStereo ? (
+                    "Stereo"
+                  ) : (
+                    "Mono"
+                  )
+                ) : (
+                  <Skeleton className="h-4 w-[4.25rem]" />
+                )}
+              </span>
+              <span className="flex items-center gap-1">
+                <b>Binaural Audio:</b>{" "}
+                {globalState.rbdsData.decoderInfo &&
+                globalState.rbdsData.decoderInfo.diIsBinaural != undefined ? (
+                  globalState.rbdsData.decoderInfo.diIsBinaural ? (
+                    "Yes"
+                  ) : (
+                    "No"
+                  )
+                ) : (
+                  <Skeleton className="h-4 w-8" />
+                )}
+              </span>
+              <span className="flex items-center gap-1">
+                <b>Compression:</b>{" "}
+                {globalState.rbdsData.decoderInfo &&
+                globalState.rbdsData.decoderInfo.diIsCompressed != undefined ? (
+                  globalState.rbdsData.decoderInfo.diIsCompressed ? (
+                    "Yes"
+                  ) : (
+                    "No"
+                  )
+                ) : (
+                  <Skeleton className="h-4 w-8" />
+                )}
+              </span>
+              <span className="flex items-center gap-1">
+                <b>PTY Type:</b>{" "}
+                {globalState.rbdsData.decoderInfo &&
+                globalState.rbdsData.decoderInfo.diIsPtyDynamic != undefined ? (
+                  globalState.rbdsData.decoderInfo.diIsPtyDynamic ? (
+                    "Dynamic"
+                  ) : (
+                    "Static"
+                  )
+                ) : (
+                  <Skeleton className="h-4 w-[4.25rem]" />
+                )}
+              </span>
+            </div>
+            <div className="flex gap-1 items-center">
+              <span className="items-center gap-1">
+                <b>Traffic Info:</b>{" "}
+                {(() => {
+                  if (
+                    globalState.rbdsData.ta != undefined &&
+                    globalState.rbdsData.tp != undefined
+                  ) {
+                    switch (true) {
+                      case globalState.rbdsData.tp == false &&
+                        globalState.rbdsData.ta == false:
+                        return "This radio station does not carry traffic announcements.";
+                      case globalState.rbdsData.tp == false &&
+                        globalState.rbdsData.ta == true:
+                        return "This radio station does not carry traffic announcements, but it carries EON information about a station that does.";
+                      case globalState.rbdsData.tp == true &&
+                        globalState.rbdsData.ta == false:
+                        return "This radio station carries traffic announcements, but none are ongoing presently.";
+                      case globalState.rbdsData.tp == true &&
+                        globalState.rbdsData.ta == true:
+                        return "There is an ongoing traffic announcement.";
+                    }
+                  }
+                })()}
+              </span>
+              {(globalState.rbdsData.tp == undefined ||
+                globalState.rbdsData.ta == undefined) && (
+                <Skeleton className="h-4 grow" />
+              )}
+            </div>
+            {(globalState.rbdsData.tp == undefined ||
+              globalState.rbdsData.ta == undefined) && (
+              <Skeleton className="h-4 w-64 -mt-0.5" />
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+    </>
   );
 }
 
