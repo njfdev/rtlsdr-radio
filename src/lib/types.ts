@@ -90,7 +90,8 @@ export interface HdRadioState {
   artist: string;
   album: string;
   genre: string;
-  lotId: number;
+  thumbnail_data?: number[] | undefined;
+  lot_id: number;
 }
 
 export interface AdsbDecodeSettings {

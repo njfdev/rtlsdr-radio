@@ -25,7 +25,7 @@ import {
 } from "@/lib/types";
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { Loader2 } from "lucide-react";
+import { Loader2, MusicIcon } from "lucide-react";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { TabsContent, TabsTrigger, Tabs, TabsList } from "../ui/tabs";
 import {
@@ -535,22 +535,38 @@ function HdRadioStateView({ globalState }: { globalState: GlobalState }) {
   return (
     <>
       <TabsContent value="radioInfo">
-        <Card>
-          <CardHeader>
-            {globalState.hdRadioState.title ? (
-              <CardTitle className="whitespace-pre-wrap">
-                {globalState.hdRadioState.title}
-              </CardTitle>
+        <Card className="overflow-clip">
+          <CardHeader className="flex-row gap-4">
+            {globalState.hdRadioState.thumbnail_data ? (
+              <img
+                src={`data:image/jpeg;base64,${btoa(
+                  String.fromCharCode.apply(
+                    null,
+                    globalState.hdRadioState.thumbnail_data!
+                  )
+                )}`}
+                width={125}
+                className=" rounded-sm"
+              />
             ) : (
-              <Skeleton className="h-6 max-w-52" />
+              <MusicIcon className="w-[125px] h-[125px] px-[20px] py-[20px] bg-stone-800 rounded-sm" />
             )}
-            <CardDescription>
-              {globalState.hdRadioState.artist ? (
-                globalState.hdRadioState.artist
+            <div className="flex flex-col">
+              {globalState.hdRadioState.title ? (
+                <CardTitle className="whitespace-pre-wrap">
+                  {globalState.hdRadioState.title}
+                </CardTitle>
               ) : (
-                <Skeleton className="h-4 max-w-20" />
+                <Skeleton className="h-6 max-w-52" />
               )}
-            </CardDescription>
+              <CardDescription>
+                {globalState.hdRadioState.artist ? (
+                  globalState.hdRadioState.artist
+                ) : (
+                  <Skeleton className="h-4 max-w-20" />
+                )}
+              </CardDescription>
+            </div>
           </CardHeader>
         </Card>
       </TabsContent>

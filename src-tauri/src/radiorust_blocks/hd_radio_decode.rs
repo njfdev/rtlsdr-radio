@@ -36,12 +36,14 @@ pub struct HdRadioDecode<Flt> {
     sender_connector: SenderConnector<Signal<Complex<Flt>>>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, PartialEq)]
 pub struct HdRadioState {
     pub title: String,
     pub artist: String,
     pub album: String,
     pub genre: String,
+    pub thumbnail_data: Option<Vec<u8>>,
+    pub fcc_id: i32,
     pub lot_id: i32,
 }
 
@@ -52,6 +54,8 @@ impl HdRadioState {
             artist: String::new(),
             album: String::new(),
             genre: String::new(),
+            thumbnail_data: None,
+            fcc_id: -1,
             lot_id: -1,
         }
     }
@@ -63,6 +67,41 @@ pub struct Nrsc5CallbackOpaque {
 }
 
 static mut AUDIO_SAMPLES: Vec<i16> = vec![];
+static mut NRSC5_LOT_FILES: Vec<(i32, Vec<(u32, u32, Vec<u8>)>)> = vec![];
+
+unsafe fn store_lot_file(fcc_id: i32, lot_id: u32, mime_type: u32, data: &[u8]) {
+    let mut station_lots = NRSC5_LOT_FILES.iter_mut().find(|val| val.0 == fcc_id);
+    if station_lots.is_none() {
+        NRSC5_LOT_FILES.push((fcc_id, vec![]));
+        station_lots = NRSC5_LOT_FILES.get_mut(NRSC5_LOT_FILES.len() - 1);
+    }
+    let station_lots = station_lots.unwrap();
+
+    let old_lot_file_index = station_lots
+        .1
+        .iter()
+        .enumerate()
+        .find(|(i, val)| val.0 == lot_id);
+    if old_lot_file_index.is_some() {
+        station_lots.1.remove(old_lot_file_index.unwrap().0);
+    }
+    station_lots.1.push((lot_id, mime_type, data.to_vec()));
+}
+
+unsafe fn get_lot_file(fcc_id: i32, lot_id: u32) -> Option<(u32, u32, Vec<u8>)> {
+    let station_lots = NRSC5_LOT_FILES.iter().find(|val| val.0 == fcc_id);
+    if station_lots.is_none() {
+        return None;
+    }
+    let station_lots = station_lots.unwrap();
+
+    let lot_file = station_lots.1.iter().find(|val| val.0 == lot_id);
+    if lot_file.is_none() {
+        return None;
+    }
+
+    Some(lot_file.unwrap().clone())
+}
 
 unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: *mut c_void) {
     if opaque.is_null() {
@@ -70,6 +109,7 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
         return;
     }
     let callback_opaque = &mut *(opaque as *mut Nrsc5CallbackOpaque);
+    let orig_state = callback_opaque.state.clone();
 
     if (*event).event == NRSC5_EVENT_ID3 && (*event).__bindgen_anon_1.id3.program == 0 {
         let raw_title = (*event).__bindgen_anon_1.id3.title;
@@ -96,9 +136,21 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
             callback_opaque.state.genre = genre.to_string();
             //println!("Genre: {}", genre);
         }
+
+        // get ufid data
+        let raw_ufid_owner = (*event).__bindgen_anon_1.id3.ufid.owner;
+        if !raw_ufid_owner.is_null() {
+            let ufid_owner = CStr::from_ptr(raw_ufid_owner).to_string_lossy();
+            println!("UFID Owner: {}", ufid_owner);
+        }
+        let raw_ufid_id = (*event).__bindgen_anon_1.id3.ufid.id;
+        if !raw_ufid_id.is_null() {
+            let ufid_id = CStr::from_ptr(raw_ufid_id).to_string_lossy();
+            println!("UFID ID: {}", ufid_id);
+        }
+
         let lot_id = (*event).__bindgen_anon_1.id3.xhdr.lot;
         callback_opaque.state.lot_id = lot_id;
-        println!("LOT ID: {}", lot_id);
     } else if (*event).event == NRSC5_EVENT_AUDIO && (*event).__bindgen_anon_1.audio.program == 0 {
         let data_ptr = (*event).__bindgen_anon_1.audio.data;
         let data_len = (*event).__bindgen_anon_1.audio.count as usize;
@@ -119,13 +171,21 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
                 .to_str()
                 .unwrap());
         let image_path = Path::new(path_string.as_str());
-        fs::write(
-            image_path,
-            std::slice::from_raw_parts(
-                (*event).__bindgen_anon_1.lot.data,
-                (*event).__bindgen_anon_1.lot.size as usize,
-            ),
+        let binary_data = std::slice::from_raw_parts(
+            (*event).__bindgen_anon_1.lot.data,
+            (*event).__bindgen_anon_1.lot.size as usize,
         );
+        fs::write(image_path, binary_data);
+
+        // TODO: store lot files in a DB and remove them after their expiry date (currently, memory usage will increase continually until restarting the app)
+        // save lot file to buffer
+        store_lot_file(
+            callback_opaque.state.fcc_id,
+            (*event).__bindgen_anon_1.lot.lot,
+            (*event).__bindgen_anon_1.lot.mime,
+            binary_data,
+        );
+
         println!(
             "  LOT: {}, MIME: {:#x}, Port: {}, Size: {}",
             (*event).__bindgen_anon_1.lot.lot,
@@ -202,6 +262,7 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
                     country, sis.fcc_facility_id
                 );
             }
+            callback_opaque.state.fcc_id = sis.fcc_facility_id;
 
             let raw_slogan = sis.slogan;
             if !raw_slogan.is_null() {
@@ -255,7 +316,27 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
         }
     }
 
-    (callback_opaque.callback)(callback_opaque.state.clone());
+    if orig_state != callback_opaque.state {
+        if callback_opaque.state.lot_id != orig_state.lot_id {
+            if callback_opaque.state.lot_id == -1 {
+                // TODO: actually set to station logo if available
+                callback_opaque.state.thumbnail_data = None;
+            } else {
+                let lot_file = get_lot_file(
+                    callback_opaque.state.fcc_id,
+                    callback_opaque.state.lot_id as u32,
+                );
+
+                if lot_file.is_some() {
+                    callback_opaque.state.thumbnail_data = Some(lot_file.unwrap().2);
+                } else {
+                    callback_opaque.state.thumbnail_data = None;
+                }
+            }
+        }
+
+        (callback_opaque.callback)(callback_opaque.state.clone());
+    }
 }
 
 impl_block_trait! { <Flt> Consumer<Signal<Complex<Flt>>> for HdRadioDecode<Flt> }
