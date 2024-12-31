@@ -14,8 +14,8 @@ use crate::{
             NRSC5_ACCESS_PUBLIC, NRSC5_EVENT_AUDIO, NRSC5_EVENT_BER, NRSC5_EVENT_ID3,
             NRSC5_EVENT_LOST_SYNC, NRSC5_EVENT_LOT, NRSC5_EVENT_MER, NRSC5_EVENT_PACKET,
             NRSC5_EVENT_SIG, NRSC5_EVENT_SIS, NRSC5_EVENT_STREAM, NRSC5_EVENT_SYNC,
-            NRSC5_MIME_JPEG, NRSC5_SAMPLE_RATE_AUDIO, NRSC5_SIG_COMPONENT_AUDIO,
-            NRSC5_SIG_SERVICE_AUDIO,
+            NRSC5_MIME_JPEG, NRSC5_MIME_PRIMARY_IMAGE, NRSC5_MIME_STATION_LOGO,
+            NRSC5_SAMPLE_RATE_AUDIO, NRSC5_SIG_COMPONENT_AUDIO, NRSC5_SIG_SERVICE_AUDIO,
         },
         Nrsc5,
     },
@@ -45,6 +45,8 @@ pub struct HdRadioState {
     pub thumbnail_data: Option<Vec<u8>>,
     pub fcc_id: i32,
     pub lot_id: i32,
+    // a list of ports in the format (port_mime, port_number)
+    pub ports: Vec<(u32, u16)>,
 }
 
 impl HdRadioState {
@@ -57,6 +59,7 @@ impl HdRadioState {
             thumbnail_data: None,
             fcc_id: -1,
             lot_id: -1,
+            ports: vec![],
         }
     }
 }
@@ -66,10 +69,19 @@ pub struct Nrsc5CallbackOpaque {
     callback: Arc<dyn Fn(HdRadioState) + Send + Sync>,
 }
 
-static mut AUDIO_SAMPLES: Vec<i16> = vec![];
-static mut NRSC5_LOT_FILES: Vec<(i32, Vec<(u32, u32, Vec<u8>)>)> = vec![];
+#[derive(Clone)]
+pub struct LotFile {
+    lot_id: u32,
+    mime_type: u32,
+    port: u16,
+    data: Vec<u8>,
+}
 
-unsafe fn store_lot_file(fcc_id: i32, lot_id: u32, mime_type: u32, data: &[u8]) {
+static mut AUDIO_SAMPLES: Vec<i16> = vec![];
+// the structure is Vec<(fcc_id, Vec<(lot_id, mime_type, port, data)>)>
+static mut NRSC5_LOT_FILES: Vec<(i32, Vec<LotFile>)> = vec![];
+
+unsafe fn store_lot_file(fcc_id: i32, lot_id: u32, mime_type: u32, port: u16, data: &[u8]) {
     let mut station_lots = NRSC5_LOT_FILES.iter_mut().find(|val| val.0 == fcc_id);
     if station_lots.is_none() {
         NRSC5_LOT_FILES.push((fcc_id, vec![]));
@@ -81,21 +93,29 @@ unsafe fn store_lot_file(fcc_id: i32, lot_id: u32, mime_type: u32, data: &[u8]) 
         .1
         .iter()
         .enumerate()
-        .find(|(i, val)| val.0 == lot_id);
+        .find(|(i, val)| val.lot_id == lot_id);
     if old_lot_file_index.is_some() {
         station_lots.1.remove(old_lot_file_index.unwrap().0);
     }
-    station_lots.1.push((lot_id, mime_type, data.to_vec()));
+    station_lots.1.push(LotFile {
+        lot_id: lot_id,
+        mime_type: mime_type,
+        port: port,
+        data: data.to_vec(),
+    });
 }
 
-unsafe fn get_lot_file(fcc_id: i32, lot_id: u32) -> Option<(u32, u32, Vec<u8>)> {
+unsafe fn get_lot_file(fcc_id: i32, lot_id: i32, port: i32) -> Option<LotFile> {
     let station_lots = NRSC5_LOT_FILES.iter().find(|val| val.0 == fcc_id);
     if station_lots.is_none() {
         return None;
     }
     let station_lots = station_lots.unwrap();
 
-    let lot_file = station_lots.1.iter().find(|val| val.0 == lot_id);
+    let lot_file = station_lots
+        .1
+        .iter()
+        .find(|val| if lot_id == -1 { true } else { val.lot_id == lot_id as u32 } && if port == -1 { true } else { val.port == port as u16 });
     if lot_file.is_none() {
         return None;
     }
@@ -110,6 +130,7 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
     }
     let callback_opaque = &mut *(opaque as *mut Nrsc5CallbackOpaque);
     let orig_state = callback_opaque.state.clone();
+    let mut lots_updated = false;
 
     if (*event).event == NRSC5_EVENT_ID3 && (*event).__bindgen_anon_1.id3.program == 0 {
         let raw_title = (*event).__bindgen_anon_1.id3.title;
@@ -183,6 +204,7 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
             callback_opaque.state.fcc_id,
             (*event).__bindgen_anon_1.lot.lot,
             (*event).__bindgen_anon_1.lot.mime,
+            (*event).__bindgen_anon_1.lot.port,
             binary_data,
         );
 
@@ -193,6 +215,7 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
             (*event).__bindgen_anon_1.lot.port,
             (*event).__bindgen_anon_1.lot.size
         );
+        lots_updated = true;
     } else if (*event).event == NRSC5_EVENT_SYNC {
         println!("Synced to Station");
     } else if (*event).event == NRSC5_EVENT_LOST_SYNC {
@@ -240,6 +263,12 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
                             (*cur_component).__bindgen_anon_1.data.mime,
                             (*cur_component).__bindgen_anon_1.data.port
                         );
+                    }
+                    if (*cur_sig).number == 1 {
+                        callback_opaque.state.ports.push((
+                            (*cur_component).__bindgen_anon_1.data.mime,
+                            (*cur_component).__bindgen_anon_1.data.port,
+                        ));
                     }
                     cur_component = (*cur_component).next;
                 }
@@ -316,19 +345,49 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
         }
     }
 
-    if orig_state != callback_opaque.state {
-        if callback_opaque.state.lot_id != orig_state.lot_id {
-            if callback_opaque.state.lot_id == -1 {
-                // TODO: actually set to station logo if available
-                callback_opaque.state.thumbnail_data = None;
-            } else {
+    if orig_state != callback_opaque.state || lots_updated {
+        if (callback_opaque.state.lot_id != orig_state.lot_id
+            || callback_opaque.state.ports != orig_state.ports
+            || lots_updated)
+            && callback_opaque.state.ports.len() > 0
+        {
+            let mut updated = false;
+
+            if callback_opaque.state.lot_id != -1 {
                 let lot_file = get_lot_file(
                     callback_opaque.state.fcc_id,
-                    callback_opaque.state.lot_id as u32,
+                    callback_opaque.state.lot_id,
+                    callback_opaque
+                        .state
+                        .ports
+                        .iter()
+                        .find(|val| val.0 == NRSC5_MIME_PRIMARY_IMAGE)
+                        .unwrap()
+                        .1 as i32,
                 );
 
                 if lot_file.is_some() {
-                    callback_opaque.state.thumbnail_data = Some(lot_file.unwrap().2);
+                    callback_opaque.state.thumbnail_data = Some(lot_file.unwrap().data);
+                    updated = true;
+                } else {
+                    callback_opaque.state.thumbnail_data = None;
+                }
+            }
+
+            if !updated {
+                let station_logo_port = callback_opaque
+                    .state
+                    .ports
+                    .iter()
+                    .find(|val| val.0 == NRSC5_MIME_STATION_LOGO)
+                    .unwrap()
+                    .1;
+
+                let station_logo =
+                    get_lot_file(callback_opaque.state.fcc_id, -1, station_logo_port as i32);
+
+                if station_logo.is_some() {
+                    callback_opaque.state.thumbnail_data = Some(station_logo.unwrap().data);
                 } else {
                     callback_opaque.state.thumbnail_data = None;
                 }
