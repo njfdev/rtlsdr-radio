@@ -545,11 +545,11 @@ function HdRadioStateView({ globalState }: { globalState: GlobalState }) {
                     globalState.hdRadioState.thumbnail_data!
                   )
                 )}`}
-                width={125}
-                className=" rounded-sm"
+                width={100}
+                className="rounded-sm aspect-square"
               />
             ) : (
-              <MusicIcon className="w-[125px] h-[125px] px-[20px] py-[20px] bg-stone-800 rounded-sm" />
+              <MusicIcon className="min-w-[100px] min-h-[100px] px-[20px] py-[20px] bg-stone-800 rounded-sm aspect-square" />
             )}
             <div className="flex flex-col">
               {globalState.hdRadioState.title ? (
