@@ -14,12 +14,13 @@ use crate::{
             NRSC5_ACCESS_PUBLIC, NRSC5_EVENT_AUDIO, NRSC5_EVENT_BER, NRSC5_EVENT_ID3,
             NRSC5_EVENT_LOST_SYNC, NRSC5_EVENT_LOT, NRSC5_EVENT_MER, NRSC5_EVENT_PACKET,
             NRSC5_EVENT_SIG, NRSC5_EVENT_SIS, NRSC5_EVENT_STREAM, NRSC5_EVENT_SYNC,
-            NRSC5_MIME_JPEG, NRSC5_MIME_PRIMARY_IMAGE, NRSC5_MIME_STATION_LOGO,
+            NRSC5_MIME_JPEG, NRSC5_MIME_PNG, NRSC5_MIME_PRIMARY_IMAGE, NRSC5_MIME_STATION_LOGO,
             NRSC5_SAMPLE_RATE_AUDIO, NRSC5_SIG_COMPONENT_AUDIO, NRSC5_SIG_SERVICE_AUDIO,
         },
         Nrsc5,
     },
 };
+use base64::Engine;
 use radiorust::{
     flow::{new_receiver, new_sender, ReceiverConnector, SenderConnector},
     impl_block_trait,
@@ -42,7 +43,7 @@ pub struct HdRadioState {
     pub artist: String,
     pub album: String,
     pub genre: String,
-    pub thumbnail_data: Option<Vec<u8>>,
+    pub thumbnail_data: Option<String>,
     pub fcc_id: i32,
     pub lot_id: i32,
     // a list of ports in the format (port_mime, port_number)
@@ -121,6 +122,18 @@ unsafe fn get_lot_file(fcc_id: i32, lot_id: i32, port: i32) -> Option<LotFile> {
     }
 
     Some(lot_file.unwrap().clone())
+}
+
+fn lot_to_base64_url(lot_file: LotFile) -> String {
+    format!(
+        "data:image/{};base64,{}",
+        if lot_file.mime_type == NRSC5_MIME_PNG {
+            "png"
+        } else {
+            "jpeg"
+        },
+        base64::engine::general_purpose::STANDARD.encode(&lot_file.data)
+    )
 }
 
 unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: *mut c_void) {
@@ -367,7 +380,8 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
                 );
 
                 if lot_file.is_some() {
-                    callback_opaque.state.thumbnail_data = Some(lot_file.unwrap().data);
+                    callback_opaque.state.thumbnail_data =
+                        Some(lot_to_base64_url(lot_file.unwrap()));
                     updated = true;
                 } else {
                     callback_opaque.state.thumbnail_data = None;
@@ -387,7 +401,8 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
                     get_lot_file(callback_opaque.state.fcc_id, -1, station_logo_port as i32);
 
                 if station_logo.is_some() {
-                    callback_opaque.state.thumbnail_data = Some(station_logo.unwrap().data);
+                    callback_opaque.state.thumbnail_data =
+                        Some(lot_to_base64_url(station_logo.unwrap()));
                 } else {
                     callback_opaque.state.thumbnail_data = None;
                 }

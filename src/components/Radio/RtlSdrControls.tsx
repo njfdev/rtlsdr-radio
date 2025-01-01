@@ -539,12 +539,7 @@ function HdRadioStateView({ globalState }: { globalState: GlobalState }) {
           <CardHeader className="flex-row gap-4">
             {globalState.hdRadioState.thumbnail_data ? (
               <img
-                src={`data:image/jpeg;base64,${btoa(
-                  String.fromCharCode.apply(
-                    null,
-                    globalState.hdRadioState.thumbnail_data!
-                  )
-                )}`}
+                src={globalState.hdRadioState.thumbnail_data!}
                 width={100}
                 className="rounded-sm aspect-square"
               />

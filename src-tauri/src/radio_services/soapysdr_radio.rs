@@ -328,12 +328,18 @@ impl RtlSdrState {
 
                             let hd_radio_decoder =
                                 HdRadioDecode::<f32>::new(true, move |state: HdRadioState| {
+                                    let thumbnail_base64 = state.thumbnail_data.clone();
+                                    let cover_url = if state.clone().thumbnail_data.is_some() {
+                                        thumbnail_base64.unwrap()
+                                    } else {
+                                        icon_url.clone()
+                                    };
                                     let _ = controls_clone2.lock().unwrap().set_metadata(
                                         MediaMetadata {
                                             title: Some(&state.title),
                                             artist: Some(&state.artist),
                                             album: Some(&state.album),
-                                            cover_url: Some(icon_url.as_str()),
+                                            cover_url: Some(cover_url.as_str()),
                                             ..Default::default()
                                         },
                                     );
