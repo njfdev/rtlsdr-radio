@@ -95,6 +95,20 @@ ExternalProject_Add(
     INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install
 )
 
+# ExternalProject_Add for SoapySDRPlay3
+ExternalProject_Add(
+    SoapySDRPlay3
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/soapy_sdrplay3
+    GIT_REPOSITORY https://github.com/pothosware/SoapySDRPlay3.git
+    GIT_TAG soapy-sdrplay3-0.5.2
+    DEPENDS SoapySDR
+    UPDATE_COMMAND ""
+    PATCH_COMMAND ""
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -S <SOURCE_DIR> -B <BINARY_DIR> -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/out -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_BINARY_DIR}/out -DRTLSDR_INCLUDE_DIRS=${CMAKE_CURRENT_BINARY_DIR}/out/include -DRTLSDR_LIBRARIES=${RTLSDR_LIBRARIES} -DSoapySDR_DIR=${CMAKE_CURRENT_BINARY_DIR}/out/lib/cmake/SoapySDR
+    BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release
+    INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install
+)
+
 # ExternalProject_Add for nrsc5
 ExternalProject_Add(
     nrsc5

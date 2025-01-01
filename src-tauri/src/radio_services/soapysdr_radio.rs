@@ -73,7 +73,7 @@ impl RtlSdrState {
         let mut freq_mul: f64 = 1_000_000.0;
         let mut freq_offset: f64 = 0.0;
         let mut required_bandwidth: f64 = 200_000.0;
-        let mut sample_rate = 1.024e6;
+        let mut sample_rate = 1.000e6;
         let mut downsampled_rate = 336000.0;
 
         // if AM Radio, use KHz instead
@@ -213,7 +213,12 @@ impl RtlSdrState {
                             .expect("Failed to set frequency");
 
                         // set the bandwidth
-                        let _ = rtlsdr_dev.set_bandwidth(Direction::Rx, 0, 1.024e6);
+                        let _ = rtlsdr_dev.set_bandwidth(Direction::Rx, 0, 1.000e6);
+
+                        // start sdr rx stream
+                        let rx_stream = rtlsdr_dev.rx_stream::<Complex<f32>>(&[0]).unwrap();
+                        let sdr_rx = rf::soapysdr::SoapySdrRx::new(rx_stream, sample_rate);
+                        sdr_rx.activate().await.unwrap();
 
                         // turn on direct sampling mode if in low frequencies
                         if stream_settings.stream_type == StreamType::AM {
@@ -233,11 +238,6 @@ impl RtlSdrState {
                         rtlsdr_dev
                             .set_gain(Direction::Rx, 0, stream_settings.gain)
                             .expect("Failed to set a gain value");
-
-                        // start sdr rx stream
-                        let rx_stream = rtlsdr_dev.rx_stream::<Complex<f32>>(&[0]).unwrap();
-                        let sdr_rx = rf::soapysdr::SoapySdrRx::new(rx_stream, sample_rate);
-                        sdr_rx.activate().await.unwrap();
 
                         // add frequency shifter
                         let freq_shifter = blocks::FreqShifter::<f32>::with_shift(0.0e6);

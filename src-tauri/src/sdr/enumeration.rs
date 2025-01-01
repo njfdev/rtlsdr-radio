@@ -7,7 +7,7 @@ use struct_iterable::Iterable;
 use tokio::task;
 
 pub fn get_available_sdr_args() -> Result<Vec<AvailableSDRArgs>, ()> {
-    let args = panic::catch_unwind(|| enumerate("driver=rtlsdr"));
+    let args = panic::catch_unwind(|| enumerate(""));
 
     if args.is_err() || args.as_ref().unwrap().is_err() {
         return Err(());
@@ -73,12 +73,12 @@ impl Into<Args> for AvailableSDRArgs {
 pub fn args_to_available_sdr_args(args: Vec<Args>) -> Vec<AvailableSDRArgs> {
     args.iter()
         .map(|args| AvailableSDRArgs {
-            driver: args.get("driver").unwrap().to_string(),
-            label: args.get("label").unwrap().to_string(),
-            manufacturer: args.get("manufacturer").unwrap().to_string(),
-            product: args.get("product").unwrap().to_string(),
-            serial: args.get("serial").unwrap().to_string(),
-            tuner: args.get("tuner").unwrap().to_string(),
+            driver: args.get("driver").unwrap_or("Unknown").to_string(),
+            label: args.get("label").unwrap_or("Unknown").to_string(),
+            manufacturer: args.get("manufacturer").unwrap_or("Unknown").to_string(),
+            product: args.get("product").unwrap_or("Unknown").to_string(),
+            serial: args.get("serial").unwrap_or("Unknown").to_string(),
+            tuner: args.get("tuner").unwrap_or("Unknown").to_string(),
         })
         .collect::<Vec<AvailableSDRArgs>>()
 }
