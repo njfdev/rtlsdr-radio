@@ -310,7 +310,11 @@ export default function RtlSdrControls({
     setCurrentStation(undefined);
     setRequestedStation(null);
     setStatus(RtlSdrStatus.Stopped);
-    setGlobalState((old) => ({ ...old, rbdsData: {} as RbdsData }));
+    setGlobalState((old) => ({
+      ...old,
+      rbdsData: {} as RbdsData,
+      hdRadioState: {} as HdRadioState,
+    }));
   };
 
   appWindow.listen("rtlsdr_status", (event: { payload: string }) => {
@@ -599,7 +603,7 @@ function HdRadioStateView({
                 globalState.hdRadioState.station_info!.audio_services.length > 0
                   ? globalState.hdRadioState.station_info?.audio_services[
                       streamSettings.hd_radio_program!
-                    ].service_type
+                    ]?.service_type
                   : "Unknown"
               }`}</SelectTrigger>
               <SelectContent>
