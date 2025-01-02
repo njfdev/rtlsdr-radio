@@ -92,6 +92,7 @@ export interface HdRadioState {
   album: string;
   genre: string;
   thumbnail_data?: string | undefined;
+  audio_bitrate: number;
   lot_id: number;
   ports: [number, number][];
   station_info?:

@@ -11,11 +11,12 @@ use crate::{
     nrsc5::{
         bindings::{
             nrsc5_event_t, nrsc5_program_type_name, nrsc5_service_data_type_name,
-            NRSC5_ACCESS_PUBLIC, NRSC5_EVENT_AUDIO, NRSC5_EVENT_BER, NRSC5_EVENT_ID3,
-            NRSC5_EVENT_LOST_SYNC, NRSC5_EVENT_LOT, NRSC5_EVENT_MER, NRSC5_EVENT_PACKET,
-            NRSC5_EVENT_SIG, NRSC5_EVENT_SIS, NRSC5_EVENT_STREAM, NRSC5_EVENT_SYNC,
-            NRSC5_MIME_JPEG, NRSC5_MIME_PNG, NRSC5_MIME_PRIMARY_IMAGE, NRSC5_MIME_STATION_LOGO,
-            NRSC5_SAMPLE_RATE_AUDIO, NRSC5_SIG_COMPONENT_AUDIO, NRSC5_SIG_SERVICE_AUDIO,
+            NRSC5_ACCESS_PUBLIC, NRSC5_AUDIO_FRAME_SAMPLES, NRSC5_EVENT_AUDIO, NRSC5_EVENT_BER,
+            NRSC5_EVENT_HDC, NRSC5_EVENT_ID3, NRSC5_EVENT_LOST_SYNC, NRSC5_EVENT_LOT,
+            NRSC5_EVENT_MER, NRSC5_EVENT_PACKET, NRSC5_EVENT_SIG, NRSC5_EVENT_SIS,
+            NRSC5_EVENT_STREAM, NRSC5_EVENT_SYNC, NRSC5_MIME_JPEG, NRSC5_MIME_PNG,
+            NRSC5_MIME_PRIMARY_IMAGE, NRSC5_MIME_STATION_LOGO, NRSC5_SAMPLE_RATE_AUDIO,
+            NRSC5_SIG_COMPONENT_AUDIO, NRSC5_SIG_SERVICE_AUDIO,
         },
         Nrsc5,
     },
@@ -46,6 +47,9 @@ pub struct HdRadioState {
     pub album: String,
     pub genre: String,
     pub thumbnail_data: Option<String>,
+    pub audio_bitrate: f32,
+    audio_packets: u32,
+    audio_bytes: u32,
     pub lot_id: i32,
     // a list of ports in the format (port_mime, port_number)
     pub ports: Vec<(u32, u16)>,
@@ -61,10 +65,35 @@ impl HdRadioState {
             album: String::new(),
             genre: String::new(),
             thumbnail_data: None,
+            audio_bitrate: 0.0,
+            audio_packets: 0,
+            audio_bytes: 0,
             lot_id: -1,
             ports: vec![],
             station_info: None,
         }
+    }
+
+    pub fn increase_audio_bytes(&mut self, bytes: u32) {
+        // increase by the new audio packet
+        self.audio_bytes += bytes;
+        self.audio_packets += 1;
+
+        // update the bitrate if necessary
+        if self.audio_packets >= 32 {
+            self.update_audio_bitrate();
+        }
+    }
+
+    fn update_audio_bitrate(&mut self) {
+        self.audio_bitrate = (self.audio_bytes as f32 * 8.0 * NRSC5_SAMPLE_RATE_AUDIO as f32
+            / NRSC5_AUDIO_FRAME_SAMPLES as f32
+            / self.audio_packets as f32
+            / 100.0)
+            .round()
+            / 10.0;
+        self.audio_bytes = 0;
+        self.audio_packets = 0;
     }
 }
 
@@ -452,6 +481,12 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
                 cur_aud = (*cur_aud).next;
             }
         }
+    } else if (*event).event == NRSC5_EVENT_HDC
+        && (*event).__bindgen_anon_1.hdc.program == callback_opaque.state.program
+    {
+        callback_opaque
+            .state
+            .increase_audio_bytes((*event).__bindgen_anon_1.hdc.count as u32);
     }
 
     if orig_state != callback_opaque.state || lots_updated {

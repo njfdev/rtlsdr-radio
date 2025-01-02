@@ -50,6 +50,7 @@ import {
   HoverCardTrigger,
 } from "../ui/hover-card";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
+import { Badge } from "../ui/badge";
 const appWindow = getCurrentWebviewWindow();
 
 enum RtlSdrStatus {
@@ -598,14 +599,33 @@ function HdRadioStateView({
                 }))
               }
             >
-              <SelectTrigger>{`${streamSettings.hd_radio_program! + 1}. ${
-                globalState.hdRadioState.station_info &&
-                globalState.hdRadioState.station_info!.audio_services.length > 0
-                  ? globalState.hdRadioState.station_info?.audio_services[
-                      streamSettings.hd_radio_program!
-                    ]?.service_type
-                  : "Unknown"
-              }`}</SelectTrigger>
+              <SelectTrigger>
+                <div className="flex gap-3">
+                  <Badge
+                    variant="outline"
+                    className={`before:content-[''] before:inline-block before:w-2 before:h-2 before:${
+                      globalState.hdRadioState.audio_bitrate >= 40
+                        ? "bg-green-500"
+                        : globalState.hdRadioState.audio_bitrate >= 30
+                        ? "bg-yellow-500"
+                        : "bg-red-500"
+                    } before:rounded-full before:mr-1 w-max`}
+                  >
+                    {globalState.hdRadioState.audio_bitrate}kbps
+                  </Badge>
+                  <span>
+                    {`${streamSettings.hd_radio_program! + 1}. ${
+                      globalState.hdRadioState.station_info &&
+                      globalState.hdRadioState.station_info!.audio_services
+                        .length > 0
+                        ? globalState.hdRadioState.station_info?.audio_services[
+                            streamSettings.hd_radio_program!
+                          ]?.service_type
+                        : "Unknown"
+                    }`}
+                  </span>
+                </div>
+              </SelectTrigger>
               <SelectContent>
                 {globalState.hdRadioState.station_info?.audio_services
                   .sort((a, b) => a.program - b.program)
