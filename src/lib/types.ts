@@ -92,6 +92,25 @@ export interface HdRadioState {
   genre: string;
   thumbnail_data?: string | undefined;
   lot_id: number;
+  ports: [number, number][];
+  station_info?:
+    | {
+        name: string;
+        country_code: string;
+        fcc_id: number;
+        slogan: string;
+        message: string;
+        alert: string;
+        location: [number, number];
+        altitude: number;
+        audio_services: {
+          program: number;
+          service_type: string;
+          is_restricted: boolean;
+          sound_experience: string;
+        }[];
+      }
+    | undefined;
 }
 
 export interface AdsbDecodeSettings {

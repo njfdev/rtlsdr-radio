@@ -44,10 +44,10 @@ pub struct HdRadioState {
     pub album: String,
     pub genre: String,
     pub thumbnail_data: Option<String>,
-    pub fcc_id: i32,
     pub lot_id: i32,
     // a list of ports in the format (port_mime, port_number)
     pub ports: Vec<(u32, u16)>,
+    pub station_info: Option<StationInfo>,
 }
 
 impl HdRadioState {
@@ -58,11 +58,33 @@ impl HdRadioState {
             album: String::new(),
             genre: String::new(),
             thumbnail_data: None,
-            fcc_id: -1,
             lot_id: -1,
             ports: vec![],
+            station_info: None,
         }
     }
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq)]
+pub struct StationInfo {
+    pub name: String,
+    pub country_code: String,
+    pub fcc_id: i32,
+    pub slogan: String,
+    pub message: String,
+    pub alert: String,
+    pub location: (f32, f32),
+    // in meters
+    pub altitude: i32,
+    pub audio_services: Vec<AudioService>,
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq)]
+pub struct AudioService {
+    pub program: u32,
+    pub service_type: String,
+    pub is_restricted: bool,
+    pub sound_experience: String,
 }
 
 pub struct Nrsc5CallbackOpaque {
@@ -214,7 +236,7 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
         // TODO: store lot files in a DB and remove them after their expiry date (currently, memory usage will increase continually until restarting the app)
         // save lot file to buffer
         store_lot_file(
-            callback_opaque.state.fcc_id,
+            callback_opaque.state.station_info.as_ref().unwrap().fcc_id,
             (*event).__bindgen_anon_1.lot.lot,
             (*event).__bindgen_anon_1.lot.mime,
             (*event).__bindgen_anon_1.lot.port,
@@ -294,42 +316,79 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
         let raw_name = sis.name;
         if !raw_name.is_null() {
             let name = CStr::from_ptr(raw_name).to_string_lossy();
-            println!("{} Station Info", name);
+            //println!("{} Station Info", name);
+
+            if callback_opaque.state.station_info.is_none()
+                || callback_opaque.state.station_info.as_ref().unwrap().fcc_id
+                    != sis.fcc_facility_id
+            {
+                callback_opaque.state.station_info = Some(StationInfo {
+                    name: name.to_string(),
+                    country_code: String::new(),
+                    fcc_id: sis.fcc_facility_id,
+                    slogan: String::new(),
+                    message: String::new(),
+                    alert: String::new(),
+                    location: (sis.latitude, sis.longitude),
+                    altitude: sis.altitude,
+                    audio_services: vec![],
+                });
+            }
 
             let raw_country = sis.country_code;
             if !raw_country.is_null() {
                 let country = CStr::from_ptr(raw_country).to_string_lossy();
-                println!(
-                    "  Country: {} - FCC Facility ID: {}",
-                    country, sis.fcc_facility_id
-                );
+                callback_opaque
+                    .state
+                    .station_info
+                    .as_mut()
+                    .unwrap()
+                    .country_code = country.to_string();
+                // println!(
+                //     "  Country: {} - FCC Facility ID: {}",
+                //     country, sis.fcc_facility_id
+                // );
             }
-            callback_opaque.state.fcc_id = sis.fcc_facility_id;
 
             let raw_slogan = sis.slogan;
             if !raw_slogan.is_null() {
                 let slogan = CStr::from_ptr(raw_slogan).to_string_lossy();
-                println!("  Slogan: {}", slogan);
+                callback_opaque.state.station_info.as_mut().unwrap().slogan = slogan.to_string();
+                //println!("  Slogan: {}", slogan);
             }
 
             let raw_message = sis.message;
             if !raw_message.is_null() {
                 let message = CStr::from_ptr(raw_message).to_string_lossy();
-                println!("  Message: {}", message);
+                callback_opaque.state.station_info.as_mut().unwrap().message = message.to_string();
+                //println!("  Message: {}", message);
             }
 
             let raw_alert = sis.alert;
             if !raw_alert.is_null() {
                 let alert = CStr::from_ptr(raw_alert).to_string_lossy();
-                println!("  Alert: {}", alert);
+                callback_opaque.state.station_info.as_mut().unwrap().alert = alert.to_string();
+                //println!("  Alert: {}", alert);
             }
 
-            println!(
-                "  Location: {}, {} - Altitude: {}ft",
-                sis.latitude, sis.longitude, sis.altitude
-            );
+            // println!(
+            //     "  Location: {}, {} - Altitude: {}m",
+            //     sis.latitude, sis.longitude, sis.altitude
+            // );
+            callback_opaque
+                .state
+                .station_info
+                .as_mut()
+                .unwrap()
+                .location = (sis.latitude, sis.longitude);
+            callback_opaque
+                .state
+                .station_info
+                .as_mut()
+                .unwrap()
+                .altitude = sis.altitude;
 
-            println!("  Audio Services:");
+            //println!("  Audio Services:");
             let mut cur_aud = sis.audio_services;
             while !cur_aud.is_null() {
                 let mut service_type_name: *const c_char = ptr::null();
@@ -337,21 +396,51 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
                 nrsc5_program_type_name((*cur_aud).type_, service_type_name_ptr);
                 if !service_type_name.is_null() {
                     let service_type = CStr::from_ptr(service_type_name).to_string_lossy();
-                    println!(
-                        "      {}. {} ({}) w/ {}",
-                        (*cur_aud).program,
-                        service_type,
-                        if (*cur_aud).access == NRSC5_ACCESS_PUBLIC {
-                            "public"
-                        } else {
-                            "restricted"
-                        },
-                        if (*cur_aud).sound_exp == 2 {
+                    let audio_service = AudioService {
+                        program: (*cur_aud).program,
+                        service_type: service_type.to_string(),
+                        is_restricted: (*cur_aud).access != NRSC5_ACCESS_PUBLIC,
+                        sound_experience: if (*cur_aud).sound_exp == 2 {
                             "Dolby Pro Logic II Surround"
                         } else {
-                            "stereo"
+                            "Stereo"
                         }
-                    );
+                        .to_string(),
+                    };
+                    if callback_opaque
+                        .state
+                        .station_info
+                        .as_ref()
+                        .unwrap()
+                        .audio_services
+                        .iter()
+                        .find(|val| val == &&audio_service)
+                        .is_none()
+                    {
+                        callback_opaque
+                            .state
+                            .station_info
+                            .as_mut()
+                            .unwrap()
+                            .audio_services
+                            .push(audio_service);
+                    }
+
+                    // println!(
+                    //     "      {}. {} ({}) w/ {}",
+                    //     (*cur_aud).program,
+                    //     service_type,
+                    //     if (*cur_aud).access == NRSC5_ACCESS_PUBLIC {
+                    //         "public"
+                    //     } else {
+                    //         "restricted"
+                    //     },
+                    //     if (*cur_aud).sound_exp == 2 {
+                    //         "Dolby Pro Logic II Surround"
+                    //     } else {
+                    //         "stereo"
+                    //     }
+                    // );
                 }
                 cur_aud = (*cur_aud).next;
             }
@@ -368,7 +457,7 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
 
             if callback_opaque.state.lot_id != -1 {
                 let lot_file = get_lot_file(
-                    callback_opaque.state.fcc_id,
+                    callback_opaque.state.station_info.as_ref().unwrap().fcc_id,
                     callback_opaque.state.lot_id,
                     callback_opaque
                         .state
@@ -397,8 +486,11 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
                     .unwrap()
                     .1;
 
-                let station_logo =
-                    get_lot_file(callback_opaque.state.fcc_id, -1, station_logo_port as i32);
+                let station_logo = get_lot_file(
+                    callback_opaque.state.station_info.as_ref().unwrap().fcc_id,
+                    -1,
+                    station_logo_port as i32,
+                );
 
                 if station_logo.is_some() {
                     callback_opaque.state.thumbnail_data =

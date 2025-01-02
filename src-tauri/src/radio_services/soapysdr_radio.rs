@@ -344,7 +344,7 @@ impl RtlSdrState {
                                         },
                                     );
 
-                                    println!("HD Radio State: {:#?}", state);
+                                    //println!("HD Radio State: {:#?}", state);
 
                                     hd_radio_channel.send(state);
                                 });

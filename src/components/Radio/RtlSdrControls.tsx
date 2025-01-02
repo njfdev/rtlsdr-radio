@@ -25,7 +25,7 @@ import {
 } from "@/lib/types";
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { Loader2, MusicIcon } from "lucide-react";
+import { Globe, Loader2, MusicIcon } from "lucide-react";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { TabsContent, TabsTrigger, Tabs, TabsList } from "../ui/tabs";
 import {
@@ -43,6 +43,12 @@ import {
   increaseListeningDuration,
 } from "@/lib/statsStorage";
 import { GlobalState } from "../AppView";
+import { Separator } from "../ui/separator";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "../ui/hover-card";
 const appWindow = getCurrentWebviewWindow();
 
 enum RtlSdrStatus {
@@ -563,6 +569,39 @@ function HdRadioStateView({ globalState }: { globalState: GlobalState }) {
               </CardDescription>
             </div>
           </CardHeader>
+          <Separator className="mb-6" />
+          <CardContent className="flex flex-col gap-0.5">
+            <div className="flex justify-between items-center">
+              <CardTitle>
+                {globalState.hdRadioState.station_info?.name}
+              </CardTitle>
+              <HoverCard>
+                <HoverCardTrigger>
+                  <div className="-mt-1 hover:cursor-pointer hover:border-b-white border-transparent border-b-[1px]">
+                    <div className="flex gap-1 -mb-1">
+                      <Globe className="w-4 pb-[2px]" />{" "}
+                      <span>
+                        {globalState.hdRadioState.station_info?.country_code}
+                      </span>
+                    </div>
+                  </div>
+                </HoverCardTrigger>
+                <HoverCardContent>
+                  <p>
+                    <b>Location:</b>{" "}
+                    {globalState.hdRadioState.station_info?.location.join(", ")}
+                  </p>
+                  <p>
+                    <b>Altitude:</b>{" "}
+                    {globalState.hdRadioState.station_info?.altitude}m
+                  </p>
+                </HoverCardContent>
+              </HoverCard>
+            </div>
+            <CardDescription>
+              {globalState.hdRadioState.station_info?.slogan}
+            </CardDescription>
+          </CardContent>
         </Card>
       </TabsContent>
       <TabsContent value="advancedInfo">
@@ -573,8 +612,9 @@ function HdRadioStateView({ globalState }: { globalState: GlobalState }) {
               This is all the other HD Radio data that RTL-SDR Radio can decode.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            Coming Soon...
+          <CardContent className="flex flex-col gap-2 text-wrap whitespace-normal">
+            {"Coming soon..." ||
+              JSON.stringify(globalState.hdRadioState, undefined, 4)}
           </CardContent>
         </Card>
       </TabsContent>
