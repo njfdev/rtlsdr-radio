@@ -64,6 +64,7 @@ export interface RadioStreamSettings {
   gain: number;
   sample_rate: number;
   stream_type: StreamType;
+  hd_radio_program?: number | undefined;
 }
 
 export interface RbdsData {

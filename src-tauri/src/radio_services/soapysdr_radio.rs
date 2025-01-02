@@ -46,6 +46,7 @@ pub struct StreamSettings {
     gain: f64,
     sample_rate: f64,
     stream_type: StreamType,
+    hd_radio_program: Option<u32>,
 }
 
 impl RtlSdrState {
@@ -326,8 +327,10 @@ impl RtlSdrState {
                         } else if stream_settings.stream_type == StreamType::HD {
                             let controls_clone2 = controls_arc.clone();
 
-                            let hd_radio_decoder =
-                                HdRadioDecode::<f32>::new(true, move |state: HdRadioState| {
+                            let hd_radio_decoder = HdRadioDecode::<f32>::new(
+                                stream_settings.hd_radio_program.unwrap(),
+                                true,
+                                move |state: HdRadioState| {
                                     let thumbnail_base64 = state.thumbnail_data.clone();
                                     let cover_url = if state.clone().thumbnail_data.is_some() {
                                         thumbnail_base64.unwrap()
@@ -347,7 +350,8 @@ impl RtlSdrState {
                                     //println!("HD Radio State: {:#?}", state);
 
                                     hd_radio_channel.send(state);
-                                });
+                                },
+                            );
                             hd_radio_decoder.feed_from(&downsample1);
 
                             // let test_recorder = WavWriterBlock::<f32>::new(
@@ -358,6 +362,19 @@ impl RtlSdrState {
                             // test_recorder.feed_from(&hd_radio_decoder);
 
                             pauser.feed_from(&hd_radio_decoder);
+
+                            app.clone().listen("radio_update_settings", move |event| {
+                                if let Ok(new_settings) =
+                                    serde_json::from_str::<StreamSettings>(&event.payload())
+                                {
+                                    if hd_radio_decoder.get()
+                                        != new_settings.hd_radio_program.unwrap()
+                                    {
+                                        hd_radio_decoder
+                                            .set(new_settings.hd_radio_program.unwrap());
+                                    }
+                                }
+                            });
                         }
 
                         // filter frequencies beyond normal human hearing range (20hz to 16 kHz)

@@ -30,15 +30,17 @@ use radiorust::{
 };
 use serde::Serialize;
 use tauri::ipc::Channel;
-use tokio::spawn;
+use tokio::{spawn, sync::watch};
 
 pub struct HdRadioDecode<Flt> {
     receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
     sender_connector: SenderConnector<Signal<Complex<Flt>>>,
+    program: watch::Sender<u32>,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub struct HdRadioState {
+    pub program: u32,
     pub title: String,
     pub artist: String,
     pub album: String,
@@ -51,8 +53,9 @@ pub struct HdRadioState {
 }
 
 impl HdRadioState {
-    pub fn new() -> Self {
+    pub fn new(program: u32) -> Self {
         Self {
+            program: program,
             title: String::new(),
             artist: String::new(),
             album: String::new(),
@@ -167,7 +170,9 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
     let orig_state = callback_opaque.state.clone();
     let mut lots_updated = false;
 
-    if (*event).event == NRSC5_EVENT_ID3 && (*event).__bindgen_anon_1.id3.program == 0 {
+    if (*event).event == NRSC5_EVENT_ID3
+        && (*event).__bindgen_anon_1.id3.program == callback_opaque.state.program
+    {
         let raw_title = (*event).__bindgen_anon_1.id3.title;
         if !raw_title.is_null() {
             let title = CStr::from_ptr(raw_title).to_string_lossy();
@@ -207,7 +212,9 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
 
         let lot_id = (*event).__bindgen_anon_1.id3.xhdr.lot;
         callback_opaque.state.lot_id = lot_id;
-    } else if (*event).event == NRSC5_EVENT_AUDIO && (*event).__bindgen_anon_1.audio.program == 0 {
+    } else if (*event).event == NRSC5_EVENT_AUDIO
+        && (*event).__bindgen_anon_1.audio.program == callback_opaque.state.program
+    {
         let data_ptr = (*event).__bindgen_anon_1.audio.data;
         let data_len = (*event).__bindgen_anon_1.audio.count as usize;
         // Safety: We assume that the data pointer is valid and has the correct length.
@@ -513,17 +520,20 @@ where
     Flt: Float + Into<f64>,
 {
     pub fn new(
+        program: u32,
         pass_along: bool,
         hdradio_callback: impl Fn(HdRadioState) + Send + Sync + 'static,
     ) -> Self {
         let (mut receiver, receiver_connector) = new_receiver::<Signal<Complex<Flt>>>();
         let (sender, sender_connector) = new_sender::<Signal<Complex<Flt>>>();
 
+        let (program_send, mut program_recv) = watch::channel(program);
+
         let mut buf_pool = ChunkBufPool::<Complex<Flt>>::new();
 
         spawn(async move {
             let mut nrsc5_opaque = Box::new(Nrsc5CallbackOpaque {
-                state: HdRadioState::new(),
+                state: HdRadioState::new(program),
                 callback: Arc::new(hdradio_callback),
             });
             let nrsc5_decoder = Nrsc5::new(
@@ -540,6 +550,10 @@ where
                         sample_rate,
                         chunk: input_chunk,
                     } => {
+                        if program_recv.has_changed().unwrap_or(false) {
+                            nrsc5_opaque.state.program = program_recv.borrow_and_update().clone();
+                        }
+
                         nrsc5_decoder.pipe_samples(
                             Self::convert_complex_to_iq_samples(
                                 input_chunk.iter().map(|value| value.clone()),
@@ -604,6 +618,7 @@ where
         Self {
             receiver_connector,
             sender_connector,
+            program: program_send,
         }
     }
 
@@ -620,5 +635,14 @@ where
         }
 
         iq_samples
+    }
+
+    /// Get current program
+    pub fn get(&self) -> u32 {
+        self.program.borrow().clone()
+    }
+    /// Set current program
+    pub fn set(&self, gain: u32) {
+        self.program.send_replace(gain);
     }
 }

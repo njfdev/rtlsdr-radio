@@ -49,6 +49,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "../ui/hover-card";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
 const appWindow = getCurrentWebviewWindow();
 
 enum RtlSdrStatus {
@@ -84,6 +85,7 @@ export default function RtlSdrControls({
 
   const [status, setStatus] = useState(RtlSdrStatus.Stopped);
   const [streamSettings, setStreamSettings] = useState<RadioStreamSettings>({
+    hd_radio_program: streamType == StreamType.HD ? 0 : undefined,
     freq: parseFloat(
       localStorage.getItem(streamType.toString() + freqStorageName) ||
         (streamType == StreamType.AM ? "850" : "101.5")
@@ -514,7 +516,11 @@ export default function RtlSdrControls({
                     has10SecondsElapsed={has10SecondsElapsed}
                   />
                 ) : (
-                  <HdRadioStateView globalState={globalState} />
+                  <HdRadioStateView
+                    globalState={globalState}
+                    streamSettings={streamSettings}
+                    setStreamSettings={setStreamSettings}
+                  />
                 )}
               </>
             ) : (
@@ -537,37 +543,79 @@ export default function RtlSdrControls({
   );
 }
 
-function HdRadioStateView({ globalState }: { globalState: GlobalState }) {
+function HdRadioStateView({
+  globalState,
+  streamSettings,
+  setStreamSettings,
+}: {
+  globalState: GlobalState;
+  streamSettings: RadioStreamSettings;
+  setStreamSettings: Dispatch<SetStateAction<RadioStreamSettings>>;
+}) {
   return (
     <>
       <TabsContent value="radioInfo">
         <Card className="overflow-clip">
-          <CardHeader className="flex-row gap-4">
-            {globalState.hdRadioState.thumbnail_data ? (
-              <img
-                src={globalState.hdRadioState.thumbnail_data!}
-                width={100}
-                className="rounded-sm aspect-square"
-              />
-            ) : (
-              <MusicIcon className="min-w-[100px] min-h-[100px] px-[20px] py-[20px] bg-stone-800 rounded-sm aspect-square" />
-            )}
-            <div className="flex flex-col">
-              {globalState.hdRadioState.title ? (
-                <CardTitle className="whitespace-pre-wrap">
-                  {globalState.hdRadioState.title}
-                </CardTitle>
+          <CardHeader className="gap-1">
+            <div className="flex gap-3">
+              {globalState.hdRadioState.thumbnail_data ? (
+                <img
+                  src={globalState.hdRadioState.thumbnail_data!}
+                  width={100}
+                  className="rounded-sm aspect-square"
+                />
               ) : (
-                <Skeleton className="h-6 max-w-52" />
+                <MusicIcon className="min-w-[100px] min-h-[100px] px-[20px] py-[20px] bg-stone-800 rounded-sm aspect-square" />
               )}
-              <CardDescription>
-                {globalState.hdRadioState.artist ? (
-                  globalState.hdRadioState.artist
+              <div className="flex flex-col">
+                {globalState.hdRadioState.title != "" ? (
+                  <CardTitle className="whitespace-pre-wrap">
+                    {globalState.hdRadioState.title}
+                  </CardTitle>
                 ) : (
-                  <Skeleton className="h-4 max-w-20" />
+                  <Skeleton className="h-6 max-w-52" />
                 )}
-              </CardDescription>
+                <CardDescription>
+                  {globalState.hdRadioState.artist != "" ? (
+                    globalState.hdRadioState.artist
+                  ) : (
+                    <Skeleton className="h-4 max-w-20" />
+                  )}
+                </CardDescription>
+              </div>
             </div>
+
+            <Select
+              value={streamSettings.hd_radio_program?.toString()}
+              onValueChange={(new_program) =>
+                setStreamSettings((old) => ({
+                  ...old,
+                  hd_radio_program: parseInt(new_program),
+                }))
+              }
+            >
+              <SelectTrigger>{`${streamSettings.hd_radio_program! + 1}. ${
+                globalState.hdRadioState.station_info &&
+                globalState.hdRadioState.station_info!.audio_services.length > 0
+                  ? globalState.hdRadioState.station_info?.audio_services[
+                      streamSettings.hd_radio_program!
+                    ].service_type
+                  : "Unknown"
+              }`}</SelectTrigger>
+              <SelectContent>
+                {globalState.hdRadioState.station_info?.audio_services
+                  .sort((a, b) => a.program - b.program)
+                  .map((audio_service) => {
+                    return (
+                      <SelectItem value={audio_service.program.toString()}>
+                        {`${audio_service.program + 1}. ${
+                          audio_service.service_type
+                        } (${audio_service.sound_experience})`}
+                      </SelectItem>
+                    );
+                  })}
+              </SelectContent>
+            </Select>
           </CardHeader>
           <Separator className="mb-6" />
           <CardContent className="flex flex-col gap-0.5">
