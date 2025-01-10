@@ -229,16 +229,30 @@ impl RtlSdrState {
                             let _ = rtlsdr_dev.write_setting("direct_samp", "0");
                         }
 
-                        // disable automatic gain mode (does not work that well)
-                        rtlsdr_dev
-                            .set_gain_mode(Direction::Rx, 0, true)
-                            .expect("Failed to set automatic gain");
+                        // disable automatic gain mode on RTL-SDR (does not work that well)
+                        if sdr_args.driver == "rtlsdr" {
+                            rtlsdr_dev
+                                .set_gain_mode(Direction::Rx, 0, false)
+                                .expect("Failed to set automatic gain");
+                        } else {
+                            rtlsdr_dev
+                                .set_gain_mode(Direction::Rx, 0, true)
+                                .expect("Failed to set automatic gain");
+                        }
 
                         // set a predetermined gain value
-                        // TODO: figure out a better automatic way to set this, or let the user set it
-                        rtlsdr_dev
-                            .set_gain(Direction::Rx, 0, stream_settings.gain)
-                            .expect("Failed to set a gain value");
+                        // TODO: figure out a better automatic way to set this
+                        // if SDRPlay, use better special RF Gain control
+                        if sdr_args.driver == "sdrplay" {
+                            let _ = rtlsdr_dev.write_setting(
+                                "rfgain_sel",
+                                stream_settings.gain.round().to_string().as_str(),
+                            );
+                        } else {
+                            rtlsdr_dev
+                                .set_gain(Direction::Rx, 0, stream_settings.gain)
+                                .expect("Failed to set a gain value");
+                        }
 
                         // add frequency shifter
                         let freq_shifter = blocks::FreqShifter::<f32>::with_shift(0.0e6);
@@ -424,6 +438,7 @@ impl RtlSdrState {
                         playback.feed_from(&buffer);
 
                         let sdr_clone = rtlsdr_dev.clone();
+                        let args_clone = sdr_args.clone();
                         app.listen("radio_update_settings", move |event| {
                             if let Ok(new_settings) =
                                 serde_json::from_str::<StreamSettings>(&event.payload())
@@ -438,11 +453,20 @@ impl RtlSdrState {
                                         .set_frequency(Direction::Rx, 0, sdr_freq, "")
                                         .expect("Failed to set new frequency");
                                 }
-                                if sdr_clone.gain(Direction::Rx, 0).unwrap() != new_settings.gain {
-                                    // set center frequency
-                                    sdr_clone
-                                        .set_gain(Direction::Rx, 0, new_settings.gain)
-                                        .expect("Failed to set new gain");
+                                if args_clone.driver == "sdrplay" {
+                                    let _ = sdr_clone.write_setting(
+                                        "rfgain_sel",
+                                        new_settings.gain.round().to_string().as_str(),
+                                    );
+                                } else {
+                                    if sdr_clone.gain(Direction::Rx, 0).unwrap()
+                                        != new_settings.gain
+                                    {
+                                        // set center frequency
+                                        sdr_clone
+                                            .set_gain(Direction::Rx, 0, new_settings.gain)
+                                            .expect("Failed to set new gain");
+                                    }
                                 }
                             }
                         });

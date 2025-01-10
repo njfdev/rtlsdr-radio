@@ -413,8 +413,18 @@ export default function RtlSdrControls({
           <Label htmlFor="gain_slider">Gain - {streamSettings.gain} dB</Label>
           <Slider
             min={0.0}
-            max={50.0}
-            step={0.1}
+            max={
+              (currentSdrArgs || globalState.defaultSdrArgs)?.driver ==
+              "sdrplay"
+                ? 27.0
+                : 49.6
+            }
+            step={
+              (currentSdrArgs || globalState.defaultSdrArgs)?.driver ==
+              "sdrplay"
+                ? 1.0
+                : 0.1
+            }
             value={[streamSettings.gain]}
             id="gain_slider"
             className="py-[2px]"
