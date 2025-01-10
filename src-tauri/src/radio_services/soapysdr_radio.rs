@@ -74,7 +74,6 @@ impl RtlSdrState {
         let mut freq_mul: f64 = 1_000_000.0;
         let mut freq_offset: f64 = 0.0;
         let mut required_bandwidth: f64 = 200_000.0;
-        let mut sample_rate = 1.000e6;
         let mut downsampled_rate = 336000.0;
 
         // if AM Radio, use KHz instead
@@ -202,6 +201,13 @@ impl RtlSdrState {
                         }
 
                         let (rtlsdr_dev, sdr_args) = rtlsdr_dev_result.unwrap();
+
+                        // set corresponding sample rate
+                        let mut sample_rate = if sdr_args.driver == "sdrplay" {
+                            1e6
+                        } else {
+                            1.024e6
+                        };
 
                         // set sample rate
                         let _ = rtlsdr_dev.set_sample_rate(Direction::Rx, 0, sample_rate);
