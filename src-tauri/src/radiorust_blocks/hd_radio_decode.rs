@@ -42,6 +42,7 @@ pub struct HdRadioDecode<Flt> {
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub struct HdRadioState {
     pub program: u32,
+    last_program: u32,
     pub title: String,
     pub artist: String,
     pub album: String,
@@ -60,6 +61,7 @@ impl HdRadioState {
     pub fn new(program: u32) -> Self {
         Self {
             program: program,
+            last_program: program,
             title: String::new(),
             artist: String::new(),
             album: String::new(),
@@ -94,6 +96,14 @@ impl HdRadioState {
             / 10.0;
         self.audio_bytes = 0;
         self.audio_packets = 0;
+    }
+
+    fn set_last_program(&mut self, program: u32) {
+        self.last_program = program;
+    }
+
+    fn get_last_program(&self) -> u32 {
+        self.last_program
     }
 }
 
@@ -242,15 +252,33 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
         let lot_id = (*event).__bindgen_anon_1.id3.xhdr.lot;
         callback_opaque.state.lot_id = lot_id;
     } else if (*event).event == NRSC5_EVENT_AUDIO
-        && (*event).__bindgen_anon_1.audio.program == callback_opaque.state.program
+        && ((*event).__bindgen_anon_1.audio.program == callback_opaque.state.program
+            || (*event).__bindgen_anon_1.audio.program == callback_opaque.state.get_last_program())
     {
-        let data_ptr = (*event).__bindgen_anon_1.audio.data;
-        let data_len = (*event).__bindgen_anon_1.audio.count as usize;
-        // Safety: We assume that the data pointer is valid and has the correct length.
-        let audio_data = std::slice::from_raw_parts(data_ptr, data_len);
+        /* If we are transitioning from the last program, we waited to update
+         * until the last program audio chunk is sent so we don't forever add
+         * tiny in-between buffers that make switching take longer and longer.
+         */
+        if (*event).__bindgen_anon_1.audio.program == callback_opaque.state.get_last_program()
+            && callback_opaque.state.program != callback_opaque.state.get_last_program()
+        {
+            callback_opaque
+                .state
+                .set_last_program(callback_opaque.state.program);
+        }
 
-        // update AUDIO_SAMPLES
-        AUDIO_SAMPLES.extend_from_slice(audio_data);
+        // only add new audio samples if the new chunk is for the current program and we are not waiting to clear the old buffer
+        if (*event).__bindgen_anon_1.audio.program == callback_opaque.state.program
+            && (*event).__bindgen_anon_1.audio.program == callback_opaque.state.get_last_program()
+        {
+            let data_ptr = (*event).__bindgen_anon_1.audio.data;
+            let data_len = (*event).__bindgen_anon_1.audio.count as usize;
+            // Safety: We assume that the data pointer is valid and has the correct length.
+            let audio_data = std::slice::from_raw_parts(data_ptr, data_len);
+
+            // update AUDIO_SAMPLES
+            AUDIO_SAMPLES.extend_from_slice(audio_data);
+        }
     } else if (*event).event == NRSC5_EVENT_LOT {
         println!(
             "-----------------Name: {}",
@@ -587,6 +615,9 @@ where
                     } => {
                         if program_recv.has_changed().unwrap_or(false) {
                             nrsc5_opaque.state.program = program_recv.borrow_and_update().clone();
+                            unsafe {
+                                AUDIO_SAMPLES.clear();
+                            }
                         }
 
                         nrsc5_decoder.pipe_samples(
