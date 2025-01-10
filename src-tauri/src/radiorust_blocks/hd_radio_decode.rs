@@ -54,6 +54,7 @@ pub struct HdRadioState {
     pub lot_id: i32,
     // a list of ports in the format (port_mime, port_number)
     pub ports: Vec<(u32, u16)>,
+    pub ber: f32,
     pub station_info: Option<StationInfo>,
 }
 
@@ -72,6 +73,7 @@ impl HdRadioState {
             audio_bytes: 0,
             lot_id: -1,
             ports: vec![],
+            ber: 0.0,
             station_info: None,
         }
     }
@@ -320,10 +322,11 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
     } else if (*event).event == NRSC5_EVENT_LOST_SYNC {
         println!("Lost Sync to Station");
     } else if (*event).event == NRSC5_EVENT_BER {
-        println!(
-            "Bit Error Ratio: {}%",
-            (*event).__bindgen_anon_1.ber.cber * 100.0
-        );
+        callback_opaque.state.ber = (*event).__bindgen_anon_1.ber.cber;
+        // println!(
+        //     "Bit Error Ratio: {}%",
+        //     (*event).__bindgen_anon_1.ber.cber * 100.0
+        // );
     } else if (*event).event == NRSC5_EVENT_MER {
         println!(
             "Modulation Error Ratio: Lower {}, Upper {}",

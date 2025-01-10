@@ -680,9 +680,25 @@ function HdRadioStateView({
                 </HoverCardContent>
               </HoverCard>
             </div>
-            <CardDescription>
-              {globalState.hdRadioState.station_info?.slogan}
-            </CardDescription>
+            <div className="flex justify-between">
+              <CardDescription>
+                {globalState.hdRadioState.station_info?.slogan}
+              </CardDescription>
+              {globalState.hdRadioState && (
+                <Badge
+                  variant="outline"
+                  className={`before:content-[''] before:inline-block before:w-2 before:h-2 before:${
+                    globalState.hdRadioState.ber < 0.0075
+                      ? "bg-green-500"
+                      : globalState.hdRadioState.ber < 0.05
+                      ? "bg-yellow-500"
+                      : "bg-red-500"
+                  } before:rounded-full before:mr-2`}
+                >
+                  {Math.floor(globalState.hdRadioState.ber * 100_00) / 100}% BER
+                </Badge>
+              )}
+            </div>
           </CardContent>
         </Card>
       </TabsContent>
