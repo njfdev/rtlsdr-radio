@@ -243,6 +243,12 @@ export default function RtlSdrControls({
         statusText: message.title || "",
       });
     }
+    if (streamType == StreamType.HD) {
+      setStreamSettings((old) => ({
+        ...old,
+        hd_radio_program: message.program,
+      }));
+    }
   };
 
   const updateSdrGlobalState = (

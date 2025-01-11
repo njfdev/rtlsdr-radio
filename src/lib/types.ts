@@ -87,6 +87,7 @@ export interface RbdsData {
 }
 
 export interface HdRadioState {
+  program: number;
   title: string;
   artist: string;
   album: string;

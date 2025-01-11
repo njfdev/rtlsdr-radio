@@ -16,43 +16,23 @@ use std::ptr;
 
 pub struct Nrsc5 {
     pub nrsc5_state: *mut nrsc5_t,
-    pub current_program: u32,
+    callback: nrsc5_callback_t,
+    opaque: *mut c_void,
 }
 
 unsafe impl Send for Nrsc5 {}
 
 impl Nrsc5 {
     pub fn new(callback: nrsc5_callback_t, opaque: *mut c_void) -> Self {
-        unsafe {
-            // Declare a mutable pointer to c_void
-            let mut nrsc5_state: *mut nrsc5_t = ptr::null_mut();
-
-            // Pass a pointer to the mutable variable `nrsc5_state` to create the object
-            let mut result = nrsc5_open_pipe(&mut nrsc5_state);
-
-            if result == 0 {
-                // set the callback
-                nrsc5_set_callback(nrsc5_state, callback, opaque);
-
-                if result != 0 {
-                    eprintln!("Could not set nrsc5 mode!");
-                } else {
-                    println!("Set nrsc5 mode to FM.")
-                }
-
-                // If the function succeeds, start and assign `nrsc5_state` to the struct
-                nrsc5_start(nrsc5_state);
-
-                let cstr = unsafe { CStr::from_ptr(nrsc5_state as *const _) }.to_string_lossy();
-                println!("{}", cstr);
-
-                Self {
-                    nrsc5_state,
-                    current_program: 0,
-                }
-            } else {
-                panic!("Failed to open pipe");
+        let result = Self::init(callback, opaque);
+        if result.is_ok() {
+            Self {
+                nrsc5_state: result.unwrap(),
+                callback: callback,
+                opaque: opaque,
             }
+        } else {
+            panic!("Error while initiating nrsc5: {}", result.unwrap_err());
         }
     }
 
@@ -62,6 +42,39 @@ impl Nrsc5 {
             let samples_ptr = samples.as_ptr();
             // Call the C function
             nrsc5_pipe_samples_cs16(self.nrsc5_state, samples_ptr, samples.len() as u32)
+        }
+    }
+
+    pub fn reset_state(&mut self) {
+        unsafe {
+            nrsc5_stop(self.nrsc5_state);
+            nrsc5_close(self.nrsc5_state);
+        }
+        self.nrsc5_state = Self::init(self.callback, self.opaque).unwrap();
+    }
+
+    fn init(callback: nrsc5_callback_t, opaque: *mut c_void) -> Result<*mut nrsc5_t, String> {
+        // Declare a mutable pointer to c_void
+        let mut nrsc5_state: *mut nrsc5_t = ptr::null_mut();
+
+        unsafe {
+            // Pass a pointer to the mutable variable `nrsc5_state` to create the object
+            let mut result = nrsc5_open_pipe(&mut nrsc5_state);
+
+            if result == 0 {
+                // set the callback
+                nrsc5_set_callback(nrsc5_state, callback, opaque);
+
+                // If the function succeeds, start and assign `nrsc5_state` to the struct
+                nrsc5_start(nrsc5_state);
+
+                let cstr = unsafe { CStr::from_ptr(nrsc5_state as *const _) }.to_string_lossy();
+                println!("{}", cstr);
+
+                return Ok(nrsc5_state);
+            } else {
+                return Err("Failed to open pipe".to_string());
+            }
         }
     }
 }

@@ -383,6 +383,8 @@ impl RtlSdrState {
 
                             pauser.feed_from(&hd_radio_decoder);
 
+                            let old_station_freq_orig = Arc::new(Mutex::new(0.0));
+                            let old_station_freq = old_station_freq_orig.clone();
                             app.clone().listen("radio_update_settings", move |event| {
                                 if let Ok(new_settings) =
                                     serde_json::from_str::<StreamSettings>(&event.payload())
@@ -392,6 +394,11 @@ impl RtlSdrState {
                                     {
                                         hd_radio_decoder
                                             .set(new_settings.hd_radio_program.unwrap());
+                                    } else if new_settings.freq != *old_station_freq.lock().unwrap()
+                                    {
+                                        hd_radio_decoder.reset_state();
+                                        (*old_station_freq.lock().as_deref_mut().unwrap()) =
+                                            new_settings.freq;
                                     }
                                 }
                             });

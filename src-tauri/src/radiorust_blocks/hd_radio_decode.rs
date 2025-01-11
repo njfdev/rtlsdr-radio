@@ -1,6 +1,7 @@
 use std::{
     ffi::{c_char, c_void, CStr},
     fs,
+    ops::Deref,
     path::Path,
     ptr::{self, null, null_mut},
     sync::{Arc, Mutex},
@@ -37,6 +38,7 @@ pub struct HdRadioDecode<Flt> {
     receiver_connector: ReceiverConnector<Signal<Complex<Flt>>>,
     sender_connector: SenderConnector<Signal<Complex<Flt>>>,
     program: watch::Sender<u32>,
+    should_reset: watch::Sender<bool>,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
@@ -328,11 +330,11 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
         //     (*event).__bindgen_anon_1.ber.cber * 100.0
         // );
     } else if (*event).event == NRSC5_EVENT_MER {
-        println!(
-            "Modulation Error Ratio: Lower {}, Upper {}",
-            (*event).__bindgen_anon_1.mer.lower,
-            (*event).__bindgen_anon_1.mer.upper
-        );
+        // println!(
+        //     "Modulation Error Ratio: Lower {}, Upper {}",
+        //     (*event).__bindgen_anon_1.mer.lower,
+        //     (*event).__bindgen_anon_1.mer.upper
+        // );
     } else if (*event).event == NRSC5_EVENT_SIG {
         println!("Station Channels:");
         let mut cur_sig = (*event).__bindgen_anon_1.sig.services;
@@ -594,6 +596,7 @@ where
         let (sender, sender_connector) = new_sender::<Signal<Complex<Flt>>>();
 
         let (program_send, mut program_recv) = watch::channel(program);
+        let (should_reset_send, mut should_reset_recv) = watch::channel(false);
 
         let mut buf_pool = ChunkBufPool::<Complex<Flt>>::new();
 
@@ -602,7 +605,7 @@ where
                 state: HdRadioState::new(program),
                 callback: Arc::new(hdradio_callback),
             });
-            let nrsc5_decoder = Nrsc5::new(
+            let mut nrsc5_decoder = Nrsc5::new(
                 Some(nrsc5_custom_callback),
                 &mut *nrsc5_opaque as *mut _ as *mut c_void,
             );
@@ -622,6 +625,15 @@ where
                                 AUDIO_SAMPLES.clear();
                             }
                         }
+                        if should_reset_recv.has_changed().unwrap_or(false) {
+                            should_reset_recv.mark_unchanged();
+                            let should_reset = should_reset_recv.borrow_and_update();
+                            if should_reset.clone() == true {
+                                nrsc5_decoder.reset_state();
+                                nrsc5_opaque.state = HdRadioState::new(program);
+                                (nrsc5_opaque.callback)(nrsc5_opaque.state.clone());
+                            }
+                        }
 
                         nrsc5_decoder.pipe_samples(
                             Self::convert_complex_to_iq_samples(
@@ -636,8 +648,6 @@ where
                             if AUDIO_SAMPLES.len() == 0 {
                                 continue;
                             }
-
-                            println!("Audio Samples length: {}", AUDIO_SAMPLES.len());
 
                             new_audio_samples = AUDIO_SAMPLES.clone();
                             AUDIO_SAMPLES.clear();
@@ -688,6 +698,7 @@ where
             receiver_connector,
             sender_connector,
             program: program_send,
+            should_reset: should_reset_send,
         }
     }
 
@@ -713,5 +724,9 @@ where
     /// Set current program
     pub fn set(&self, gain: u32) {
         self.program.send_replace(gain);
+    }
+    /// reset state
+    pub fn reset_state(&self) {
+        self.should_reset.send_replace(true);
     }
 }
