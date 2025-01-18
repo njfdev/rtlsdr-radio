@@ -1,5 +1,7 @@
+use libc::{dlopen, RTLD_NOW};
+use libloading::Library;
 use log::{debug, info};
-use std::env;
+use std::{env, ffi::CString};
 use tauri::{App, Emitter, Manager};
 
 use crate::{
@@ -10,8 +12,19 @@ use crate::{
 pub fn setup_dependencies(app: &mut App) {
     let resource_dir = app.path().resource_dir().unwrap();
 
+    // set library path for macos/linux (needed to load sdrplay_api)
+    let resources_lib_path = resource_dir.join("resources/lib");
+    let sdrplay_lib_path = resources_lib_path.join("libsdrplay_api.so.3");
+    let sdrplay_lib_path_str = sdrplay_lib_path.to_str().unwrap();
+    unsafe {
+        dlopen(
+            CString::new(sdrplay_lib_path_str).unwrap().as_ptr(),
+            RTLD_NOW,
+        );
+    }
+
     // set env for SoapySDR modules
-    let modules_path = resource_dir.join("resources/lib/SoapySDR/modules0.8/");
+    let modules_path = resources_lib_path.join("SoapySDR/modules0.8/");
     let mut modules_path_str = modules_path.to_str().unwrap();
     /* On windows, \\?\ is a valid prefix to a path, however, it prevents SoapySDR
      * from loading the correct path, so we remove it if it exists.
@@ -19,6 +32,8 @@ pub fn setup_dependencies(app: &mut App) {
     if modules_path_str.starts_with("\\\\?\\") {
         modules_path_str = &modules_path_str[4..];
     }
+
+    // load plugin path for SoapySDR
     env::set_var("SOAPY_SDR_PLUGIN_PATH", modules_path_str);
     debug!(
         "SoapySDR Plugin Path: {}",

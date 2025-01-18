@@ -40,6 +40,11 @@ if(WIN32)
 else()
     set(RTLSDR_LIBRARIES ${CMAKE_CURRENT_BINARY_DIR}/out/lib/librtlsdr${LIB_EXT})
     set(LIBUSB_BUILD_SHARED_LIBS on)
+
+    set(CMAKE_INSTALL_RPATH "@loader_path/../Resources/resources/lib")
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+    set(CMAKE_SKIP_BUILD_RPATH OFF)
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
 endif()
 
 ExternalProject_Add(
@@ -95,16 +100,23 @@ ExternalProject_Add(
     INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install
 )
 
+# copy SDRPlay api libs to the folders
+add_custom_target(SDRplayAPI ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different /Library/SDRplayAPI/3.15.0/lib/libsdrplay_api.so.3.15 ${CMAKE_BINARY_DIR}/out/lib/libsdrplay_api.so.3
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different /Library/SDRplayAPI/3.15.0/include/* ${CMAKE_BINARY_DIR}/out/include/
+    COMMENT "Copying SDRplayAPI to dist"
+)
+
 # ExternalProject_Add for SoapySDRPlay3
 ExternalProject_Add(
     SoapySDRPlay3
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/soapy_sdrplay3
     GIT_REPOSITORY https://github.com/pothosware/SoapySDRPlay3.git
     GIT_TAG soapy-sdrplay3-0.5.2
-    DEPENDS SoapySDR
+    DEPENDS SoapySDR SDRplayAPI
     UPDATE_COMMAND ""
     PATCH_COMMAND ""
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -S <SOURCE_DIR> -B <BINARY_DIR> -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/out -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_BINARY_DIR}/out -DRTLSDR_INCLUDE_DIRS=${CMAKE_CURRENT_BINARY_DIR}/out/include -DRTLSDR_LIBRARIES=${RTLSDR_LIBRARIES} -DSoapySDR_DIR=${CMAKE_CURRENT_BINARY_DIR}/out/lib/cmake/SoapySDR
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -S <SOURCE_DIR> -B <BINARY_DIR> -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/out -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_BINARY_DIR}/out -DSoapySDR_DIR=${CMAKE_CURRENT_BINARY_DIR}/out/lib/cmake/SoapySDR -DLIBSDRPLAY_LIBRARIES=${CMAKE_CURRENT_BINARY_DIR}/out/lib/libsdrplay_api.so.3 -DLIBSDRPLAY_INCLUDE_DIRS=${CMAKE_CURRENT_BINARY_DIR}/out/include -DLIBSDRPLAY_FOUND=ON -DBUILD_SHARED_LIBS=ON
     BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release
     INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install
 )
