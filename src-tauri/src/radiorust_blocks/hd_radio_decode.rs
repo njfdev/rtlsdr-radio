@@ -136,6 +136,22 @@ pub struct AudioService {
 pub struct Nrsc5CallbackOpaque {
     state: HdRadioState,
     callback: Arc<dyn Fn(HdRadioState) + Send + Sync>,
+    audio_samples: Arc<Mutex<Vec<i16>>>,
+}
+
+impl Nrsc5CallbackOpaque {
+    pub fn extend_audio_samples(&self, samples: &[i16]) {
+        let audio_samples_arc = self.audio_samples.clone();
+        let mut audio_samples = audio_samples_arc.lock();
+        audio_samples.as_mut().unwrap().extend_from_slice(samples);
+    }
+
+    pub fn get_audio_samples(&self) -> Vec<i16> {
+        let audio_samples_arc = self.audio_samples.clone();
+        let audio_samples = audio_samples_arc.lock().as_mut().unwrap().clone();
+        audio_samples_arc.lock().as_mut().unwrap().clear();
+        return audio_samples;
+    }
 }
 
 #[derive(Clone)]
@@ -146,7 +162,6 @@ pub struct LotFile {
     data: Vec<u8>,
 }
 
-static mut AUDIO_SAMPLES: Vec<i16> = vec![];
 // the structure is Vec<(fcc_id, Vec<(lot_id, mime_type, port, data)>)>
 static mut NRSC5_LOT_FILES: Vec<(i32, Vec<LotFile>)> = vec![];
 
@@ -281,7 +296,7 @@ unsafe extern "C" fn nrsc5_custom_callback(event: *const nrsc5_event_t, opaque: 
             let audio_data = std::slice::from_raw_parts(data_ptr, data_len);
 
             // update AUDIO_SAMPLES
-            AUDIO_SAMPLES.extend_from_slice(audio_data);
+            callback_opaque.extend_audio_samples(audio_data);
         }
     } else if (*event).event == NRSC5_EVENT_LOT {
         println!(
@@ -604,6 +619,7 @@ where
             let mut nrsc5_opaque = Box::new(Nrsc5CallbackOpaque {
                 state: HdRadioState::new(program),
                 callback: Arc::new(hdradio_callback),
+                audio_samples: Arc::new(Mutex::new(vec![])),
             });
             let mut nrsc5_decoder = Nrsc5::new(
                 Some(nrsc5_custom_callback),
@@ -621,9 +637,7 @@ where
                     } => {
                         if program_recv.has_changed().unwrap_or(false) {
                             nrsc5_opaque.state.program = program_recv.borrow_and_update().clone();
-                            unsafe {
-                                AUDIO_SAMPLES.clear();
-                            }
+                            nrsc5_opaque.get_audio_samples();
                         }
                         if should_reset_recv.has_changed().unwrap_or(false) {
                             should_reset_recv.mark_unchanged();
@@ -642,16 +656,13 @@ where
                             .as_slice(),
                         );
 
-                        let mut new_audio_samples: Vec<i16> = vec![];
+                        let new_audio_samples: Vec<i16> = nrsc5_opaque.get_audio_samples();
 
-                        unsafe {
-                            if AUDIO_SAMPLES.len() == 0 {
-                                continue;
-                            }
-
-                            new_audio_samples = AUDIO_SAMPLES.clone();
-                            AUDIO_SAMPLES.clear();
+                        if new_audio_samples.len() == 0 {
+                            continue;
                         }
+
+                        println!("{} Audio samples are being sent", new_audio_samples.len());
 
                         let mut output_chunk = buf_pool.get();
 
