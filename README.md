@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="600" src="https://cloud-5azqpz64z-hack-club-bot.vercel.app/0screenshot_2024-09-01_at_8.31.59___am.png">
+  <img width="800" alt="RTL-SDR Radio Thumbnail" src="https://github.com/user-attachments/assets/a752c451-24f3-4960-834f-7a58e4a4fe71">
 </p>
 
 # RTL-SDR Radio
