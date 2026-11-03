@@ -2,7 +2,7 @@
   <img width="800" alt="RTL-SDR Radio Thumbnail" src="https://github.com/user-attachments/assets/a752c451-24f3-4960-834f-7a58e4a4fe71">
 </p>
 
-# RTL-SDR Radio
+# RTL-SDR Radio ([Video Demo](https://youtu.be/oCa6fWjkM0E))
 
 Your one-stop shop for decoding/listening to radio frequencies!
 
